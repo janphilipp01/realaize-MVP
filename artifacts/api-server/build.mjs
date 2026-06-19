@@ -18,6 +18,7 @@ async function buildAll() {
     entryPoints: [
       path.resolve(artifactDir, "src/index.ts"),
       path.resolve(artifactDir, "src/seed/devSeed.ts"),
+      path.resolve(artifactDir, "src/vercel.ts"),
     ],
     platform: "node",
     bundle: true,

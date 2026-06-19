@@ -1,9 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["fra1"],
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/realaize run build",
-  "outputDirectory": "artifacts/realaize/dist/public",
-  "framework": null,
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+  "buildCommand": "node vercel-build.mjs"
 }
