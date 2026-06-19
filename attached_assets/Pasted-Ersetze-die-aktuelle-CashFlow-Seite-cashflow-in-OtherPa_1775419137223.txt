@@ -1,0 +1,58 @@
+Ersetze die aktuelle CashFlow-Seite (/cashflow in OtherPages.tsx CashFlowPage) durch ein professionelles Cash Flow Model im Stil einer Immobilien-Investitionsrechnung. Das Modell zeigt den Portfolio-Cashflow über 10 Jahre in tabellarischer Form mit jährlichen Spalten.
+Cash Flow Struktur (Zeilen)
++ Gross Rental Income
+- Operating Costs
+- Capex / Construction Costs
+= Net Operating Income (NOI)
+
+- Acquisitions (Kaufpreis)
+- Acquisition Costs (Nebenkosten: Closing Costs + Broker Fee)
++ Sales Proceeds (Verkaufserlös)
+- Sales Costs (Verkaufsnebenkosten)
+= Cashflow from Transactions
+
++ Loan Received (Darlehensauszahlung)
+- Interest Payments (Zinsen)
+- Other Loan Costs
+- Loan Repayments (Tilgung)
+= Debt Cashflow
+
+== Free Cashflow (NOI + Transactions + Debt)
+Spalten
+
+Zeige 10 Jahres-Spalten (Jahr 1 bis Jahr 10) plus eine "Total"-Spalte
+Jahr 1 beginnt ab dem frühesten Ankaufsdatum im Portfolio
+Jede Zeile zeigt den Wert pro Jahr für das gesamte Portfolio (Summe aller Assets)
+
+Logik pro Asset im Bestand
+
+Haltedauer: Standardmäßig 10 Jahre ab purchaseDate des Assets
+Gross Rental Income: Aus asset.annualRent, jährlich indexiert mit einer neuen Eigenschaft rentalGrowthRate (% p.a.) die auf dem Asset-Typ hinzugefügt werden muss (Default: 2%)
+Operating Costs: Aus computeAssetNOI(asset) — die Differenz zwischen Gross Rent und NOI
+NOI: Aus computeAssetNOI(asset), ebenfalls jährlich indexiert mit rentalGrowthRate
+Acquisition: Kaufpreis im Jahr des Erwerbs (Jahr 1 für bestehende Assets)
+Acquisition Costs: purchasePrice * (closingCostPercent + brokerFeePercent) / 100 — aus den Operating Costs Defaults in Settings falls nicht am Asset vorhanden
+Verkauf (Default): Am Ende der 10-Jahres-Haltedauer wird das Asset verkauft. Der Exit-Preis berechnet sich aus: NOI in Jahr 10 (indexiert) / Exit NIY. Die Exit NIY ergibt sich aus der aktuellen NIY des Assets (= NOI / currentValue). Formel: Verkaufspreis = NOI_Jahr10 / (NOI_Jahr1 / currentValue)
+Finanzierung: Aus asset.debtInstruments — Zinsen = outstandingAmount * interestRate / 100, Tilgung = outstandingAmount * amortizationRate / 100, Darlehensauszahlung im Ankaufsjahr
+
+Sonderfall: Asset ist in "Sales"
+Wenn ein Asset auch als SaleObject existiert (über sourceId verknüpft):
+
+Der Verkauf findet im geplanten Verkaufsjahr statt, NICHT nach 10 Jahren
+Sales Proceeds = saleObject.askingPrice (oder soldPrice falls schon verkauft)
+Ab dem Verkaufsjahr fallen keine weiteren Mieteinnahmen, Opex oder Debt-Zahlungen an
+
+Sonderfall: Developments
+Developments (DevelopmentProject) werden ebenfalls in den Cashflow übernommen:
+
+Ankauf: purchasePrice im Jahr des startDate
+Baukosten (Capex): totalBudget verteilt über die Bauzeit (von startDate bis plannedEndDate), gleichmäßig auf die Baujahre
+Mieteinnahmen: Beginnen erst NACH Fertigstellung (plannedEndDate bzw. actualEndDate)
+Haltedauer: 10 Jahre ab Fertigstellung (Standard), es sei denn das Development hat einen verknüpften Sale
+Finanzierung: Aus den Development-Daten falls vorhanden
+
+Neues Feld auf Asset-Typ
+Füge zu AssetOperatingCosts oder direkt auf dem Asset-Interface hinzu:
+typescriptrentalGrowthRate: number; // % p.a., Default 2.0
+Zeige dieses Feld im Asset-Detail unter "Operating Costs" Tab als editierbares Feld.
+Setze den Default-Wert in den Settings: defaultRentalGrowthRate: 2.0

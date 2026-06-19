@@ -1,0 +1,1077 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: ai
+    description: AI copilot operations
+  - name: contacts
+    description: Address book contacts
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /ai/chat:
+    post:
+      operationId: aiChat
+      tags: [ai]
+      summary: AI copilot chat
+      description: Sends a chat conversation to the configured LLM and returns the assistant reply.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiChatRequest"
+      responses:
+        "200":
+          description: Assistant reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiChatResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error (e.g. missing API key, upstream failure)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /contacts:
+    get:
+      operationId: listContacts
+      tags: [contacts]
+      summary: List contacts for the org
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      responses:
+        "200":
+          description: Contact list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contact"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createContact
+      tags: [contacts]
+      summary: Create a contact
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactWrite"
+      responses:
+        "201":
+          description: Created contact
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /contacts/{id}:
+    get:
+      operationId: getContact
+      tags: [contacts]
+      summary: Get a single contact
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Contact
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateContact
+      tags: [contacts]
+      summary: Update a contact
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactWrite"
+      responses:
+        "200":
+          description: Updated contact
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteContact
+      tags: [contacts]
+      summary: Delete a contact
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [appointments]
+      summary: List appointments for the org
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      responses:
+        "200":
+          description: Appointment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createAppointment
+      tags: [appointments]
+      summary: Create an appointment
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentWrite"
+      responses:
+        "201":
+          description: Created appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /appointments/{id}:
+    get:
+      operationId: getAppointment
+      tags: [appointments]
+      summary: Get a single appointment
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateAppointment
+      tags: [appointments]
+      summary: Update an appointment
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentWrite"
+      responses:
+        "200":
+          description: Updated appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteAppointment
+      tags: [appointments]
+      summary: Delete an appointment
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /market-locations:
+    get:
+      operationId: listMarketLocations
+      tags: [marketLocations]
+      summary: List market locations for the org
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      responses:
+        "200":
+          description: Market location list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketLocation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createMarketLocation
+      tags: [marketLocations]
+      summary: Create a market location
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketLocationWrite"
+      responses:
+        "201":
+          description: Created market location
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketLocation"
+
+  /market-locations/{id}:
+    patch:
+      operationId: updateMarketLocation
+      tags: [marketLocations]
+      summary: Update a market location's metadata
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - name: id
+          in: path
+          required: true
+          description: locationKey (e.g. loc-berlin)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketLocationPatch"
+      responses:
+        "200":
+          description: Updated market location
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketLocation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteMarketLocation
+      tags: [marketLocations]
+      summary: Delete a market location
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /assets:
+    get:
+      operationId: listAssets
+      tags: [assets]
+      summary: List assets for the org
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      responses:
+        "200":
+          description: Asset list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PortfolioObject"
+    post:
+      operationId: createAsset
+      tags: [assets]
+      summary: Create an asset
+      parameters: [{ $ref: "#/components/parameters/XOrgId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObjectWrite" } } }
+      responses:
+        "201":
+          description: Created
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+  /assets/{id}:
+    get:
+      operationId: getAsset
+      tags: [assets]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Asset
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateAsset
+      tags: [assets]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObjectWrite" } } }
+      responses:
+        "200":
+          description: Updated
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteAsset
+      tags: [assets]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /deals:
+    get:
+      operationId: listDeals
+      tags: [deals]
+      parameters: [{ $ref: "#/components/parameters/XOrgId" }]
+      responses:
+        "200":
+          description: Deal list
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/PortfolioObject" } } } }
+    post:
+      operationId: createDeal
+      tags: [deals]
+      parameters: [{ $ref: "#/components/parameters/XOrgId" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObjectWrite" } } } }
+      responses:
+        "201":
+          description: Created
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+  /deals/{id}:
+    get:
+      operationId: getDeal
+      tags: [deals]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Deal
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateDeal
+      tags: [deals]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObjectWrite" } } } }
+      responses:
+        "200":
+          description: Updated
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteDeal
+      tags: [deals]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /developments:
+    get:
+      operationId: listDevelopments
+      tags: [developments]
+      parameters: [{ $ref: "#/components/parameters/XOrgId" }]
+      responses:
+        "200":
+          description: Development list
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/PortfolioObject" } } } }
+    post:
+      operationId: createDevelopment
+      tags: [developments]
+      parameters: [{ $ref: "#/components/parameters/XOrgId" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObjectWrite" } } } }
+      responses:
+        "201":
+          description: Created
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+  /developments/{id}:
+    get:
+      operationId: getDevelopment
+      tags: [developments]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Development
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateDevelopment
+      tags: [developments]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObjectWrite" } } } }
+      responses:
+        "200":
+          description: Updated
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteDevelopment
+      tags: [developments]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /sales:
+    get:
+      operationId: listSales
+      tags: [sales]
+      parameters: [{ $ref: "#/components/parameters/XOrgId" }]
+      responses:
+        "200":
+          description: Sale list
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/PortfolioObject" } } } }
+    post:
+      operationId: createSale
+      tags: [sales]
+      parameters: [{ $ref: "#/components/parameters/XOrgId" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObjectWrite" } } } }
+      responses:
+        "201":
+          description: Created
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+  /sales/{id}:
+    get:
+      operationId: getSale
+      tags: [sales]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Sale
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateSale
+      tags: [sales]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObjectWrite" } } } }
+      responses:
+        "200":
+          description: Updated
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortfolioObject" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteSale
+      tags: [sales]
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /market-locations/{id}/benchmarks:
+    post:
+      operationId: refreshMarketBenchmarks
+      tags: [marketLocations]
+      summary: Upsert benchmarks (replace by usageType) and append an update log entry
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketBenchmarksRefresh"
+      responses:
+        "200":
+          description: Updated market location
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketLocation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    XOrgId:
+      name: X-Org-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Insufficient role or wrong org
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    AiChatMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+      required:
+        - role
+        - content
+    AiChatRequest:
+      type: object
+      properties:
+        system:
+          type: string
+          description: Optional system prompt prepended to the conversation.
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiChatMessage"
+          minItems: 1
+        maxTokens:
+          type: integer
+          minimum: 1
+          maximum: 8192
+          default: 1500
+        model:
+          type: string
+          description: Optional model override. Defaults to the server-configured model.
+        webSearch:
+          type: boolean
+          default: false
+          description: When true, gives the model access to Anthropic's web_search tool (single use).
+      required:
+        - messages
+    AiChatResult:
+      type: object
+      properties:
+        text:
+          type: string
+        model:
+          type: string
+        stopReason:
+          type: string
+          nullable: true
+      required:
+        - text
+        - model
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Contact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        category:
+          type: string
+        subcategory:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+        lastName:
+          type: string
+        company:
+          type: string
+          nullable: true
+        position:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        mobile:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        linkedObjectIds:
+          type: array
+          items:
+            type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - orgId
+        - category
+        - firstName
+        - lastName
+        - createdAt
+        - updatedAt
+
+    ContactWrite:
+      type: object
+      properties:
+        category:
+          type: string
+        subcategory:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+        lastName:
+          type: string
+        company:
+          type: string
+          nullable: true
+        position:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        mobile:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        linkedObjectIds:
+          type: array
+          items:
+            type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+      required:
+        - category
+        - firstName
+        - lastName
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        endTime:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        participants:
+          type: string
+          nullable: true
+        assetId:
+          type: string
+          nullable: true
+        category:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - orgId
+        - title
+        - date
+        - time
+        - category
+        - createdAt
+        - updatedAt
+
+    # Generic JSONB-document carrier used for assets, deals, developments, sales.
+    # The actual shape is defined client-side (see frontend models/types.ts);
+    # this spec only guarantees id + orgId + timestamps.
+    PortfolioObject:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - orgId
+        - createdAt
+        - updatedAt
+
+    PortfolioObjectWrite:
+      type: object
+      additionalProperties: true
+
+    MarketBenchmark:
+      type: object
+      properties:
+        id:
+          type: string
+        locationId:
+          type: string
+        usageType:
+          type: string
+        rentMin:
+          type: number
+        rentMax:
+          type: number
+        rentMedian:
+          type: number
+        purchasePriceMin:
+          type: number
+        purchasePriceMax:
+          type: number
+        purchasePriceMedian:
+          type: number
+        multiplierMin:
+          type: number
+        multiplierMax:
+          type: number
+        multiplierMedian:
+          type: number
+        vacancyRatePercent:
+          type: number
+        confidenceScore:
+          type: number
+        sourceLabel:
+          type: string
+        lastUpdated:
+          type: string
+        notes:
+          type: string
+          nullable: true
+      required:
+        - id
+        - locationId
+        - usageType
+        - rentMin
+        - rentMax
+        - rentMedian
+        - purchasePriceMin
+        - purchasePriceMax
+        - purchasePriceMedian
+        - multiplierMin
+        - multiplierMax
+        - multiplierMedian
+        - vacancyRatePercent
+        - confidenceScore
+        - sourceLabel
+        - lastUpdated
+
+    MarketUpdateEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        locationId:
+          type: string
+        timestamp:
+          type: string
+        updatedBy:
+          type: string
+        changes:
+          type: string
+        sourceLabel:
+          type: string
+      required:
+        - id
+        - locationId
+        - timestamp
+        - updatedBy
+        - changes
+        - sourceLabel
+
+    MarketLocation:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stable client-side location key (e.g. loc-berlin).
+        city:
+          type: string
+        region:
+          type: string
+        submarket:
+          type: string
+        lastUpdated:
+          type: string
+        benchmarks:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketBenchmark"
+        updateLog:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketUpdateEntry"
+      required:
+        - id
+        - city
+        - region
+        - submarket
+        - lastUpdated
+        - benchmarks
+        - updateLog
+
+    MarketLocationWrite:
+      type: object
+      properties:
+        id:
+          type: string
+        city:
+          type: string
+        region:
+          type: string
+        submarket:
+          type: string
+        lastUpdated:
+          type: string
+      required:
+        - id
+        - city
+        - region
+        - submarket
+
+    MarketLocationPatch:
+      type: object
+      properties:
+        city:
+          type: string
+        region:
+          type: string
+        submarket:
+          type: string
+        lastUpdated:
+          type: string
+
+    MarketBenchmarksRefresh:
+      type: object
+      properties:
+        benchmarks:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketBenchmark"
+        updateEntry:
+          $ref: "#/components/schemas/MarketUpdateEntry"
+      required:
+        - benchmarks
+        - updateEntry
+
+    AppointmentWrite:
+      type: object
+      properties:
+        title:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        endTime:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        participants:
+          type: string
+          nullable: true
+        assetId:
+          type: string
+          nullable: true
+        category:
+          type: string
+        notes:
+          type: string
+          nullable: true
+      required:
+        - title
+        - date
+        - time
+        - category

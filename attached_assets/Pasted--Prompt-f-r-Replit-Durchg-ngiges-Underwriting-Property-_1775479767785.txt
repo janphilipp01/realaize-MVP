@@ -1,0 +1,314 @@
+**Prompt für Replit:**
+
+---
+
+## Durchgängiges Underwriting & Property Cashflow — Komplette Neugestaltung
+
+### Überblick
+
+Der gesamte Flow von Acquisition → Development → Bestand soll durchgängig transparent sein. Das Underwriting im Acquisition Wizard erfasst ALLE Annahmen einmalig. Diese Annahmen werden 1:1 in das Development und den Bestand übernommen — kein manuelles Nacherfassen, keine Datenverluste bei Transfers.
+
+Außerdem bekommt JEDES Objekt (Acquisition, Development, Asset) einen eigenen Property Cashflow über 10 Jahre in derselben Tabellenstruktur wie der Portfolio Cashflow.
+
+---
+
+### Teil 1: Erweitertes Underwriting im Acquisition Wizard
+
+Der New Deal Wizard (`src/pages/Acquisition.tsx`) soll folgende Abschnitte haben. Die Schritte können als Tabs oder als erweiterte Wizard-Steps umgesetzt werden:
+
+**Schritt 1 — Stammdaten:**
+- Projektname (Pflicht)
+- Adresse, Stadt (Pflicht), PLZ
+- Nutzungsart (Dropdown: Wohnen, Büro, Einzelhandel, Logistik, Mixed Use)
+- Deal Type (Investment / Development)
+- Gesamtfläche (m²)
+- Vermietbare Fläche (m²)
+- Baujahr (optional)
+- Broker, Verkäufer
+
+**Schritt 2 — Kaufpreis & Nebenkosten:**
+- Purchase Price (€)
+- Closing Costs (%, Default aus Settings: `defaultClosingCostPct`)
+- Broker Fee (%, Default aus Settings: `defaultBrokerFeePct`)
+- Initial Capex (€, für Investment-Deals)
+- Berechnetes Feld: Total Acquisition Cost = Purchase Price × (1 + Closing% + Broker%) + Initial Capex
+
+**Schritt 3 — Baukosten & Timing (nur bei Deal Type = Development):**
+- Entwicklungsart (Neubau, Kernsanierung, Modernisierung, Umbau, Aufstockung, Anbau)
+- Total Construction Budget (€)
+- Construction Cost per sqm (€/m², auto-berechnet aus Budget / Fläche)
+- Baubeginn (Datum)
+- Geplante Fertigstellung (Datum)
+- Bauzeit in Monaten (auto-berechnet)
+- Contingency (%, Default 10%)
+- Berechnetes Feld: Total Development Cost = Purchase Price + Acquisition Costs + Construction Budget × (1 + Contingency%)
+
+**Schritt 4 — Finanzierung:**
+- Loan Amount (€, Default: 65% des Kaufpreises, bei Development: 65% der Total Development Cost)
+- Interest Rate (% p.a.)
+- Amortization Rate (% p.a.)
+- Loan Term (Jahre)
+- Fixed Rate Period (Jahre)
+- Lender Name
+- Berechnete Felder: LTV, Annual Debt Service, DSCR (live)
+
+**Schritt 5 — Vermietung & Betriebskosten:**
+- Vermietbare Fläche (m², aus Schritt 1 übernommen)
+- Ist-Miete (€/m²/Monat) — aktuelle Miete bei Ankauf
+- ERV / Marktmiete (€/m²/Monat) — erwartete Miete nach Repositionierung/Development
+- Annual Gross Rent (€, auto-berechnet: Fläche × Ist-Miete × 12)
+- Projected Annual Rent after Development (€, auto-berechnet: Fläche × ERV × 12, nur bei Development)
+- Vacancy Rate (%, Default aus Settings)
+- Management Cost (% of Gross Rent, Default aus Settings)
+- Maintenance Reserve (€/m²/Jahr, Default aus Settings)
+- Non-Recoverable Opex (€/Jahr)
+- Other Operating Income (€/Jahr)
+- Berechnetes Feld: NOI (live)
+
+**Schritt 6 — Marktannahmen:**
+- ERV Growth Rate per Nutzungsart (% p.a.) — wie stark steigt die Marktmiete jährlich
+  - Wohnen: Default 2.0%
+  - Büro: Default 1.5%
+  - Einzelhandel: Default 1.0%
+  - Logistik: Default 2.5%
+  - Mixed Use: Default 1.8%
+  (Nur die relevante Nutzungsart des Deals wird angezeigt, aber der Wert ist editierbar)
+- Exit Cap Rate / Exit NIY per Nutzungsart (%) — welcher Multiplikator wird beim Verkauf unterstellt
+  - Wohnen: Default 4.0%
+  - Büro: Default 5.0%
+  - Einzelhandel: Default 5.5%
+  - Logistik: Default 5.5%
+  - Mixed Use: Default 5.0%
+  (Nur die relevante Nutzungsart wird angezeigt)
+- Rental Growth Rate (% p.a., Default = ERV Growth der jeweiligen Nutzungsart)
+- Holding Period: Default 10 Jahre (editierbar)
+
+**Schritt 7 — Zusammenfassung & KPIs:**
+- Alle Eingaben als kompakte Übersicht
+- Live-KPI-Preview:
+  - NIY (at acquisition)
+  - IRR nach Fertigstellung (nur Development): basierend auf Development Cost, projected NOI, Exit Cap Rate, Bauzeit
+  - IRR nach 10 Jahren Hold: basierend auf Total Cost, NOI (indexiert mit Rental Growth), Exit Value nach 10 Jahren (NOI Jahr 10 / Exit Cap Rate)
+  - Multiple on Equity
+  - DSCR
+  - Cash-on-Cash Return Year 1
+  - LTV
+- Completeness Ring
+- Button: Deal anlegen
+
+---
+
+### Teil 2: Neue TypeScript Interfaces
+
+Erweitere die bestehenden Types in `src/models/types.ts`:
+
+```typescript
+// Neues Interface für Marktannahmen
+interface MarketAssumptions {
+  ervGrowthRate: number;      // % p.a., indexiert die Miete jährlich
+  exitCapRate: number;        // %, Exit NIY für Verkaufswertberechnung
+  rentalGrowthRate: number;   // % p.a., tatsächliche Mietsteigerung (kann von ERV abweichen)
+  holdingPeriodYears: number; // Default 10
+}
+
+// Erweitere UnderwritingAssumptions um:
+interface UnderwritingAssumptions {
+  // ...bestehende Felder...
+  ervPerSqm: number;               // ERV €/m²/Monat (Marktmiete nach Repositionierung)
+  projectedAnnualRent: number;     // Fläche × ERV × 12
+  contingencyPercent: number;      // Default 10%, nur Development
+  marketAssumptions: MarketAssumptions;
+}
+
+// Erweitere Asset um:
+interface Asset {
+  // ...bestehende Felder...
+  rentalGrowthRate: number;     // % p.a. (aus Underwriting übernommen)
+  exitCapRate: number;          // % (aus Underwriting übernommen)
+  holdingPeriodYears: number;   // Default 10
+  ervPerSqm: number;           // ERV €/m²/Monat
+}
+```
+
+Füge Default-Werte für ERV Growth und Exit Cap Rate in die Settings (`AppSettings`):
+```typescript
+interface AppSettings {
+  // ...bestehende Felder...
+  defaultErvGrowthRates: Record<UsageType, number>;  // % p.a. per Nutzungsart
+  defaultExitCapRates: Record<UsageType, number>;     // % per Nutzungsart
+  defaultHoldingPeriod: number;                        // Jahre, Default 10
+  defaultContingencyPercent: number;                   // %, Default 10
+}
+```
+
+---
+
+### Teil 3: Transparenter Transfer Acquisition → Development → Bestand
+
+**Bei `transferToDevelopment(dealId)`:**
+Alle Underwriting-Annahmen werden 1:1 in das DevelopmentProject übernommen:
+- Purchase Price, Acquisition Costs → `purchasePrice`, `acquisitionCosts`
+- Construction Budget, Contingency → `totalBudget` (inkl. Contingency)
+- Baubeginn, Fertigstellung → `startDate`, `plannedEndDate`
+- Finanzierung → wird auf dem Development gespeichert
+- Vermietungsannahmen (ERV, Vacancy, Opex) → für den Bestand nach Fertigstellung
+- Marktannahmen → `rentalGrowthRate`, `exitCapRate`, `holdingPeriodYears`
+
+**Bei `transferToBestand(dealId)` oder `transferDevToBestand(devId)`:**
+- Alle Betriebskosten (Vacancy, Management, Maintenance, Opex, Other Income) → `asset.operatingCosts`
+- ERV, Rental Growth, Exit Cap Rate → direkt auf dem Asset
+- Holding Period → auf dem Asset
+- Finanzierung → `asset.debtInstruments`
+- Die Operating Costs im Asset-Detail sind weiterhin editierbar (Überschreiben der Underwriting-Werte)
+
+---
+
+### Teil 4: Property Cashflow pro Objekt
+
+JEDES Objekt bekommt einen eigenen 10-Jahres-Cashflow in derselben Struktur wie der Portfolio Cashflow:
+
+```
++ Gross Rental Income          ← annualRent, indexiert mit rentalGrowthRate p.a.
+- Operating Costs              ← aus computeAssetNOI(), indexiert proportional
+- Capex / Construction Costs   ← Development Budget verteilt über Bauzeit, danach 0
+= NOI
+
+- Acquisitions (Kaufpreis)     ← purchasePrice im Jahr 1
+- Acquisition Costs            ← purchasePrice × (closingCost% + brokerFee%)  im Jahr 1
++ Sales Proceeds               ← Exit Value = NOI Jahr 10 (indexiert) / exitCapRate
+- Sales Costs                  ← 1.5% vom Exit Value (oder aus Sale wenn vorhanden)
+= Cashflow from Transactions
+
++ Loan Received                ← loanAmount im Jahr 1
+- Interest Payments            ← outstanding × interestRate% (jährlich, outstanding sinkt durch Tilgung)
+- Other Loan Costs             ← 0 (Platzhalter)
+- Loan Repayments              ← outstanding × amortizationRate% (jährlich)
+= Debt Cashflow
+
+== Free Cashflow
+```
+
+**Sonderregel Development:** 
+- Jahr 1 bis Fertigstellung: Nur Acquisition, Construction Costs, Loan — keine Mieteinnahmen
+- Ab Fertigstellung: Mieteinnahmen beginnen (mit ERV, nicht Ist-Miete), NOI wächst mit rentalGrowthRate
+- Haltedauer: 10 Jahre ab FERTIGSTELLUNG (nicht ab Ankauf)
+
+**Sonderregel Sale überschreibt Default:**
+- Wenn das Asset einen verknüpften Sale hat (`SaleObject` mit `sourceId`):
+  - `Sales Proceeds` = `saleObject.askingPrice` oder `saleObject.soldPrice`
+  - Verkaufszeitpunkt = geplantes Verkaufsjahr aus dem Sale, NICHT nach 10 Jahren
+  - Nach dem Verkauf: keine weiteren Cashflows
+
+**IRR-Berechnung:**
+Aus dem Property Cashflow werden zwei IRRs berechnet:
+1. **Development IRR** (nur bei Developments): IRR über die Bauzeit bis Fertigstellung + 1 Jahr stabilisierte Vermietung. Cashflows: negative (Ankauf + Bau + Finanzierung) → positive (Verkauf bei Fertigstellung zum Wert NOI/exitCapRate)
+2. **Hold IRR** (10 Jahre): IRR über die gesamte 10-Jahres-Haltedauer. Cashflows: negative (Ankauf + Bau) → laufende NOI → positive (Verkauf in Jahr 10)
+
+Nutze die bestehende `computeIRR()` Funktion aus `irrCalculator.ts`.
+
+---
+
+### Teil 5: Property Cashflow Utility
+
+Erstelle eine neue Datei `src/utils/propertyCashFlowModel.ts`:
+
+```typescript
+interface PropertyCashFlowYear {
+  year: number;              // 1-10
+  calendarYear: number;      // z.B. 2024
+  grossRentalIncome: number;
+  operatingCosts: number;
+  capexConstructionCosts: number;
+  noi: number;
+  acquisitions: number;
+  acquisitionCosts: number;
+  salesProceeds: number;
+  salesCosts: number;
+  transactionsCashflow: number;
+  loanReceived: number;
+  interestPayments: number;
+  otherLoanCosts: number;
+  loanRepayments: number;
+  debtCashflow: number;
+  freeCashflow: number;
+  cumulativeFreeCashflow: number;
+}
+
+function computePropertyCashFlow(
+  asset: Asset,
+  development?: DevelopmentProject,
+  sale?: SaleObject,
+  settings?: AppSettings
+): PropertyCashFlowYear[];
+
+function computePortfolioCashFlow(
+  assets: Asset[],
+  developments: DevelopmentProject[],
+  sales: SaleObject[],
+  settings: AppSettings
+): PropertyCashFlowYear[];
+
+function computePropertyIRR(cashflows: PropertyCashFlowYear[]): {
+  developmentIRR: number | null;  // nur bei Developments
+  holdIRR: number;                // 10-Jahres-IRR
+};
+```
+
+---
+
+### Teil 6: UI-Integration
+
+**Im Asset-Detail** (`Assets.tsx`):
+- Der "Cash Flow" Tab zeigt den Property Cashflow als Tabelle (10 Spalten + Total)
+- Oberhalb der Tabelle: IRR-KPIs (Development IRR + Hold IRR)
+- Das Chart aus Teil 5 des vorherigen Prompts (Area Chart mit Gradient) zeigt NOI, Transactions, Debt, Kum. Free CF
+
+**Im DealDashboard** (`DealDashboard.tsx`):
+- Neuer Tab "Cash Flow" mit demselben Property Cashflow basierend auf den Underwriting-Annahmen
+- Zeigt die prognostizierten Cashflows BEVOR der Deal übernommen wird — als Entscheidungsgrundlage
+
+**Im Development-Detail** (`Developments.tsx`):
+- Neuer Tab "Cash Flow" mit Property Cashflow der die Bauphase + Haltephase zeigt
+
+**Im Portfolio Cashflow** (`/cashflow`):
+- Die bestehende Tabelle bleibt, aber die Daten kommen jetzt aus `computePortfolioCashFlow()` das alle Property Cashflows aggregiert
+- Das Dropdown für Einzelasset-Ansicht nutzt ebenfalls `computePropertyCashFlow()`
+
+---
+
+### Teil 7: Neue Settings-Defaults
+
+Ergänze in der Settings-Seite einen neuen Abschnitt "Marktannahmen":
+
+```
+ERV Growth Rates (% p.a.):
+  Wohnen:       2.0
+  Büro:         1.5
+  Einzelhandel: 1.0
+  Logistik:     2.5
+  Mixed Use:    1.8
+
+Exit Cap Rates (%):
+  Wohnen:       4.0
+  Büro:         5.0
+  Einzelhandel: 5.5
+  Logistik:     5.5
+  Mixed Use:    5.0
+
+Default Holding Period: 10 Jahre
+Default Contingency:    10%
+```
+
+Alle editierbar. Werden als Defaults in den Acquisition Wizard und bei `transferToBestand/Dev` verwendet.
+
+---
+
+### Wichtig — NICHT ändern:
+- `anthropic-dangerous-direct-browser-access: true` Header in allen API-Calls
+- `claude-sonnet-4-20250514` als Modell in allen Agents
+- `fetchWithRetry` und `max_uses: 1` in News und Market Agent
+- Store-Struktur und Zustand persist Key `restate-storage-v2`
+- KPI-Begriffe bleiben IMMER auf Englisch
+- Bestehende Features (Deal Radar, News, Market Intelligence, AI Copilot, Document Upload, Kalender, Addressbook) dürfen nicht entfernt oder beschädigt werden
+
+---

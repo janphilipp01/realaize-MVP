@@ -1,0 +1,67 @@
+Cash Flow Chart — Neue Visualisierung
+Ersetze das aktuelle Chart (NOI + Free Cashflow + Kum. Free CF) durch ein gestapeltes Wasserfall-Diagramm das die drei Cashflow-Segmente pro Jahr übereinander zeigt. Das macht sofort sichtbar, woher der Cashflow kommt und was ihn belastet.
+Chart-Aufbau
+Gestapeltes Bar Chart (Recharts BarChart mit stackId):
+Zeige pro Jahr (X-Achse) 3 gestapelte Balken-Segmente plus eine Linie:
+Balken (gestapelt, stackId="cf"):
+  1. NOI                    → Farbe: #007aff (Blau)
+  2. Transactions (netto)   → Farbe: #c9a96e (Gold)
+  3. Debt Cashflow (netto)  → Farbe: #f87171 (Rot)
+
+Linie (darüber):
+  4. Kumulierter Free CF    → Farbe: #4ade80 (Grün), 4px, durchgezogen
+Die Balken zeigen die Nettowerte pro Segment:
+
+NOI ist fast immer positiv (blauer Balken nach oben)
+Transactions ist negativ im Ankaufsjahr (goldener Balken nach unten), positiv im Verkaufsjahr (goldener Balken nach oben)
+Debt ist negativ in den meisten Jahren (roter Balken nach unten), positiv im Auszahlungsjahr
+
+Implementierung mit Recharts
+tsx<ComposedChart data={chartData}>
+  <XAxis dataKey="year" />
+  <YAxis tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+  <ReferenceLine y={0} stroke="rgba(0,0,0,0.15)" strokeDasharray="4 4" />
+  <Tooltip content={<CustomTooltip />} />
+  <Legend />
+  
+  {/* Gestapelte Balken */}
+  <Bar dataKey="noi" stackId="cf" fill="#007aff" name="NOI" radius={[2,2,0,0]} />
+  <Bar dataKey="transactions" stackId="cf" fill="#c9a96e" name="Transactions" />
+  <Bar dataKey="debtCashflow" stackId="cf" fill="#f87171" name="Debt" radius={[0,0,2,2]} />
+  
+  {/* Kumulative Linie */}
+  <Line dataKey="cumulativeFreeCF" stroke="#4ade80" strokeWidth={4} dot={false} name="Kum. Free CF" />
+</ComposedChart>
+chartData Aufbau
+typescriptconst chartData = years.map(year => ({
+  year: year,             // z.B. "2024"
+  noi: 520000,            // NOI dieses Jahres (positiv)
+  transactions: -8900000, // Netto Transactions (negativ = Ankauf, positiv = Verkauf)
+  debtCashflow: -180000,  // Netto Debt (meist negativ = Zinsen+Tilgung)
+  freeCashflow: ...,      // NOI + transactions + debtCashflow
+  cumulativeFreeCF: ...   // Running total Free CF
+}));
+Custom Tooltip
+Beim Hover über einen Balken soll ein Tooltip erscheinen der alle Segmente mit EUR-Format zeigt:
+2025
+─────────────────
+NOI:           + € 524.000
+Transactions:  − € 8.900.000  
+Debt:          − € 180.000
+─────────────────
+Free CF:       − € 8.556.000
+Kum. Free CF:  − € 7.200.000
+Positive Werte grün, negative rot, formatiert mit formatEUR().
+Legende
+Zeige die Legende unterhalb des Charts mit farbigen Quadraten:
+
+🟦 NOI (Blau)
+🟨 Transactions (Gold)
+🟥 Debt (Rot)
+🟩 Kum. Free CF (Grün, durchgezogene Linie)
+
+Chart-Größe
+
+Höhe: 280px
+Volle Breite der GlassPanel-Karte
+Null-Linie (ReferenceLine bei y=0) als gestrichelte graue Linie

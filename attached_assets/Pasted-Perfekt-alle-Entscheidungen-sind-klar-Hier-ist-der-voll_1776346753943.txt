@@ -1,0 +1,1444 @@
+Perfekt, alle Entscheidungen sind klar. Hier ist der vollständige, korrigierte Prompt:
+
+---
+
+**Prompt für Replit:**
+
+---
+
+# RESTATE INVESTMENT OS — KOMPLETTE NEUGESTALTUNG ACQUISITION → DEVELOPMENT → BESTAND
+
+## KRITISCHE DESIGN-REGEL
+
+**NICHTS am bestehenden Design ändern.** Alle UI-Komponenten (GlassPanel, KpiCard, Badge, Buttons, Tabs, Sidebar, Inputs, Modals, Tabellen-Styling, Border-Radien, Shadows, Farben, Schriftgrößen, Icons) bleiben **exakt wie sie sind**. Neue Sections nutzen dieselben bestehenden Komponenten. Neue Tabs nutzen die bestehende Tab-Komponente. Neue Inputs nutzen `.input-glass`. Neue Tabellen nutzen dieselbe Tabellen-Struktur wie bisher.
+
+**Einzige Design-Ausnahmen:**
+- Der "In Development" Transfer-Button bekommt einen orange-braunen Gradient (#c9a96e → #a08040, weiße Schrift)
+- Lock-Icon (🔒) neben gefreezten Feldern in der Development-Detailseite
+- Die vier Cashflow-Chart-Farben (NOI=#007aff, Transactions=#c9a96e, Debt=#f87171, Kum. Free CF=#4ade80) die bereits definiert sind
+
+Implementiere in dieser Reihenfolge:
+1. Datenmodell (Types)
+2. Berechnungs-Engine (Utils)
+3. Store-Funktionen
+4. Acquisition Wizard
+5. Acquisition Detailseite
+6. Development Detailseite
+7. Transfer-Funktionen
+
+---
+
+## TEIL 1: DATENMODELL
+
+### 1.1 Neue Types in `src/models/types.ts`
+
+```typescript
+type FloorLevel = 'TG' | 'KG' | 'EG' | '1.OG' | '2.OG' | '3.OG' | '4.OG' | '5.OG' | '6.OG' | 'DG';
+
+interface AcquisitionCostItem {
+  id: string;
+  name: string;          // 'Grunderwerbsteuer' | 'Makler' | 'Notar' | 'Grundbuch' | 'Sonstiges'
+  percent: number;
+  active: boolean;
+}
+
+interface RentRollUnit {
+  id: string;
+  unitNumber: string;
+  floor: FloorLevel;
+  area: number;                  // m²
+  usageType: 'Wohnen' | 'Büro' | 'Einzelhandel' | 'Lager' | 'Stellplatz' | 'Sonstiges';
+  tenant: string;                // leer bei Leerstand
+  leaseStart: string;            // ISO date, leer wenn keine Vermietung
+  leaseEnd: string;              // ISO date, leer bei unbefristet
+  currentRentPerSqm: number;     // Ist €/m²/Monat
+  ervPerSqm: number;             // ERV €/m²/Monat
+  monthlyRent: number;           // Ist-Miete €/Monat (bidirektional mit currentRentPerSqm)
+  indexationInterval: 'jährlich' | 'alle 2 Jahre' | 'alle 3 Jahre' | 'keine';
+  indexationRate: number;        // % pro Intervall
+  nonRecoverableOpex: number;    // €/Monat pro Einheit, individuell
+  sourceUnitId?: string;         // nur bei Zielmiete: Referenz auf Ist-Einheit
+}
+
+interface PropertyOperatingCosts {
+  vacancyRatePercent: number;
+  managementCostPercent: number;        // % of Gross Rent
+  maintenanceReservePerSqm: number;     // €/m²/Jahr
+  insurancePerYear: number;             // €/Jahr gesamt
+  propertyTaxPerYear: number;           // €/Jahr gesamt
+  otherOpexPerYear: number;             // €/Jahr gesamt
+  otherIncomePerYear: number;           // €/Jahr gesamt
+  // nonRecoverableOpex kommt aus Rent Roll Summe
+}
+
+interface MarketAssumptionPerUsage {
+  usageType: string;
+  ervFromRentRoll: number;              // Ø ERV €/m² gewichtet aus Rent Roll (read-only)
+  ervGrowthRatePercent: number;         // % p.a.
+  exitCapRatePercent: number;           // %
+  exitMultiplier: number;               // auto: 1 / (exitCapRate / 100)
+  aiSuggested?: boolean;
+}
+
+interface PropertyMarketAssumptions {
+  perUsageType: MarketAssumptionPerUsage[];
+  opexInflationPercent: number;          // % p.a.
+  capexInflationPercent: number;         // % p.a.
+  salesCostPercent: number;              // % vom Verkaufserlös
+  opexInflationAiSuggested?: boolean;
+  capexInflationAiSuggested?: boolean;
+}
+
+type CostDistribution = 'vorauszahlung' | 'linear' | '30-40-30' | 'endfällig';
+
+interface GewerkePosition {
+  id: string;
+  category: string;
+  description: string;
+  budgetInputMode: 'pauschal' | 'per_sqm';
+  budgetAmount: number;          // € pauschal ODER €/m² (je nach Mode)
+  budgetTotal: number;           // berechnet: € Gesamtbetrag
+  costPerSqm: number;            // berechnet: €/m²
+  startWeek: number;             // Woche ab Projektstart (1-basiert)
+  durationWeeks: number;
+  endWeek: number;               // berechnet: startWeek + durationWeeks − 1
+  costDistribution: CostDistribution;
+  status: 'Geplant' | 'Beauftragt' | 'Laufend' | 'Abgeschlossen';
+}
+
+interface Offer {
+  id: string;
+  gewerkId: string;
+  gewerkCategory: string;
+  description: string;
+  measure: string;
+  amountNet: number;
+  amountGross: number;
+  date: string;
+}
+
+type InvoiceType = 'Anzahlung' | 'Vollzahlung' | 'Baufortschritt' | 'Schlussrechnung';
+
+interface Invoice {
+  id: string;
+  gewerkId: string;
+  gewerkCategory: string;
+  measure: string;
+  invoiceType: InvoiceType;
+  description: string;
+  amountNet: number;
+  amountGross: number;
+  date: string;
+}
+
+type FinancingType = 'Bankdarlehen' | 'Mezzanine' | 'Privates Darlehen' | 'Gesellschafterdarlehen';
+type RepaymentType = 'Annuität' | 'Endfällig';
+
+interface FinancingTranche {
+  id: string;
+  name: string;
+  financingType: FinancingType;
+  loanAmount: number;
+  interestRate: number;         // % p.a.
+  fixedRatePeriod: number;      // Jahre
+  loanTerm: number;             // Jahre
+  repaymentType: RepaymentType;
+  amortizationRate: number;     // % p.a., AUTO-BERECHNET bei Annuität, 0 bei Endfällig
+  disbursementDate?: string;    // Default: Ankaufsdatum, editierbar
+}
+
+// ══ HAUPT-INTERFACE ══
+interface PropertyData {
+  name: string;
+  address: string;
+  city: string;
+  zip: string;
+  usageType: UsageType;
+  dealType: DealType;              // 'Investment' | 'Development'
+  developmentType?: string;
+  floors: FloorLevel[];
+
+  vendor: string;
+  broker: string;
+  purchasePrice: number;
+  acquisitionCosts: AcquisitionCostItem[];
+  acquisitionDate: string;
+
+  unitsAsIs: RentRollUnit[];
+  unitsTarget: RentRollUnit[];     // leer bei Investment-Deals
+
+  operatingCosts: PropertyOperatingCosts;
+
+  marketAssumptions: PropertyMarketAssumptions;
+
+  gewerke: GewerkePosition[];      // leer bei Investment-Deals
+  projectStart: string;             // nur bei Development
+  contingencyPercent: number;
+
+  financingTranches: FinancingTranche[];
+
+  holdingPeriodYears: number;
+}
+
+// Ergänze bestehende Interfaces:
+interface AcquisitionDeal {
+  // ...bestehende Felder bleiben...
+  propertyData: PropertyData;
+}
+
+interface DevelopmentProject {
+  // ...bestehende Felder bleiben...
+  propertyData: PropertyData;
+  underwritingSnapshot: PropertyData;    // Deep-Copy bei Transfer, nicht mehr änderbar
+  offers: Offer[];
+  invoices: Invoice[];
+}
+
+interface Asset {
+  // ...bestehende Felder bleiben...
+  propertyData?: PropertyData;           // optional wegen bestehender Mock-Assets
+}
+
+interface AppSettings {
+  // ...bestehende Felder bleiben...
+  defaultErvGrowthRates: Record<string, number>;
+  defaultExitCapRates: Record<string, number>;
+  defaultHoldingPeriod: number;
+  defaultContingencyPercent: number;
+  defaultOpexInflation: number;
+  defaultCapexInflation: number;
+  defaultSalesCostPercent: number;
+  defaultAcquisitionCosts: AcquisitionCostItem[];
+}
+```
+
+### 1.2 Default-Werte
+
+```typescript
+const DEFAULT_ACQUISITION_COSTS: AcquisitionCostItem[] = [
+  { id: 'grest', name: 'Grunderwerbsteuer', percent: 6.0, active: true },
+  { id: 'makler', name: 'Makler', percent: 1.5, active: true },
+  { id: 'notar', name: 'Notar', percent: 1.5, active: true },
+  { id: 'grundbuch', name: 'Grundbuch', percent: 0.5, active: true },
+  { id: 'sonstige', name: 'Sonstiges', percent: 0.0, active: false },
+];
+
+const DEFAULT_GEWERKE_CATEGORIES = [
+  'Rohbau', 'Fassade', 'Dach', 'Haustechnik / TGA', 'Elektro',
+  'Sanitär', 'Heizung / Klima', 'Aufzüge', 'Innenausbau',
+  'Außenanlagen', 'Planung / Architektur', 'Statik',
+  'Bauüberwachung', 'Genehmigungen', 'Versicherung', 'Sonstiges'
+];
+
+const DEFAULT_ERV_GROWTH: Record<string, number> = {
+  'Wohnen': 2.0, 'Büro': 1.5, 'Einzelhandel': 1.0, 'Logistik': 2.5,
+  'Mixed Use': 1.8, 'Lager': 1.0, 'Stellplatz': 1.0, 'Sonstiges': 1.5,
+};
+
+const DEFAULT_EXIT_CAP: Record<string, number> = {
+  'Wohnen': 4.0, 'Büro': 5.0, 'Einzelhandel': 5.5, 'Logistik': 5.5,
+  'Mixed Use': 5.0, 'Lager': 6.0, 'Stellplatz': 7.0, 'Sonstiges': 6.0,
+};
+```
+
+---
+
+## TEIL 2: BERECHNUNGS-ENGINE (`src/utils/propertyCashFlowModel.ts`)
+
+### 2.1 Hilfsfunktionen
+
+```typescript
+/** Summe der aktiven Kaufnebenkosten in € */
+function computeTotalAcquisitionCosts(purchasePrice: number, costItems: AcquisitionCostItem[]): number {
+  const totalPercent = costItems.filter(c => c.active).reduce((sum, c) => sum + c.percent, 0);
+  return purchasePrice * totalPercent / 100;
+}
+
+/** Gesamtfläche */
+function computeTotalArea(units: RentRollUnit[]): number {
+  return units.reduce((sum, u) => sum + u.area, 0);
+}
+
+/** Jahresmiete aus Rent Roll (aktuelle/Ist-Miete) */
+function computeAnnualRent(units: RentRollUnit[]): number {
+  return units.reduce((sum, u) => sum + u.monthlyRent, 0) * 12;
+}
+
+/** Gewichteter Ø ERV nach Fläche */
+function computeWeightedERV(units: RentRollUnit[]): number {
+  const totalArea = computeTotalArea(units);
+  if (totalArea === 0) return 0;
+  return units.reduce((sum, u) => sum + u.ervPerSqm * u.area, 0) / totalArea;
+}
+
+/** WALT in Jahren */
+function computeWALT(units: RentRollUnit[], referenceDate: string): number {
+  const ref = new Date(referenceDate);
+  let weightedSum = 0;
+  let totalArea = 0;
+  units.forEach(u => {
+    if (u.leaseEnd && u.tenant) {
+      const end = new Date(u.leaseEnd);
+      const remainingYears = Math.max(0, (end.getTime() - ref.getTime()) / (365.25 * 86400 * 1000));
+      weightedSum += u.area * remainingYears;
+      totalArea += u.area;
+    }
+  });
+  return totalArea > 0 ? weightedSum / totalArea : 0;
+}
+
+/** Summe nicht-umlagefähige NK aus Rent Roll in €/Jahr */
+function computeTotalNonRecoverableFromRentRoll(units: RentRollUnit[]): number {
+  return units.reduce((sum, u) => sum + u.nonRecoverableOpex, 0) * 12;
+}
+
+/** Gesamt-Baubudget inkl. Contingency */
+function computeTotalDevBudget(gewerke: GewerkePosition[], contingencyPercent: number): number {
+  const base = gewerke.reduce((sum, g) => sum + g.budgetTotal, 0);
+  return base * (1 + contingencyPercent / 100);
+}
+
+/** Gesamtkapitalbedarf */
+function computeTotalCapitalRequirement(pd: PropertyData): number {
+  const acqCosts = computeTotalAcquisitionCosts(pd.purchasePrice, pd.acquisitionCosts);
+  const devBudget = pd.dealType === 'Development'
+    ? computeTotalDevBudget(pd.gewerke, pd.contingencyPercent)
+    : 0;
+  return pd.purchasePrice + acqCosts + devBudget;
+}
+
+/** Gesamtdarlehen */
+function computeTotalLoan(tranches: FinancingTranche[]): number {
+  return tranches.reduce((sum, t) => sum + t.loanAmount, 0);
+}
+
+/** Eigenkapital */
+function computeEquity(pd: PropertyData): number {
+  return computeTotalCapitalRequirement(pd) - computeTotalLoan(pd.financingTranches);
+}
+```
+
+### 2.2 Annuitätsberechnung
+
+```typescript
+/** 
+ * Annuität pro Jahr bei annuitätischer Tilgung.
+ * Formel: A = D × (i × (1+i)^n) / ((1+i)^n − 1)
+ * wobei i = interestRate/100, n = loanTerm, D = loanAmount
+ */
+function computeAnnuity(loanAmount: number, interestRate: number, loanTerm: number): number {
+  if (interestRate === 0) return loanAmount / loanTerm;
+  const i = interestRate / 100;
+  return loanAmount * (i * Math.pow(1 + i, loanTerm)) / (Math.pow(1 + i, loanTerm) - 1);
+}
+
+/**
+ * Auto-Berechnung der Tilgungsrate bei Annuität im ersten Jahr.
+ * Tilgungsrate = (Annuität − Zins Jahr 1) / Darlehensbetrag × 100
+ */
+function computeInitialAmortizationRate(tranche: FinancingTranche): number {
+  if (tranche.repaymentType === 'Endfällig') return 0;
+  const annuity = computeAnnuity(tranche.loanAmount, tranche.interestRate, tranche.loanTerm);
+  const interestYear1 = tranche.loanAmount * tranche.interestRate / 100;
+  const amortYear1 = annuity - interestYear1;
+  return tranche.loanAmount > 0 ? (amortYear1 / tranche.loanAmount) * 100 : 0;
+}
+```
+
+### 2.3 NOI pro Einheit (für Exit Value)
+
+```typescript
+interface UnitNOIBreakdown {
+  unitId: string;
+  usageType: string;
+  area: number;
+  annualRent: number;              // aus currentRent ODER ERV (je nach Modus)
+  vacancyLoss: number;
+  managementCost: number;          // proportional nach Fläche
+  maintenance: number;             // per sqm × area
+  insuranceAllocation: number;     // proportional nach Fläche
+  propertyTaxAllocation: number;   // proportional nach Fläche
+  otherOpexAllocation: number;     // proportional nach Fläche
+  nonRecoverableOpex: number;      // individuell aus Unit
+  otherIncomeAllocation: number;   // proportional nach Fläche
+  noi: number;
+}
+
+/**
+ * Berechnet NOI pro Einheit. Opex-Posten die auf Property-Ebene angegeben sind
+ * (Management, Insurance, PropertyTax, OtherOpex, OtherIncome) werden proportional
+ * nach Flächenanteil auf jede Einheit verteilt.
+ * Maintenance ist per sqm → direkt auf Einheit.
+ * NonRecoverableOpex ist individuell pro Einheit.
+ */
+function computeUnitNOIs(pd: PropertyData, useTargetRents: boolean): UnitNOIBreakdown[] {
+  const units = useTargetRents ? pd.unitsTarget : pd.unitsAsIs;
+  const totalArea = computeTotalArea(units);
+  if (totalArea === 0) return [];
+
+  return units.map(u => {
+    const annualRent = u.monthlyRent * 12;
+    const areaShare = u.area / totalArea;
+    const grossRentAll = computeAnnualRent(units);
+    const vacancyLoss = annualRent * pd.operatingCosts.vacancyRatePercent / 100;
+    const mgmt = grossRentAll * pd.operatingCosts.managementCostPercent / 100 * areaShare;
+    const maintenance = u.area * pd.operatingCosts.maintenanceReservePerSqm;
+    const insAlloc = pd.operatingCosts.insurancePerYear * areaShare;
+    const taxAlloc = pd.operatingCosts.propertyTaxPerYear * areaShare;
+    const otherOpexAlloc = pd.operatingCosts.otherOpexPerYear * areaShare;
+    const nonRec = u.nonRecoverableOpex * 12;
+    const otherIncAlloc = pd.operatingCosts.otherIncomePerYear * areaShare;
+    const noi = annualRent - vacancyLoss + otherIncAlloc
+              - mgmt - maintenance - insAlloc - taxAlloc - otherOpexAlloc - nonRec;
+
+    return {
+      unitId: u.id, usageType: u.usageType, area: u.area,
+      annualRent, vacancyLoss, managementCost: mgmt, maintenance,
+      insuranceAllocation: insAlloc, propertyTaxAllocation: taxAlloc,
+      otherOpexAllocation: otherOpexAlloc, nonRecoverableOpex: nonRec,
+      otherIncomeAllocation: otherIncAlloc, noi,
+    };
+  });
+}
+
+/** Gesamt-NOI (Summe aller Unit-NOIs) */
+function computePropertyNOI(pd: PropertyData, useTargetRents: boolean): number {
+  return computeUnitNOIs(pd, useTargetRents).reduce((sum, u) => sum + u.noi, 0);
+}
+```
+
+### 2.4 Exit Value pro Nutzungsart
+
+```typescript
+/**
+ * Exit Value = Summe pro Einheit: Unit-NOI (im Exit-Jahr, indexiert) / Exit Cap Rate der Nutzungsart
+ * - Bei Development: Mieten erst ab Fertigstellung, dann mit ervGrowth indexiert
+ * - Bei Investment: Mieten ab Jahr 1, mit ervGrowth indexiert
+ * - Opex werden mit opexInflation indexiert
+ */
+function computeExitValue(
+  pd: PropertyData,
+  exitYearIndex: number,        // 0-basiert
+  devCompletionYearIndex: number  // 0 bei Investment, sonst Jahr der Fertigstellung
+): number {
+  const useTarget = pd.unitsTarget.length > 0;
+  const unitNOIs = computeUnitNOIs(pd, useTarget);
+
+  let totalExitValue = 0;
+
+  unitNOIs.forEach(unitNOI => {
+    const unit = (useTarget ? pd.unitsTarget : pd.unitsAsIs).find(u => u.id === unitNOI.unitId);
+    if (!unit) return;
+
+    const marketAssumption = pd.marketAssumptions.perUsageType.find(m => m.usageType === unit.usageType);
+    const ervGrowth = marketAssumption?.ervGrowthRatePercent ?? 2.0;
+    const exitCap = marketAssumption?.exitCapRatePercent ?? 5.0;
+    const opexInflation = pd.marketAssumptions.opexInflationPercent;
+
+    // Jahre seit Fertigstellung (Wachstum wirkt nur nach Fertigstellung)
+    const yearsOfGrowth = Math.max(0, exitYearIndex - devCompletionYearIndex);
+
+    // Indexierte Werte in Exit-Jahr
+    const futureRent = unitNOI.annualRent * Math.pow(1 + ervGrowth / 100, yearsOfGrowth);
+    const opexRatio = unitNOI.annualRent > 0
+      ? (unitNOI.annualRent - unitNOI.noi - unitNOI.otherIncomeAllocation) / unitNOI.annualRent
+      : 0.25;
+    const futureOpex = (futureRent * opexRatio) * Math.pow(1 + opexInflation / 100, yearsOfGrowth) / Math.pow(1 + ervGrowth / 100, yearsOfGrowth);
+    // Vereinfacht: futureNOI = futureRent − futureOpex
+    const futureNOI = futureRent - futureOpex;
+
+    const teilwert = futureNOI / (exitCap / 100);
+    totalExitValue += teilwert;
+  });
+
+  return totalExitValue;
+}
+```
+
+### 2.5 Monatlicher Cashflow (Basis für alles)
+
+```typescript
+interface PropertyCashFlowMonth {
+  monthIndex: number;            // 0 = Ankaufsmonat
+  calendarDate: string;           // YYYY-MM
+  // Betrieblich
+  grossRentalIncome: number;
+  operatingCosts: number;
+  capexConstructionCosts: number;
+  noi: number;
+  // Transaktionen
+  acquisitionPrice: number;
+  acquisitionCosts: number;
+  salesProceeds: number;
+  salesCosts: number;
+  transactionsCashflow: number;
+  // Finanzierung
+  loanReceived: number;
+  interestPayments: number;
+  loanRepayments: number;
+  debtCashflow: number;
+  // Gesamt
+  freeCashflow: number;
+  cumulativeFreeCashflow: number;
+}
+
+/**
+ * KERN-BERECHNUNG — monatliche Cashflows über die Haltedauer.
+ * Jährliche Ansicht wird daraus aggregiert.
+ */
+function computePropertyCashFlowMonthly(pd: PropertyData, sale?: SaleObject): PropertyCashFlowMonth[] {
+  const months: PropertyCashFlowMonth[] = [];
+  const holdingYears = pd.holdingPeriodYears || 10;
+
+  // Sale überschreibt Haltedauer
+  const acqDate = new Date(pd.acquisitionDate || new Date().toISOString());
+  let exitDate = new Date(acqDate);
+  exitDate.setFullYear(exitDate.getFullYear() + holdingYears);
+
+  if (sale && sale.soldAt) {
+    exitDate = new Date(sale.soldAt);
+  } else if (sale && (sale as any).targetCloseDate) {
+    exitDate = new Date((sale as any).targetCloseDate);
+  }
+
+  const totalMonths = Math.max(1, Math.round((exitDate.getTime() - acqDate.getTime()) / (30.44 * 86400 * 1000)));
+
+  const isDev = pd.dealType === 'Development';
+  const devStartDate = isDev && pd.projectStart ? new Date(pd.projectStart) : acqDate;
+  const lastGewerkEndWeek = pd.gewerke.length > 0
+    ? Math.max(...pd.gewerke.map(g => g.startWeek + g.durationWeeks - 1))
+    : 0;
+  const devEndDate = new Date(devStartDate);
+  devEndDate.setDate(devEndDate.getDate() + lastGewerkEndWeek * 7);
+
+  // Monatsindex der Fertigstellung
+  const devCompletionMonth = isDev
+    ? Math.max(0, Math.round((devEndDate.getTime() - acqDate.getTime()) / (30.44 * 86400 * 1000)))
+    : 0;
+
+  // === CAPEX pro Monat berechnen ===
+  const capexPerMonth = new Array(totalMonths + 2).fill(0);
+  if (isDev) {
+    pd.gewerke.forEach(g => {
+      const gStartDate = new Date(devStartDate);
+      gStartDate.setDate(gStartDate.getDate() + (g.startWeek - 1) * 7);
+      const gEndDate = new Date(gStartDate);
+      gEndDate.setDate(gEndDate.getDate() + g.durationWeeks * 7);
+      const gStartMonth = Math.round((gStartDate.getTime() - acqDate.getTime()) / (30.44 * 86400 * 1000));
+      const gEndMonth = Math.round((gEndDate.getTime() - acqDate.getTime()) / (30.44 * 86400 * 1000));
+      const gDurationMonths = Math.max(1, gEndMonth - gStartMonth);
+
+      // Kostenverteilung
+      switch (g.costDistribution) {
+        case 'vorauszahlung': {
+          if (gStartMonth >= 0 && gStartMonth < capexPerMonth.length) {
+            capexPerMonth[gStartMonth] += g.budgetTotal;
+          }
+          break;
+        }
+        case 'endfällig': {
+          const endIdx = Math.min(gEndMonth - 1, capexPerMonth.length - 1);
+          if (endIdx >= 0) {
+            capexPerMonth[endIdx] += g.budgetTotal;
+          }
+          break;
+        }
+        case '30-40-30': {
+          const firstIdx = gStartMonth;
+          const midIdx = gStartMonth + Math.floor(gDurationMonths / 2);
+          const lastIdx = Math.min(gEndMonth - 1, capexPerMonth.length - 1);
+          if (firstIdx >= 0 && firstIdx < capexPerMonth.length) capexPerMonth[firstIdx] += g.budgetTotal * 0.30;
+          if (midIdx >= 0 && midIdx < capexPerMonth.length) capexPerMonth[midIdx] += g.budgetTotal * 0.40;
+          if (lastIdx >= 0 && lastIdx < capexPerMonth.length) capexPerMonth[lastIdx] += g.budgetTotal * 0.30;
+          break;
+        }
+        case 'linear':
+        default: {
+          const perMonth = g.budgetTotal / gDurationMonths;
+          for (let m = gStartMonth; m < gEndMonth && m < capexPerMonth.length; m++) {
+            if (m >= 0) capexPerMonth[m] += perMonth;
+          }
+          break;
+        }
+      }
+    });
+
+    // Contingency proportional auf alle Capex-Monate verteilen
+    const contMultiplier = 1 + pd.contingencyPercent / 100;
+    for (let i = 0; i < capexPerMonth.length; i++) {
+      capexPerMonth[i] *= contMultiplier;
+    }
+
+    // Capex-Inflation wirkt ab Ankaufsmonat (Monat 0 = keine Inflation,
+    // Monat 12 = (1+capexInflation)^1, etc.)
+    for (let i = 0; i < capexPerMonth.length; i++) {
+      const yearsFromAcq = i / 12;
+      capexPerMonth[i] *= Math.pow(1 + pd.marketAssumptions.capexInflationPercent / 100, yearsFromAcq);
+    }
+  }
+
+  // === TRANSAKTIONEN ===
+  const totalAcqCosts = computeTotalAcquisitionCosts(pd.purchasePrice, pd.acquisitionCosts);
+  const exitValue = sale && sale.soldPrice
+    ? sale.soldPrice
+    : computeExitValue(pd, totalMonths / 12, devCompletionMonth / 12);
+  const salesCostAmount = exitValue * pd.marketAssumptions.salesCostPercent / 100;
+
+  // === FINANZIERUNG ===
+  // Restschuld-Tracking pro Tranche (monatlich)
+  const trancheState = pd.financingTranches.map(t => {
+    const amortRate = t.repaymentType === 'Annuität'
+      ? computeInitialAmortizationRate(t)
+      : 0;
+    return {
+      ...t,
+      amortizationRate: amortRate,
+      outstanding: t.loanAmount,
+      annuityAnnual: t.repaymentType === 'Annuität'
+        ? computeAnnuity(t.loanAmount, t.interestRate, t.loanTerm)
+        : 0,
+    };
+  });
+
+  let cumulativeCF = 0;
+
+  for (let m = 0; m < totalMonths; m++) {
+    const calDate = new Date(acqDate);
+    calDate.setMonth(calDate.getMonth() + m);
+    const calYMD = `${calDate.getFullYear()}-${String(calDate.getMonth() + 1).padStart(2, '0')}`;
+
+    // === MIETEINNAHMEN ===
+    let grossRent = 0;
+
+    // Während Bau: Ist-Mieten (nur wenn Mieter noch läuft)
+    if (isDev && m < devCompletionMonth) {
+      pd.unitsAsIs.forEach(u => {
+        if (!u.tenant || !u.leaseStart) return;
+        const leaseStart = new Date(u.leaseStart);
+        const leaseEnd = u.leaseEnd ? new Date(u.leaseEnd) : null;
+        if (calDate >= leaseStart && (!leaseEnd || calDate <= leaseEnd)) {
+          // Indexierung: Anzahl kompletter Indexierungsintervalle seit Mietbeginn
+          const yearsSinceStart = (calDate.getTime() - leaseStart.getTime()) / (365.25 * 86400 * 1000);
+          let intervalYears = 0;
+          switch (u.indexationInterval) {
+            case 'jährlich': intervalYears = 1; break;
+            case 'alle 2 Jahre': intervalYears = 2; break;
+            case 'alle 3 Jahre': intervalYears = 3; break;
+            case 'keine': intervalYears = 0; break;
+          }
+          const completedIntervals = intervalYears > 0 ? Math.floor(yearsSinceStart / intervalYears) : 0;
+          const indexFactor = Math.pow(1 + u.indexationRate / 100, completedIntervals);
+          grossRent += u.monthlyRent * indexFactor;
+        }
+      });
+    } else {
+      // Nach Fertigstellung (oder Investment): Ziel-Mieten ab individuellem Mietbeginn
+      const targetUnits = pd.unitsTarget.length > 0 ? pd.unitsTarget : pd.unitsAsIs;
+      targetUnits.forEach(u => {
+        // Mietbeginn bestimmen
+        let mietbeginn: Date;
+        if (u.leaseStart) {
+          mietbeginn = new Date(u.leaseStart);
+        } else if (isDev) {
+          mietbeginn = devEndDate;  // Default: Fertigstellung
+        } else {
+          mietbeginn = acqDate;
+        }
+
+        // Prüfe ob Mietbeginn erreicht
+        if (calDate < mietbeginn) return;
+        // Prüfe Mietende
+        if (u.leaseEnd) {
+          const leaseEnd = new Date(u.leaseEnd);
+          if (calDate > leaseEnd) return;
+        }
+
+        // Indexierung mit ERV Growth der Nutzungsart (nach Fertigstellung)
+        const marketAssumption = pd.marketAssumptions.perUsageType.find(ma => ma.usageType === u.usageType);
+        const growth = marketAssumption?.ervGrowthRatePercent ?? 2.0;
+        const yearsOfGrowth = Math.max(0, (calDate.getTime() - mietbeginn.getTime()) / (365.25 * 86400 * 1000));
+        const indexFactor = Math.pow(1 + growth / 100, yearsOfGrowth);
+        grossRent += u.monthlyRent * indexFactor;
+      });
+    }
+
+    // === BETRIEBSKOSTEN ===
+    // Basis-Opex monatlich, indexiert mit opexInflation
+    const yearsFromAcq = m / 12;
+    const useTarget = m >= devCompletionMonth && pd.unitsTarget.length > 0;
+    const baseAnnualOpex = computeTotalArea(useTarget ? pd.unitsTarget : pd.unitsAsIs) > 0
+      ? computeUnitNOIs(pd, useTarget).reduce(
+          (sum, u) => sum + u.managementCost + u.maintenance + u.insuranceAllocation
+                    + u.propertyTaxAllocation + u.otherOpexAllocation + u.nonRecoverableOpex, 0)
+      : 0;
+    const indexedAnnualOpex = baseAnnualOpex * Math.pow(1 + pd.marketAssumptions.opexInflationPercent / 100, yearsFromAcq);
+    const opexMonthly = indexedAnnualOpex / 12;
+    const otherIncomeMonthly = pd.operatingCosts.otherIncomePerYear * Math.pow(1 + pd.marketAssumptions.opexInflationPercent / 100, yearsFromAcq) / 12;
+
+    // NOI
+    const vacancyMonthly = grossRent * pd.operatingCosts.vacancyRatePercent / 100;
+    const noi = grossRent - vacancyMonthly + otherIncomeMonthly - opexMonthly;
+
+    // === CAPEX ===
+    const capex = capexPerMonth[m] || 0;
+
+    // === TRANSAKTIONEN ===
+    const isFirstMonth = m === 0;
+    const isLastMonth = m === totalMonths - 1;
+    const acqPrice = isFirstMonth ? -pd.purchasePrice : 0;
+    const acqCostsThisMonth = isFirstMonth ? -totalAcqCosts : 0;
+    const salesProc = isLastMonth ? exitValue : 0;
+    const salesCost = isLastMonth ? -salesCostAmount : 0;
+    const txCF = acqPrice + acqCostsThisMonth + salesProc + salesCost;
+
+    // === FINANZIERUNG ===
+    let loanReceived = 0;
+    let interestThisMonth = 0;
+    let repaymentThisMonth = 0;
+
+    trancheState.forEach(t => {
+      // Auszahlung bei Disbursement Date (Default = Monat 0)
+      const disbDate = t.disbursementDate ? new Date(t.disbursementDate) : acqDate;
+      const disbMonth = Math.round((disbDate.getTime() - acqDate.getTime()) / (30.44 * 86400 * 1000));
+
+      if (m === disbMonth) {
+        loanReceived += t.loanAmount;
+      }
+
+      // Zinsen & Tilgung nur wenn Darlehen ausgezahlt und nicht zurückgezahlt
+      if (m > disbMonth && t.outstanding > 0) {
+        const monthsSinceDisb = m - disbMonth;
+        const loanTermMonths = t.loanTerm * 12;
+
+        if (monthsSinceDisb <= loanTermMonths) {
+          // Monatliche Zinsen
+          const monthlyInterest = t.outstanding * t.interestRate / 100 / 12;
+          interestThisMonth += monthlyInterest;
+
+          // Tilgung
+          if (t.repaymentType === 'Annuität') {
+            const monthlyAnnuity = t.annuityAnnual / 12;
+            const monthlyRepayment = Math.max(0, monthlyAnnuity - monthlyInterest);
+            const actualRepayment = Math.min(monthlyRepayment, t.outstanding);
+            repaymentThisMonth += actualRepayment;
+            t.outstanding -= actualRepayment;
+          }
+          // Bei Endfällig: keine laufende Tilgung
+        }
+      }
+
+      // Im Exit-Monat: Restschuld komplett zurückzahlen
+      if (isLastMonth && t.outstanding > 0) {
+        repaymentThisMonth += t.outstanding;
+        t.outstanding = 0;
+      }
+    });
+
+    const debtCF = loanReceived - interestThisMonth - repaymentThisMonth;
+
+    // === FREE CASHFLOW ===
+    const freeCF = noi - capex + txCF + debtCF;
+    cumulativeCF += freeCF;
+
+    months.push({
+      monthIndex: m,
+      calendarDate: calYMD,
+      grossRentalIncome: grossRent,
+      operatingCosts: opexMonthly + vacancyMonthly - otherIncomeMonthly,
+      capexConstructionCosts: capex,
+      noi,
+      acquisitionPrice: acqPrice,
+      acquisitionCosts: acqCostsThisMonth,
+      salesProceeds: salesProc,
+      salesCosts: salesCost,
+      transactionsCashflow: txCF,
+      loanReceived,
+      interestPayments: -interestThisMonth,
+      loanRepayments: -repaymentThisMonth,
+      debtCashflow: debtCF,
+      freeCashflow: freeCF,
+      cumulativeFreeCashflow: cumulativeCF,
+    });
+  }
+
+  return months;
+}
+```
+
+### 2.6 Aggregation auf Jahre
+
+```typescript
+interface PropertyCashFlowYear {
+  yearIndex: number;
+  calendarYear: number;
+  grossRentalIncome: number;
+  operatingCosts: number;
+  capexConstructionCosts: number;
+  noi: number;
+  acquisitionPrice: number;
+  acquisitionCosts: number;
+  salesProceeds: number;
+  salesCosts: number;
+  transactionsCashflow: number;
+  loanReceived: number;
+  interestPayments: number;
+  loanRepayments: number;
+  debtCashflow: number;
+  freeCashflow: number;
+  cumulativeFreeCashflow: number;
+}
+
+function aggregateToYears(months: PropertyCashFlowMonth[], startYear: number): PropertyCashFlowYear[] {
+  const years: PropertyCashFlowYear[] = [];
+  const monthsPerYear: Record<number, PropertyCashFlowMonth[]> = {};
+
+  months.forEach(m => {
+    const yearIdx = Math.floor(m.monthIndex / 12);
+    if (!monthsPerYear[yearIdx]) monthsPerYear[yearIdx] = [];
+    monthsPerYear[yearIdx].push(m);
+  });
+
+  Object.entries(monthsPerYear).forEach(([yrStr, ms]) => {
+    const yr = parseInt(yrStr);
+    const agg = ms.reduce((acc, m) => ({
+      grossRentalIncome: acc.grossRentalIncome + m.grossRentalIncome,
+      operatingCosts: acc.operatingCosts + m.operatingCosts,
+      capexConstructionCosts: acc.capexConstructionCosts + m.capexConstructionCosts,
+      noi: acc.noi + m.noi,
+      acquisitionPrice: acc.acquisitionPrice + m.acquisitionPrice,
+      acquisitionCosts: acc.acquisitionCosts + m.acquisitionCosts,
+      salesProceeds: acc.salesProceeds + m.salesProceeds,
+      salesCosts: acc.salesCosts + m.salesCosts,
+      transactionsCashflow: acc.transactionsCashflow + m.transactionsCashflow,
+      loanReceived: acc.loanReceived + m.loanReceived,
+      interestPayments: acc.interestPayments + m.interestPayments,
+      loanRepayments: acc.loanRepayments + m.loanRepayments,
+      debtCashflow: acc.debtCashflow + m.debtCashflow,
+      freeCashflow: acc.freeCashflow + m.freeCashflow,
+    }), {
+      grossRentalIncome: 0, operatingCosts: 0, capexConstructionCosts: 0, noi: 0,
+      acquisitionPrice: 0, acquisitionCosts: 0, salesProceeds: 0, salesCosts: 0,
+      transactionsCashflow: 0, loanReceived: 0, interestPayments: 0, loanRepayments: 0,
+      debtCashflow: 0, freeCashflow: 0,
+    });
+
+    const cumulative = ms[ms.length - 1].cumulativeFreeCashflow;
+
+    years.push({
+      yearIndex: yr,
+      calendarYear: startYear + yr,
+      ...agg,
+      cumulativeFreeCashflow: cumulative,
+    });
+  });
+
+  return years;
+}
+```
+
+### 2.7 IRR-Berechnung (korrekt, aus Equity-Sicht)
+
+```typescript
+/**
+ * Newton-Raphson IRR-Berechnung.
+ * cashflows[0] muss negativ sein (Investment), Rest sind Returns.
+ */
+function computeIRR(cashflows: number[], guess = 0.1): number {
+  const maxIter = 100;
+  const tolerance = 1e-7;
+  let rate = guess;
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    let npv = 0;
+    let dnpv = 0;
+    for (let t = 0; t < cashflows.length; t++) {
+      npv += cashflows[t] / Math.pow(1 + rate, t);
+      if (t > 0) dnpv += -t * cashflows[t] / Math.pow(1 + rate, t + 1);
+    }
+    if (Math.abs(npv) < tolerance) return rate * 100;
+    if (Math.abs(dnpv) < 1e-12) break;
+    rate = rate - npv / dnpv;
+  }
+  return rate * 100;
+}
+
+/**
+ * 10-Year Hold IRR (oder Haltedauer) aus Equity-Sicht.
+ * Year 0: −Equity (NUR Eigenkapital, nicht Gesamtinvestition, weil Loan Received den Kaufpreis teilweise deckt)
+ * Year 1 bis n-1: NOI − Debt Service (laufende Ausschüttungen)
+ * Year n: NOI − Debt Service + Sales Proceeds − Sales Costs − Restschuld
+ *
+ * TECHNISCHE NOTE: Aus dem Monthly Cashflow können wir die EquityCashflows ableiten:
+ * equityCF = freeCashflow + loanReceived − acquisitionPrice − acquisitionCosts
+ * (nettiert den Acquisitions-Effekt und den Loan Received raus, weil die bereits im freeCashflow
+ *  verrechnet sind. Das Ergebnis ist der Cashflow den der Equity-Investor sieht.)
+ * Year 0: Der Equity-CF = Nettoeinsatz = −(Acquisitions − Loan)
+ * Vereinfacht: equityCF[0] = -Equity, equityCF[n] enthält Sales Proceeds + Restschuld-Rückzahlung
+ */
+function computeHoldIRR(pd: PropertyData, months: PropertyCashFlowMonth[]): number {
+  const years = aggregateToYears(months, new Date(pd.acquisitionDate).getFullYear());
+  const equity = computeEquity(pd);
+
+  // Erstes Jahr: Equity-Einsatz (negativ)
+  // Laufende Jahre: NOI + Debt CF (der enthält bereits Zins & Tilgung negativ)
+  // Capex in laufenden Jahren sind Teil der Equity-Investition (wenn nicht fremdfinanziert — vereinfacht wir annehmen dass alles EK-finanziert ist)
+  const equityCashflows: number[] = [];
+
+  years.forEach((y, idx) => {
+    let cf: number;
+    if (idx === 0) {
+      // Year 0: Equity-Einsatz + laufender CF (NOI + Debt CF ohne Loan Received)
+      const debtCFexLoan = y.debtCashflow - y.loanReceived;  // nur Zins + Tilgung
+      cf = -equity + y.noi - y.capexConstructionCosts + debtCFexLoan;
+    } else if (idx === years.length - 1) {
+      // Letztes Jahr: NOI + Debt CF + Sales Proceeds − Sales Costs
+      cf = y.noi - y.capexConstructionCosts + y.debtCashflow + y.transactionsCashflow;
+    } else {
+      cf = y.noi - y.capexConstructionCosts + y.debtCashflow;
+    }
+    equityCashflows.push(cf);
+  });
+
+  return computeIRR(equityCashflows);
+}
+
+/**
+ * Development IRR — monatliche Cashflows von Ankauf bis Fertigstellung.
+ * Zusätzliches letztes "Monat": Wert bei Fertigstellung (= Ziel-NOI / Exit Cap Rate) − Restschuld.
+ */
+function computeDevIRR(pd: PropertyData, months: PropertyCashFlowMonth[]): number | null {
+  if (pd.dealType !== 'Development') return null;
+  if (pd.gewerke.length === 0) return null;
+
+  const acqDate = new Date(pd.acquisitionDate);
+  const devStart = new Date(pd.projectStart);
+  const lastGewerkEndWeek = Math.max(...pd.gewerke.map(g => g.startWeek + g.durationWeeks - 1));
+  const devEndDate = new Date(devStart);
+  devEndDate.setDate(devEndDate.getDate() + lastGewerkEndWeek * 7);
+
+  const devEndMonth = Math.round((devEndDate.getTime() - acqDate.getTime()) / (30.44 * 86400 * 1000));
+
+  // Cashflows von Monat 0 bis devEndMonth
+  const devMonths = months.slice(0, devEndMonth + 1);
+  const equity = computeEquity(pd);
+
+  // Monatliche Equity-Cashflows
+  const monthlyEquityCF: number[] = [];
+
+  devMonths.forEach((m, idx) => {
+    let cf: number;
+    if (idx === 0) {
+      // Equity-Einsatz + laufender CF (ohne Loan Received)
+      const debtCFexLoan = m.debtCashflow - m.loanReceived;
+      cf = -equity + m.noi - m.capexConstructionCosts + debtCFexLoan;
+    } else {
+      cf = m.noi - m.capexConstructionCosts + m.debtCashflow;
+    }
+    monthlyEquityCF.push(cf);
+  });
+
+  // Im letzten Monat: Wert bei Fertigstellung addieren, Restschuld abziehen
+  const devEndYearIdx = devEndMonth / 12;
+  const valueAtCompletion = computeExitValue(pd, devEndYearIdx, devEndYearIdx);
+
+  // Restschuld berechnen durch Simulation
+  let totalOutstanding = 0;
+  pd.financingTranches.forEach(t => {
+    if (t.repaymentType === 'Endfällig') {
+      totalOutstanding += t.loanAmount;
+    } else {
+      // Annuität: Restschuld nach devEndMonth Monaten
+      const monthlyAnnuity = computeAnnuity(t.loanAmount, t.interestRate, t.loanTerm) / 12;
+      const monthlyRate = t.interestRate / 100 / 12;
+      let outstanding = t.loanAmount;
+      for (let i = 0; i < devEndMonth; i++) {
+        const interest = outstanding * monthlyRate;
+        const repayment = monthlyAnnuity - interest;
+        outstanding = Math.max(0, outstanding - repayment);
+      }
+      totalOutstanding += outstanding;
+    }
+  });
+
+  monthlyEquityCF[monthlyEquityCF.length - 1] += valueAtCompletion - totalOutstanding;
+
+  // Monatliches IRR berechnen und auf Jahresbasis umrechnen
+  const monthlyIRR = computeIRR(monthlyEquityCF) / 100;
+  const annualIRR = (Math.pow(1 + monthlyIRR, 12) - 1) * 100;
+
+  return annualIRR;
+}
+```
+
+### 2.8 Gesamte KPIs
+
+```typescript
+interface PropertyKPIs {
+  niyAtAcquisition: number;
+  multiple: number;
+  dscr: number;
+  ltv: number;
+  cashOnCashYear1: number;
+  gri: number;
+  noiIst: number;
+  noiZiel: number;
+  irr10Year: number;
+  equityMultiple10Year: number;
+  irrDevelopment: number | null;
+  developmentProfit: number;
+  profitOnCost: number;
+  netDevelopmentYield: number;
+  cashOnCash10YearAvg: number;
+  peakEquity: number;
+  paybackPeriodYears: number;
+}
+
+function computePropertyKPIs(pd: PropertyData, sale?: SaleObject): PropertyKPIs {
+  const months = computePropertyCashFlowMonthly(pd, sale);
+  const years = aggregateToYears(months, new Date(pd.acquisitionDate).getFullYear());
+  const noiIst = computePropertyNOI(pd, false);
+  const noiZiel = pd.unitsTarget.length > 0 ? computePropertyNOI(pd, true) : noiIst;
+
+  const totalAcqCosts = computeTotalAcquisitionCosts(pd.purchasePrice, pd.acquisitionCosts);
+  const totalDevBudget = pd.dealType === 'Development'
+    ? computeTotalDevBudget(pd.gewerke, pd.contingencyPercent) : 0;
+  const totalCostBasis = pd.purchasePrice + totalAcqCosts + totalDevBudget;
+  const totalCapReq = computeTotalCapitalRequirement(pd);
+  const totalLoan = computeTotalLoan(pd.financingTranches);
+  const equity = totalCapReq - totalLoan;
+
+  // Debt Service p.a. (Jahr 1)
+  const totalDS = pd.financingTranches.reduce((sum, t) => {
+    const interest = t.loanAmount * t.interestRate / 100;
+    const amort = t.repaymentType === 'Annuität'
+      ? computeAnnuity(t.loanAmount, t.interestRate, t.loanTerm) - interest
+      : 0;
+    return sum + interest + amort;
+  }, 0);
+
+  const irr10 = computeHoldIRR(pd, months);
+  const irrDev = computeDevIRR(pd, months);
+
+  // Equity Multiple = (Equity + Summe aller positiven Returns) / Equity
+  const totalReturns = years.reduce((sum, y) => sum + Math.max(0, y.freeCashflow + (y.yearIndex === 0 ? equity : 0)), 0);
+  const equityMultiple = equity > 0 ? totalReturns / equity : 0;
+
+  // Development Profit
+  let devProfit = 0;
+  if (pd.dealType === 'Development' && pd.gewerke.length > 0) {
+    const devStart = new Date(pd.projectStart);
+    const lastWk = Math.max(...pd.gewerke.map(g => g.startWeek + g.durationWeeks - 1));
+    const devEnd = new Date(devStart);
+    devEnd.setDate(devEnd.getDate() + lastWk * 7);
+    const devEndMonth = Math.round((devEnd.getTime() - new Date(pd.acquisitionDate).getTime()) / (30.44 * 86400 * 1000));
+    const valueAtCompletion = computeExitValue(pd, devEndMonth / 12, devEndMonth / 12);
+
+    const finCostsDuringDev = months.slice(0, devEndMonth + 1)
+      .reduce((sum, m) => sum + Math.abs(m.interestPayments), 0);
+
+    devProfit = valueAtCompletion - pd.purchasePrice - totalAcqCosts - totalDevBudget - finCostsDuringDev;
+  }
+
+  const profitOnCost = totalCostBasis > 0 ? (devProfit / totalCostBasis) * 100 : 0;
+  const netDevYield = totalCostBasis > 0 ? (noiZiel / totalCostBasis) * 100 : 0;
+
+  // Cash-on-Cash 10 Year Average
+  const annualCoCs = years.slice(1).map(y => {
+    const cashAfterDebt = y.noi + y.debtCashflow;
+    return equity > 0 ? (cashAfterDebt / equity) * 100 : 0;
+  });
+  const avgCoC = annualCoCs.length > 0 ? annualCoCs.reduce((s, v) => s + v, 0) / annualCoCs.length : 0;
+
+  // Peak Equity & Payback
+  let peakEquity = 0;
+  let paybackYear = years.length;
+  years.forEach(y => {
+    if (y.cumulativeFreeCashflow < peakEquity) peakEquity = y.cumulativeFreeCashflow;
+    if (y.cumulativeFreeCashflow > 0 && y.yearIndex < paybackYear) paybackYear = y.yearIndex;
+  });
+
+  return {
+    niyAtAcquisition: pd.purchasePrice > 0 ? (noiIst / pd.purchasePrice) * 100 : 0,
+    multiple: noiIst > 0 ? pd.purchasePrice / (computeAnnualRent(pd.unitsAsIs)) : 0,
+    dscr: totalDS > 0 ? noiZiel / totalDS : 999,
+    ltv: totalCapReq > 0 ? (totalLoan / totalCapReq) * 100 : 0,
+    cashOnCashYear1: equity > 0 ? ((noiIst - totalDS) / equity) * 100 : 0,
+    gri: computeAnnualRent(pd.unitsTarget.length > 0 ? pd.unitsTarget : pd.unitsAsIs),
+    noiIst,
+    noiZiel,
+    irr10Year: irr10,
+    equityMultiple10Year: equityMultiple,
+    irrDevelopment: irrDev,
+    developmentProfit: devProfit,
+    profitOnCost,
+    netDevelopmentYield: netDevYield,
+    cashOnCash10YearAvg: avgCoC,
+    peakEquity: Math.abs(peakEquity),
+    paybackPeriodYears: paybackYear,
+  };
+}
+```
+
+---
+
+## TEIL 3: ACQUISITION WIZARD
+
+Ersetze den bestehenden `NewDealWizard` komplett. Nutze die **bestehenden UI-Komponenten** für alles (bestehende Tab-Komponente, `.input-glass`, `GlassPanel`, Buttons, etc.). Keine neuen Farben, keine neuen Komponenten außer der Gantt-Visualisierung.
+
+### Tab-Struktur (8 Tabs)
+
+Bei Investment-Deal (`dealType === 'Investment'`): Tabs "Development" und Tab "Zielmiete" ausgeblendet.
+
+```
+1. Stammdaten
+2. Acquisition
+3. Rent Roll       (Untertabs: Ist-Miete | Zielmiete — Zielmiete nur bei Development)
+4. Opex
+5. Market
+6. Development     (nur bei Development, sonst ausgeblendet)
+7. Finanzierung
+8. Cashflow        (zeigt auch KPIs)
+9. Summary
+```
+
+### Tab 1: Stammdaten
+
+Felder (alle bestehende `.input-glass` Styling):
+- Projektname (Pflicht)
+- Adresse
+- Stadt (Pflicht)
+- PLZ
+- Nutzungsart (Dropdown: Wohnen, Büro, Einzelhandel, Logistik, Mixed Use)
+- **Deal Type**: Zwei große klickbare Kacheln (bestehendes Button-Styling): "Investment Asset" | "Development Asset"
+- Entwicklungsart (nur bei Development, Dropdown: Neubau, Kernsanierung, Modernisierung, Umbau, Aufstockung, Anbau)
+- Geschosse: Tick-Boxen nebeneinander für TG, KG, EG, 1.OG, 2.OG, 3.OG, 4.OG, 5.OG, 6.OG, DG (bestehendes Checkbox-Styling)
+
+### Tab 2: Acquisition
+
+- Verkäufer, Makler (Text-Inputs)
+- Kaufpreis (€, Number-Input)
+- **Kaufnebenkosten**: Flex-Container mit 5 Boxen nebeneinander (bestehende GlassPanel-Styling mit kleinerem Padding). Jede Box: Checkbox + Label + kleines %-Input-Feld. Inaktive Boxen ausgegraut.
+- Ankaufsdatum (Datepicker)
+- Berechnete Anzeige unter den Inputs: "Summe Nebenkosten: X% = € Y" und "Total Acquisition Cost: € Z"
+
+### Tab 3: Rent Roll
+
+**Untertabs (bestehende Tab-Komponente, kleiner):**
+- "Ist-Miete (vor Development)" — immer sichtbar
+- "Zielmiete (nach Development)" — nur bei Development
+
+**Ist-Miete Tabelle** (bestehende Tabellen-Struktur, horizontal scrollbar):
+
+Spalten: Einheit | Etage (Dropdown mit ausgewählten Geschossen) | Fläche | Nutzung | Mieter | Mietbeginn | Mietende | Ist €/m² | ERV €/m² | Mon. Miete | Indexierungsintervall | Indexierungssatz % | NK nicht-umlagef. | 🗑
+
+**Bidirektionale Mieteingabe:** Wenn User `currentRentPerSqm` ändert → `monthlyRent = area × currentRentPerSqm` (auto). Wenn User `monthlyRent` ändert → `currentRentPerSqm = monthlyRent / area` (auto). Letzte Änderung gewinnt.
+
+**Schnellerfassung-Button** (bestehendes Button-Styling) öffnet Modal (bestehende Modal-Komponente):
+- Anzahl Einheiten
+- Fläche pro Einheit
+- Nutzungsart (Dropdown)
+- Etage (Dropdown)
+- Tab: Radio "Ist-Miete" | "Zielmiete"
+- Ist-Miete Eingabe: Toggle €/m²/Mon vs €/Mon (bestehende Toggle-Styling) — bidirektional
+- ERV Eingabe: Toggle €/m²/Mon vs €/Mon — bidirektional
+- Button "Einheiten erzeugen"
+
+**Auto-Summen unter der Tabelle** (in einer Summary-Zeile, bestehende Styling):
+Gesamtfläche | Gesamt-Monatsmiete | Gesamt-Jahresmiete | Ø Ist-Miete | Ø ERV | Vermietungsquote | WALT | Gesamt NK n.u./Jahr
+
+**Zielmiete Tabelle** (nur bei Development):
+
+Selbe Spalten wie Ist-Miete, aber:
+- Einheit-Feld: Dropdown mit zwei Gruppen — "Bestehende Einheiten" (aus Ist-Miete) und "Neue Einheit anlegen"
+- Bei bestehender Einheit: `sourceUnitId` gesetzt, Etage/Fläche/Nutzung/ERV aus Ist-Einheit vorausgefüllt (editierbar)
+- Zusätzliche Summary-Zeile: Delta Jahresmiete (Ist → Ziel) in € und %, WALT alt vs. WALT neu
+
+### Tab 4: Opex
+
+- Read-only Feld "NK nicht-umlagefähig (aus Rent Roll)" mit Summe
+- Editierbare Felder: Vacancy Rate, Management Cost %, Maintenance Reserve €/m²/Jahr, Versicherung €/Jahr, Grundsteuer €/Jahr, Sonstige Betriebskosten €/Jahr, Sonstige Einnahmen €/Jahr
+- **Live NOI-Preview** unter den Inputs (bestehende `GlassPanel` mit Tabellen-Struktur): Zeigt alle Zeilen Gross Rental → NOI sowohl für Ist als auch für Ziel (bei Development), NIY berechnet
+
+### Tab 5: Market
+
+**Pro Nutzungsart aus dem Rent Roll eine Zeile** (bestehende Tabellen-Struktur):
+
+Spalten: Nutzung | Ø ERV (read-only) | ERV Growth % p.a. (editierbar) | Exit Cap Rate % (editierbar) | Exit Multiplier (auto)
+
+**Button "AI Market Research — Vorschläge laden"** (bestehendes Button-Styling) ruft `researchCityMarketData()` aus `marketResearchAgent.ts` auf und füllt ERV Growth + Exit Cap Rate automatisch. Badge "[AI]" (bestehende Badge-Styling) erscheint neben automatisch ausgefüllten Werten.
+
+**Kosteninflation:**
+- Opex Inflation % p.a. + "AI vorschlagen" Button
+- Capex Inflation % p.a. + "AI vorschlagen" Button
+- Verkaufskosten % (Default 1.5)
+
+### Tab 6: Development (nur bei Development)
+
+**Timeline-Inputs:**
+- Projektstart (Datepicker)
+- Projektende (read-only, auto-berechnet)
+- Projektdauer (read-only, in Monaten + Wochen)
+
+**Gewerke-Auswahl** (16 Tick-Boxen in 4-Spalten-Grid, bestehende Checkbox-Styling)
+
+**Detail-Tabelle für ausgewählte Gewerke** (bestehende Tabellen-Struktur):
+
+Spalten: Gewerk | Eingabe-Toggle (Pauschal/pro m²) | Budget (€) | €/m² (auto) | Start (Woche) | Dauer (Wochen) | Ende (Wochen, auto) | Kostenverteilung (Dropdown: Vorauszahlung, Linear, 30/40/30, Endfällig) | Status (Dropdown)
+
+**Summen-Zeile:** Gesamtbudget | Ø €/m² | Contingency % (editierbar) | Total Development Budget
+
+**Gantt-Visualisierung** (neue SVG-Komponente, aber mit bestehenden Farben): Horizontales Balkendiagramm unter der Tabelle. Jedes Gewerk als farbiger Balken von `startWeek` bis `endWeek`. X-Achse = Wochen. Nutze Farben aus dem bestehenden Design-System (#007aff, #c9a96e, #4ade80, #f87171, #a78bfa etc. rotierend durch die Gewerke).
+
+### Tab 7: Finanzierung
+
+**Zusammenfassung oben** (read-only, in `GlassPanel`):
+Kaufpreis | + Kaufnebenkosten | + Baukosten inkl. Contingency (nur bei Dev) | = Gesamtkapitalbedarf
+
+**Tranchen-Liste:** Jede Tranche als `GlassPanel` mit Inputs. "Tranche hinzufügen" Button.
+
+Pro Tranche: Bezeichnung | Finanzierungsform (Dropdown) | Darlehensbetrag | Zins % p.a. | Zinsbindung Jahre | Laufzeit Jahre | Tilgungsart (Dropdown: Annuität/Endfällig) | Tilgungsrate % p.a. (read-only bei Annuität, auto-berechnet)
+
+**Berechnete Werte pro Tranche:**
+- Annuität/Rate: €/Jahr und €/Monat (Toggle p.a./p.m. darüber)
+- Zinsanteil Jahr 1
+- Tilgungsanteil Jahr 1
+
+**Gesamt-Berechnungen unten:**
+Gesamtdarlehen | LTV % | Eigenkapital | Debt Service p.a. (€) | DSCR (Ist) | DSCR (Ziel)
+
+### Tab 8: Cashflow
+
+**Input oben:** Haltedauer (Default 10, editierbar)
+
+**KPI-Cards** (bestehende `KpiCard` Komponente, 4er-Grid):
+- Development IRR (nur bei Dev)
+- 10Y Hold IRR
+- Equity Multiple 10Y
+- Peak Equity
+
+**Ansicht-Toggle** (bestehende Toggle/Button-Group Styling): "Jährlich" | "Monatlich"
+
+**Jährliche Ansicht:** Tabelle mit Spalten Jahr 1 bis Jahr [Haltedauer] + Total. Zeilen in Sections (bestehende collapsible Styling) wie definiert.
+
+**Monatliche Ansicht:** Zeigt Monate 1 bis (Bauphase-Ende + 12 Monate), danach weiterhin jährlich. Horizontal scrollbar.
+
+**Zahlenformat:** Bestehendes `formatEUR()`. Negative Werte in Rot, positive neutral/grün, Null als "—". Subtotals fett mit leicht grauem Hintergrund. Free Cashflow fett mit blauem Hintergrund.
+
+**Area Chart unter der Tabelle** (bereits definiert: NOI blau, Transactions gold, Debt rot, Kum. Free CF grün 4px Linie).
+
+### Tab 9: Summary
+
+Reihenfolge:
+1. Deal Overview Card (Name, Stadt, etc.) + Completeness Ring (bestehende Komponente)
+2. **KPI Grid** (12 KpiCards in 3x4 Grid): NIY, Multiple, DSCR, IRR 10Y, Eq. Mult 10Y, Cash-on-Cash 10Y, IRR Dev, Dev Profit, Profit on Cost, Net Dev Yield, GRI, NOI (Ziel)
+3. Rent Roll Summary (Einheiten, Fläche, Vermietungsquote, WALT)
+4. Development Summary (Gewerke, Budget, €/m², Bauzeit) — nur bei Development
+5. Button "Deal anlegen" (bestehendes Accent-Button-Styling)
+
+---
+
+## TEIL 4: ACQUISITION DETAILSEITE
+
+Ersetze die bestehende Detailseite unter `/acquisition/:id` komplett. **Bestehende Tab-Struktur wird ersetzt** durch die Wizard-Tab-Struktur in derselben Reihenfolge, plus die bestehenden Tabs danach.
+
+### Header
+
+**Bestehendes Header-Styling**, ergänzt um:
+- Status-Dropdown im Header (neben Projekt-Titel): Screening | Due Diligence | Verhandlung | Beurkundung — nutzt bestehende Dropdown-Komponente
+- Transfer-Button **rechts**: "In Development →" — **orange-braune Gradient** (linear-gradient von #c9a96e zu #a08040, weiße Schrift, bestehendes Button-Padding und Border-Radius)
+- **KEIN** "In Bestand überführen" Button
+
+### Tab-Reihenfolge
+
+```
+Summary | Stammdaten | Acquisition | Rent Roll | Opex | Market | Development* | Finanzierung | Cashflow | AI Research | Dokumente | IC Memo | Aktivitäten | Bilder
+```
+
+*Development nur bei Development-Deals sichtbar.
+
+**Summary** steht zuerst. Inhalt: selbe KPIs und Zusammenfassung wie im Wizard Tab 9, aber in Detailseiten-Layout.
+
+Die Sections 2-8 haben genau denselben Inhalt wie im Wizard — aber **alle Werte sind editierbar**. Bei jeder Änderung: Live-Save in den Store + "Gespeichert" Badge oben rechts für 2 Sekunden (neue kleine Toast-Komponente im bestehenden Design-Stil).
+
+Die bestehenden Tabs (AI Research, Dokumente, IC Memo, Aktivitäten, Bilder) bleiben wie sie sind.
+
+---
+
+## TEIL 5: DEVELOPMENT DETAILSEITE
+
+Ersetze die bestehende Development-Detailseite unter `/developments/:id`.
+
+### Header
+
+Bestehendes Header-Styling. Transfer-Buttons rechts:
+- "In Bestand überführen" (bestehendes Styling)
+- "Zum Verkauf" (bestehendes Styling)
+
+### Tab-Reihenfolge
+
+```
+Summary | Stammdaten | Acquisition🔒 | Rent Roll | Opex | Market | Kosten & Budget | Finanzierung | Cashflow | Construction Advisor | Hold/Sell | Dokumente | Aktivitäten | Bilder
+```
+
+- **Construction Advisor** und **Hold/Sell**: Bleiben EXAKT wie aktuell, keine Änderungen
+- **Acquisition Tab 🔒**: read-only, zeigt `underwritingSnapshot` Werte mit Lock-Icon neben Section-Header
+- Alle anderen neuen Tabs: editierbar, mit **Vergleichsmodus**
+
+### Vergleichsmodus (für Rent Roll, Opex, Market, Finanzierung)
+
+Jede editierbare Tab hat einen Toggle oben: "Nur Aktuell" | "Vergleich"
+
+Im Vergleichsmodus zeigen die Felder **3 Spalten**:
+```
+| Feld          | Underwriting | Aktuell      | Delta       |
+| Jahresmiete   | € 277.740    | € 285.000   | +2,6% ✓     |
+```
+
+- "Underwriting" = aus `underwritingSnapshot` (read-only, grauer Hintergrund)
+- "Aktuell" = aus `propertyData` (editierbar, bestehende Input-Styling)
+- "Delta" = prozentuale Abweichung: grün bei positiver Entwicklung, rot bei negativer, orange bei >5% Abweichung
+
+### Tab "Kosten & Budget" (ersetzt Wizard-Tab "Development")
+
+**Erweiterte Gewerke-Tabelle:**
+
+Spalten: Gewerk | Budget (UW)🔒 | Angebote (auto) | Vergabe (editierbar) | Rechnung (auto) | Delta Budget (auto) | Start | Dauer | Status
+
+- **Budget (UW)**: read-only aus `underwritingSnapshot.gewerke`
+- **Angebote**: auto-summiert aus `development.offers` für dieses Gewerk (Summe `amountNet`)
+- **Vergabe**: manuell editierbar
+- **Rechnung**: auto-summiert aus `development.invoices` für dieses Gewerk (Summe `amountNet`)
+- **Delta Budget**: Differenz zwischen Budget (UW) und letztem Kosten-Stand. Priorität: Rechnung > Vergabe > Angebote > Budget. Positives Delta = rot. Negatives Delta = grün.
+
+**Sub-Bereich "Angebote"** (unter der Gewerke-Tabelle, bestehende `GlassPanel` mit Überschrift):
+
+Button "+ Angebot hinzufügen". Tabelle: Gewerk (Dropdown) | Maßnahme | Beschreibung | Netto (€) | Brutto (€) | Datum | 🗑
+
+Automatische Gruppierung: Angebote werden in der Ansicht nach Gewerk gruppiert (bestehende Accordion-Styling oder einfach Gewerk-Header-Zeilen). Brutto auto = Netto × 1.19, editierbar.
+
+**Sub-Bereich "Rechnungen"**:
+
+Button "+ Rechnung hinzufügen". Tabelle: Gewerk (Dropdown) | Maßnahme | Typ (Dropdown: Anzahlung/Vollzahlung/Baufortschritt/Schlussrechnung) | Beschreibung | Netto (€) | Brutto (€) | Datum | 🗑
+
+Automatische Gruppierung nach Gewerk.
+
+---
+
+## TEIL 6: ASSET DETAILSEITE (ANPASSUNGEN)
+
+Bestehende Asset-Detailseite bleibt weitgehend wie sie ist, wird aber erweitert um:
+
+**Zusätzliche Tabs (vor den bestehenden):**
+- Stammdaten, Acquisition🔒, Rent Roll, Opex, Market, Development🔒 (wenn aus Development kam), Finanzierung, Cashflow
+
+**Bestehende Tabs bleiben unverändert:** Overview, Documents, Activity, Images, etc.
+
+Die neuen Tabs zeigen die `propertyData` des Assets. Acquisition und Development sind read-only (historisch). Rent Roll, Opex, Market, Finanzierung sind editierbar (Asset Management).
+
+**Für Assets die kein `propertyData` haben** (bestehende Mock-Assets): Zeige die neuen Tabs nicht, oder zeige eine Message "Keine Property-Daten verfügbar. Wurde dieses Asset manuell angelegt?" mit einem Button "Property-Daten hinzufügen".
+
+---
+
+## TEIL 7: STORE-FUNKTIONEN
+
+### Transfer-Funktionen in `src/store/useStore.ts`
+
+```typescript
+transferToDevelopment: (dealId) => {
+  const deal = get().deals.find(d => d.id === dealId);
+  if (!deal) return;
+  
+  const now = new Date().toISOString();
+  const devPropertyData = JSON.parse(JSON.stringify(deal.propertyData));  // Deep copy
+  const snapshot = JSON.parse(JSON.stringify(deal.propertyData));         // Deep copy für Freeze
+  
+  const newDev: DevelopmentProject = {
+    id: `dev-${Date.now()}`,
+    // ...bestehende Felder mappen aus propertyData...
+    name: devPropertyData.name,
+    address: devPropertyData.address,
+    city: devPropertyData.city,
+    // ...etc
+    propertyData: devPropertyData,
+    underwritingSnapshot: snapshot,
+    offers: [],
+    invoices: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+  
+  set(s => ({
+    deals: s.deals.filter(d => d.id !== dealId),
+    developments: [...s.developments, newDev],
+  }));
+},
+
+transferDevToBestand: (devId) => {
+  const dev = get().developments.find(d => d.id === devId);
+  if (!dev) return;
+  
+  const pd = JSON.parse(JSON.stringify(dev.propertyData));  // Deep copy
+  // Bei Transfer in Bestand: Ziel-Mieten werden zu Ist-Mieten
+  if (pd.unitsTarget.length > 0) {
+    pd.unitsAsIs = pd.unitsTarget;
+    pd.unitsTarget = [];
+  }
+  
+  const newAsset: Asset = {
+    // ...bestehende Felder...
+    propertyData: pd,
+    // Mapping auf bestehende Asset-Felder (units, annualRent, operatingCosts, etc.)
+  };
+  
+  // Offers und Invoices bleiben auf dem Development als historisches Dokument
+  // Development wird mit Status "Abgeschlossen" markiert statt gelöscht
+  
+  set(s => ({
+    assets: [...s.assets, newAsset],
+    developments: s.developments.map(d => d.id === devId ? { ...d, status: 'Abgeschlossen' } : d),
+  }));
+},
+```
+
+### Auto-Save
+
+Live Save bei jeder Änderung auf Detailseiten. `updateDeal`, `updateDevelopment`, `updateAsset` werden bei jedem Input-Blur oder Change aufgerufen. Nach erfolgreichem Save: kleine Toast-Nachricht oben rechts ("Gespeichert ✓", verschwindet nach 2 Sekunden).
+
+---
+
+## TEIL 8: SETTINGS ERGÄNZEN
+
+Neue Section "Market Defaults" in `Settings`:
+
+- ERV Growth Rates pro Nutzungsart (7 Inputs)
+- Exit Cap Rates pro Nutzungsart (7 Inputs)
+- Default Holding Period
+- Default Contingency %
+- Default Opex Inflation
+- Default Capex Inflation
+- Default Sales Cost %
+- Default Acquisition Costs (5 Zeilen: Name, %, Active — editierbar)
+
+Bestehendes Settings-Styling, keine neuen Design-Elemente.
+
+---
+
+## TEIL 9: i18n ERGÄNZEN
+
+Füge alle neuen UI-Labels in `src/i18n/translations.ts` (DE/EN). **KPI-Begriffe bleiben IMMER auf Englisch** (NIY, IRR, DSCR, WALT, NOI, GRI, LTV, Cap Rate, etc.). Nur UI-Labels übersetzen.
+
+---
+
+## WICHTIG — NICHT ÄNDERN
+
+- `anthropic-dangerous-direct-browser-access: true` Header in allen API-Calls
+- `claude-sonnet-4-20250514` als Modell in allen Agents
+- `fetchWithRetry` und `max_uses: 1` in News und Market Agent
+- Store persist Key `restate-storage-v2`
+- KPI-Begriffe bleiben IMMER auf Englisch
+- **Gesamtes bestehendes Design** (Farben, Fonts, Spacing, Border-Radien, Shadows, alle UI-Komponenten)
+- Bestehende Features (Deal Radar, News, Market Intelligence, AI Copilot, Document Upload, Kalender, Addressbook, Construction Advisor, Hold/Sell Analyse) dürfen NICHT entfernt oder beschädigt werden
+- Bestehende Mock-Assets müssen weiterhin funktionieren (Fallback: `asset.propertyData?.xxx ?? asset.xxx`)
+- Portfolio Cashflow Seite (`/cashflow`) bleibt, nutzt aber `computePropertyCashFlowMonthly()` pro Asset als Datenquelle für Aggregation
+
+---

@@ -1,0 +1,220 @@
+Der Acquisition Wizard (New Deal — Development) hat aktuell 6 Tabs: Basic Data, Development, Underwriting, Market, Financing, Summary. Die Tabs müssen erweitert werden, sodass ALLE Informationen die später in Development und Bestand benötigt werden bereits hier erfasst werden. Kein Nacherfassen.
+Neue Tab-Struktur (8 Tabs)
+1. Stammdaten          — Projekt-Basics + Deal Type
+2. Rent Roll           — Vollständiger Mietspiegel mit allen Einheiten
+3. Development         — Gewerke-Budget mit Einzelpositionen (nur bei Development)
+4. Underwriting        — Kaufpreis, Nebenkosten, Operating Costs, NOI-Preview
+5. Market              — ERV Growth, Exit Cap Rate, Rental Growth per Nutzungsart
+6. Financing           — Darlehen, Zinsen, Tilgung, LTV-Preview
+7. Cash Flow & IRR     — 10-Jahres Property Cashflow + Development IRR + Hold IRR
+8. Summary             — Alles auf einen Blick + Deal anlegen
+Für Investment-Deals (kein Development): Tab 3 wird übersprungen, Tab 7 zeigt nur die Hold IRR.
+
+Tab 2: Rent Roll (NEU)
+Vollständige Erfassung aller Mieteinheiten — identisch zur Rent Roll Tabelle im Asset-Detail.
+Tabelle mit Spalten:
+
+Einheit (z.B. "EG-01", "1.OG-02") — Freitext
+Etage (Dropdown: UG, EG, 1.OG, 2.OG, 3.OG, 4.OG, 5.OG, DG)
+Fläche (m²)
+Nutzungsart (Dropdown: Wohnen, Büro, Einzelhandel, Lager, Stellplatz, Sonstiges)
+Status (Dropdown: Vermietet, Leerstand, Eigennutzung)
+Mieter Name (Freitext, optional bei Leerstand)
+Ist-Miete (€/m²/Monat)
+ERV / Marktmiete (€/m²/Monat) — erwartete Miete nach Repositionierung
+Monatsmiete (€, auto-berechnet: Fläche × Ist-Miete)
+Mietende (Datum, optional)
+
+Funktionen:
+
+Button "Einheit hinzufügen" — fügt leere Zeile hinzu
+Button "Zeile löschen" (Trash-Icon pro Zeile)
+Button "Schnell-Erfassung" — Dialog: "X Einheiten à Y m² als [Nutzungsart], [Status]" → erzeugt X identische Zeilen
+Auto-Summen am Tabellenende: Gesamtfläche, Ø Ist-Miete/m², Ø ERV/m², Gesamt-Monatsmiete, Gesamt-Jahresmiete, Vermietungsquote (%)
+
+Datenübernahme:
+Diese Rent Roll wird 1:1 auf den Deal gespeichert und bei transferToBestand als asset.units[] übernommen. Die Summen fließen automatisch in Tab 4 (Underwriting):
+
+annualGrossRent = Summe aller Monatsmieten × 12
+projectedAnnualRent = Summe aller (Fläche × ERV) × 12
+area = Gesamtfläche
+occupancyRate = Vermietete Fläche / Gesamtfläche
+
+
+Tab 3: Development — Gewerke-Budget (NEU, nur bei Development)
+Vollständige Kostenaufstellung nach Gewerken — identisch zur Gewerke-Tabelle in Developments.
+Tabelle mit Spalten:
+
+Gewerk (Dropdown: Rohbau, Fassade, Dach, Haustechnik TGA, Elektro, Sanitär, Heizung/Klima, Aufzüge, Innenausbau, Außenanlagen, Planung/Architektur, Statik, Bauüberwachung, Genehmigungen, Versicherung, Sonstiges)
+Beschreibung (Freitext)
+Budget (€)
+Kosten pro m² (€/m², auto-berechnet: Budget / Gesamtfläche)
+Start-Monat (relative Angabe: Monat 1, 2, 3... ab Baubeginn)
+End-Monat
+Status (Default: Geplant)
+
+Funktionen:
+
+Button "Gewerk hinzufügen"
+Button "Standard-Gewerke laden" — füllt typische Gewerke mit Platzhalter-Budgets vor:
+
+  Rohbau:              30% des Gesamtbudgets
+  Fassade:             10%
+  Dach:                 5%
+  Haustechnik TGA:     15%
+  Innenausbau:         15%
+  Außenanlagen:         5%
+  Planung/Architektur:  8%
+  Bauüberwachung:       4%
+  Genehmigungen:        2%
+  Sonstiges:            6%
+
+Auto-Summen: Gesamtbudget, Ø Kosten/m², Contingency (% editierbar, Default 10%), Total inkl. Contingency
+
+Timeline-Visualisierung:
+Unter der Tabelle ein einfaches Gantt-artiges Balkendiagramm das die Gewerke zeitlich darstellt (farbcodierte Balken nach Gewerk-Kategorie, horizontal = Monate).
+Datenübernahme:
+Bei transferToDevelopment werden alle Gewerke als development.gewerke[] übernommen. Das Gesamtbudget (inkl. Contingency) wird als development.totalBudget gesetzt. Die Timeline definiert startDate und plannedEndDate.
+
+Tab 4: Underwriting (erweitert)
+Wie bisher, aber die Mietdaten kommen automatisch aus dem Rent Roll (Tab 2):
+
+Purchase Price (€) — manuell eingeben
+Closing Costs (%, Default aus Settings)
+Broker Fee (%, Default aus Settings)
+Initial Capex (€, nur bei Investment)
+Total Acquisition Cost (berechnet)
+
+Betriebskosten (Defaults aus Settings, editierbar):
+
+Vacancy Rate (%)
+Management Cost (% of Gross Rent)
+Maintenance Reserve (€/m²/Jahr)
+Non-Recoverable Opex (€/Jahr)
+Other Operating Income (€/Jahr)
+
+Live NOI-Preview:
+
+Gross Rental Income (aus Rent Roll)
+− Vacancy Loss
+
+
+Other Income
+
+
+− Management
+− Maintenance
+− Non-Rec. Opex
+= NOI
+NOI Yield on Purchase Price (%)
+
+Zeige sowohl die Ist-NOI (mit aktuellen Mieten) als auch die Projected NOI (mit ERV aus Rent Roll).
+
+Tab 7: Cash Flow & IRR (NEU)
+Zeige den vollständigen 10-Jahres Property Cashflow in der bekannten Tabellenstruktur:
++ Gross Rental Income
+- Operating Costs
+- Capex / Construction Costs
+= NOI
+
+- Acquisitions
+- Acquisition Costs
++ Sales Proceeds
+- Sales Costs
+= Cashflow from Transactions
+
++ Loan Received
+- Interest Payments
+- Loan Repayments
+= Debt Cashflow
+
+== Free Cashflow
+Datenquelle:
+
+Mieten aus Rent Roll (indexiert mit Rental Growth Rate aus Tab 5)
+Baukosten aus Gewerke-Budget (Tab 3), verteilt über die Monate
+Betriebskosten aus Underwriting (Tab 4)
+Finanzierung aus Tab 6
+Exit Value = NOI Jahr 10 / Exit Cap Rate (aus Tab 5)
+
+Zwei IRR-Werte prominent anzeigen (als große KPI-Cards über der Tabelle):
+
+Development IRR (nur bei Development-Deals):
+
+Zeitraum: Ankauf bis 1 Jahr nach Fertigstellung
+Negative Cashflows: Kaufpreis + Nebenkosten + Baukosten + Zinsen während Bau
+Positive Cashflows: Wert bei Fertigstellung (= Projected NOI / Exit Cap Rate) − Restschuld Darlehen
+Formel: IRR über diese Cashflow-Reihe
+
+
+10-Year Hold IRR (für alle Deals):
+
+Zeitraum: 10 Jahre ab Ankauf (bei Development: 10 Jahre ab Fertigstellung)
+Negative Cashflows: Equity invested (Total Cost − Loan)
+Laufende Cashflows: NOI − Debt Service (jährlich, indexiert)
+Terminal Cashflow: Exit Value − Restschuld in Jahr 10
+Formel: IRR über diese Cashflow-Reihe
+
+
+
+Nutze die bestehende computeIRR() aus irrCalculator.ts. Falls die Funktion angepasst werden muss (z.B. für unregelmäßige Cashflows), erweitere sie entsprechend.
+Zusätzlich anzeigen:
+
+Multiple on Equity (Total Return / Equity Invested)
+Peak Equity Requirement (maximaler negativer kumulierter Cashflow)
+Payback Period (Jahr in dem kumulierter Free CF erstmals positiv wird)
+
+
+Tab 8: Summary (erweitert)
+Kompakte Zusammenfassung aller Tabs mit den wichtigsten Kennzahlen:
+Deal Overview Card:
+
+Name, Stadt, Adresse, Nutzungsart, Deal Type
+Completeness Ring
+
+Rent Roll Summary:
+
+X Einheiten, Y m² Gesamtfläche, Z% vermietet
+Ø Ist-Miete, Ø ERV, Jahresmiete
+
+Development Summary (nur bei Development):
+
+X Gewerke, Total Budget, €/m², Bauzeit X Monate
+Timeline: Baubeginn → Fertigstellung
+
+Financial KPIs (als KPI-Cards):
+
+NIY (at acquisition)
+Development IRR
+10-Year Hold IRR
+Multiple on Equity
+DSCR
+LTV
+Cash-on-Cash Year 1
+
+Button: Deal anlegen
+
+Datenfluss-Zusammenfassung
+Acquisition (Wizard)
+  ├── Rent Roll        → deal.units[]
+  ├── Gewerke-Budget   → deal.gewerke[]  
+  ├── Underwriting     → deal.underwritingAssumptions
+  ├── Market           → deal.underwritingAssumptions.marketAssumptions
+  ├── Financing        → deal.financingAssumptions
+  │
+  ├── transferToDevelopment()
+  │     ├── units[]           → (gespeichert für Bestand-Transfer)
+  │     ├── gewerke[]         → development.gewerke[]
+  │     ├── totalBudget       → development.totalBudget (inkl. Contingency)
+  │     ├── timeline          → development.startDate, plannedEndDate
+  │     ├── financing         → development.financing
+  │     └── marketAssumptions → development.marketAssumptions
+  │
+  └── transferToBestand() / transferDevToBestand()
+        ├── units[]           → asset.units[]
+        ├── operatingCosts    → asset.operatingCosts
+        ├── rentalGrowthRate  → asset.rentalGrowthRate
+        ├── exitCapRate       → asset.exitCapRate
+        ├── holdingPeriod     → asset.holdingPeriodYears
+        ├── financing         → asset.debtInstruments[]
+        └── ervPerSqm         → asset.ervPerSqm

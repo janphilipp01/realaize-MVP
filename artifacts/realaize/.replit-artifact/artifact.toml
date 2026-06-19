@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "REALAIZE — Real Estate Portfolio"
+version = "1.0.0"
+id = "artifacts/realaize"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20077
+
+[services.development]
+run = "pnpm --filter @workspace/realaize run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/realaize", "run", "build" ]
+publicDir = "artifacts/realaize/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20077"
+BASE_PATH = "/"

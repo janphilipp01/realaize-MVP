@@ -1,0 +1,100 @@
+Cash Flow Chart — Area Chart mit Gradient-Fills
+Ersetze das Bar Chart durch ein gestapeltes Area Chart mit Farbverläufen. Jedes Segment wird als eigene Fläche dargestellt, die Schichten überlagern sich und erzeugen einen fließenden, modernen Look.
+Visueller Stil
+Drei gestapelte Flächen mit Gradient von oben (sichtbar) nach unten (transparent), plus eine kräftige Free-CF-Linie darüber:
+tsx<ComposedChart data={chartData}>
+  <defs>
+    <linearGradient id="gradNOI" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#007aff" stopOpacity={0.35} />
+      <stop offset="100%" stopColor="#007aff" stopOpacity={0.05} />
+    </linearGradient>
+    <linearGradient id="gradTx" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#c9a96e" stopOpacity={0.35} />
+      <stop offset="100%" stopColor="#c9a96e" stopOpacity={0.05} />
+    </linearGradient>
+    <linearGradient id="gradDebt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#f87171" stopOpacity={0.35} />
+      <stop offset="100%" stopColor="#f87171" stopOpacity={0.05} />
+    </linearGradient>
+    <linearGradient id="gradFCF" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#4ade80" stopOpacity={0.25} />
+      <stop offset="100%" stopColor="#4ade80" stopOpacity={0.0} />
+    </linearGradient>
+  </defs>
+
+  <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'rgba(60,60,67,0.5)' }} axisLine={false} tickLine={false} />
+  <YAxis tickFormatter={v => `${(v/1000).toFixed(0)}k`} tick={{ fontSize: 10, fill: 'rgba(60,60,67,0.4)' }} axisLine={false} tickLine={false} />
+  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+  <ReferenceLine y={0} stroke="rgba(0,0,0,0.2)" strokeWidth={1} />
+  <Tooltip content={<CustomTooltip />} />
+  <Legend />
+
+  {/* Flächen — jede einzeln (nicht gestapelt), überlagert */}
+  <Area type="monotone" dataKey="noi" name="NOI"
+    stroke="#007aff" strokeWidth={2} fill="url(#gradNOI)" />
+  <Area type="monotone" dataKey="transactions" name="Transactions"
+    stroke="#c9a96e" strokeWidth={2} fill="url(#gradTx)" />
+  <Area type="monotone" dataKey="debtCashflow" name="Debt"
+    stroke="#f87171" strokeWidth={2} fill="url(#gradDebt)" />
+
+  {/* Free Cashflow als eigene Fläche mit kräftiger Linie */}
+  <Area type="monotone" dataKey="freeCashflow" name="Free CF"
+    stroke="#4ade80" strokeWidth={3} fill="url(#gradFCF)" />
+
+  {/* Kumuliert als Linie darüber */}
+  <Line type="monotone" dataKey="cumulativeFreeCF" name="Kum. Free CF"
+    stroke="#ff9500" strokeWidth={3} dot={{ r: 4, fill: '#ff9500', strokeWidth: 2, stroke: '#fff' }} />
+</ComposedChart>
+chartData
+typescriptconst chartData = years.map(year => ({
+  year: "2024",
+  noi: 520000,
+  transactions: -8900000,
+  debtCashflow: -180000,
+  freeCashflow: -8560000,    // NOI + transactions + debt
+  cumulativeFreeCF: -7200000 // running total
+}));
+Custom Tooltip
+Abgerundetes Panel mit Backdrop-Blur:
+tsxconst CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload) return null;
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.92)',
+      backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(0,0,0,0.08)',
+      borderRadius: 12,
+      padding: '12px 16px',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+      fontSize: 12,
+    }}>
+      <div style={{ fontWeight: 700, marginBottom: 8 }}>{label}</div>
+      {payload.map(p => (
+        <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 24, marginBottom: 3 }}>
+          <span style={{ color: 'rgba(60,60,67,0.6)' }}>
+            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: p.color, marginRight: 6 }} />
+            {p.name}
+          </span>
+          <span style={{ fontWeight: 600, fontFamily: 'ui-monospace', color: p.value >= 0 ? '#1c1c1e' : '#f87171' }}>
+            {formatEUR(p.value)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+Legende
+
+🟦 NOI — blaue Linie mit Gradient-Fläche
+🟨 Transactions — goldene Linie mit Gradient-Fläche
+🟥 Debt — rote Linie mit Gradient-Fläche
+🟩 Free CF — grüne Fläche mit kräftiger Linie
+🟠 Kum. Free CF — orange Linie mit Dots
+
+Chart-Größe und Styling
+
+Höhe: 300px
+Volle Breite
+Kein Achsen-Rahmen, dezentes Grid nur horizontal
+Dots nur auf der Kum. Free CF Linie (weiß gefüllt mit orangem Rand)
+type="monotone" für weiche Kurven

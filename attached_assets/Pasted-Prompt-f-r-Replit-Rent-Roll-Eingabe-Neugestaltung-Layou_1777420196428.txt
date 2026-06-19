@@ -1,0 +1,203 @@
+Prompt für Replit:
+
+Rent Roll Eingabe — Neugestaltung Layout & Mietlogik
+DESIGN-REGEL: Keine Änderungen am bestehenden Design. Alle UI-Komponenten (GlassPanel, Inputs, Buttons, Tabellen) bleiben exakt wie sie sind.
+
+1. Layout: Ist-Miete und Zielmiete untereinander (nicht als Tabs)
+Ersetze die aktuelle Tab-Struktur (Ist-Miete | Zielmiete) durch ein vertikales Layout. Beide Bereiche sind gleichzeitig sichtbar, untereinander:
+┌─────────────────────────────────────────────────────────┐
+│  IST-MIETE (vor Development)                            │
+│                                                         │
+│  [Tabelle mit Positionen]                               │
+│                                                         │
+│  [+ Position hinzufügen]  [Schnellerfassung]            │
+│                                                         │
+│  Summen: Gesamtfläche | Jahresmiete | Ø Ist | WALT     │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│  ZIELMIETE (nach Development)                           │
+│                                                         │
+│  [Tabelle mit Positionen]                               │
+│                                                         │
+│  [+ Position hinzufügen]  [Schnellerfassung]            │
+│                                                         │
+│  Summen: Gesamtfläche | Jahresmiete | Ø Ziel | WALT    │
+│  Delta: +€ XX.XXX (+XX,X%)                             │
+└─────────────────────────────────────────────────────────┘
+Bei Investment-Deals (kein Development): nur der Bereich "Ist-Miete" sichtbar.
+
+2. Button-Position: Fixiert, nicht verschiebend
+Der Button "+ Position hinzufügen" und "Schnellerfassung" müssen immer an derselben Stelle stehen, unabhängig davon wie viele Zeilen in der Tabelle sind. Umsetzung:
+Die Tabelle hat eine feste max-height mit overflow-y: auto (scrollbar).
+Die Buttons sitzen UNTER der Tabelle, AUSSERHALB des scroll-Containers.
+So bleibt die Button-Position stabil auch bei 50+ Zeilen.
+tsx<div>
+  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+    <table>
+      {/* Zeilen */}
+    </table>
+  </div>
+  {/* Buttons AUSSERHALB des Scroll-Containers — Position bleibt immer gleich */}
+  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+    <button className="btn-glass">+ Position hinzufügen</button>
+    <button className="btn-glass">Schnellerfassung</button>
+  </div>
+</div>
+
+3. Neue Spaltenstruktur Rent Roll
+Ersetze die bisherigen Spalten. Neue Spalten pro Zeile:
+| Einheit | Etage | Fläche m² | Nutzung | Mieter | Mietstart | Laufzeit (Mon.) | Anschluss | Ist €/m² | ERV €/m² | Mon. Miete | Indexierung % | NK n.u. €/Mon | 🗑 |
+Geänderte/neue Felder im Detail:
+Mietstart (ersetzt Mietbeginn):
+
+Datepicker
+Wann beginnt dieser Mietvertrag
+
+Laufzeit (Monate) (ersetzt Mietende):
+
+Number-Input
+Laufzeit in Monaten ab Mietstart
+Mietende wird intern berechnet: Mietstart + Laufzeit Monate (NICHT als Spalte angezeigt, nur intern für WALT-Berechnung)
+
+Anschluss (NEU, Dropdown):
+
+Was passiert nach Ablauf der Laufzeit
+Optionen: "Neuvermietung" | "Leerstand"
+Default: "Neuvermietung"
+Bei Neuvermietung: Nach Ablauf der Laufzeit wird 1 Monat Leerstand angesetzt, dann läuft die Miete weiter zur letzten indexierten Miete (selbe Konditionen, unbefristet)
+Bei Leerstand: Nach Ablauf der Laufzeit fällt die Miete komplett weg, kein Mieteinfluss mehr im Cashflow
+
+Indexierung % (ersetzt Indexierungsintervall + Indexierungssatz):
+
+Ein einziges Number-Input-Feld
+Prozentsatz der in Market Assumptions angegebenen Opex Inflation (NICHT Capex Inflation — Korrektur: es ist die allgemeine Inflationsrate/VPI, die als Referenz dient)
+Beispiel: Wenn Opex Inflation in Market = 2,5% und Indexierung = 80%, dann steigt die Miete jährlich um 2,5% × 80% = 2,0%
+Default: 100% (volle Indexierung)
+Die Miete erhöht sich jährlich um diesen berechneten Satz
+Tooltip oder Hilfetext: "Anteil der Inflation (aus Market) der auf die Miete angewendet wird"
+
+Entfernte Spalten:
+
+Mietbeginn → ersetzt durch Mietstart
+Mietende → ersetzt durch Laufzeit (Monate)
+Indexierungsintervall → entfällt, Indexierung ist immer jährlich
+Indexierungssatz  → ersetzt durch Indexierung % (Anteil der Inflation)
+
+Beibehalten:
+
+Einheit, Etage, Fläche, Nutzung, Mieter, Ist €/m², ERV €/m², Mon. Miete (bidirektional), NK n.u., Löschen-Button
+Bidirektionale Mieteingabe bleibt: Ist €/m² ↔ Mon. Miete (letzte Eingabe gewinnt)
+
+
+4. Aktualisiertes RentRollUnit Interface
+typescriptinterface RentRollUnit {
+  id: string;
+  unitNumber: string;
+  floor: FloorLevel;
+  area: number;
+  usageType: 'Wohnen' | 'Büro' | 'Einzelhandel' | 'Lager' | 'Stellplatz' | 'Sonstiges';
+  tenant: string;
+  leaseStart: string;              // ISO date — Mietstart
+  leaseDurationMonths: number;     // Laufzeit in Monaten
+  leaseEndAction: 'Neuvermietung' | 'Leerstand';  // Was nach Ablauf passiert
+  currentRentPerSqm: number;       // Ist €/m²/Monat
+  ervPerSqm: number;               // ERV €/m²/Monat
+  monthlyRent: number;             // bidirektional mit currentRentPerSqm
+  indexationPercent: number;        // % der Inflation aus Market Assumptions (Default 100)
+  nonRecoverableOpex: number;       // €/Monat
+  sourceUnitId?: string;            // nur Zielmiete: Referenz auf Ist-Einheit
+}
+
+5. Auswirkung auf Cashflow-Berechnung
+Die monatliche Cashflow-Berechnung in propertyCashFlowModel.ts muss diese Logik abbilden:
+typescript// Für jede Einheit in jedem Monat:
+
+function computeUnitRentForMonth(unit: RentRollUnit, monthIndex: number, acqDate: Date, opexInflation: number): number {
+  const currentDate = new Date(acqDate);
+  currentDate.setMonth(currentDate.getMonth() + monthIndex);
+  
+  const leaseStart = new Date(unit.leaseStart);
+  const leaseEndDate = new Date(leaseStart);
+  leaseEndDate.setMonth(leaseEndDate.getMonth() + unit.leaseDurationMonths);
+  
+  // VOR Mietstart: keine Miete
+  if (currentDate < leaseStart) return 0;
+  
+  // WÄHREND Laufzeit: Miete mit jährlicher Indexierung
+  if (currentDate <= leaseEndDate) {
+    const yearsSinceStart = (currentDate.getTime() - leaseStart.getTime()) / (365.25 * 86400 * 1000);
+    const annualIncrease = opexInflation * unit.indexationPercent / 100 / 100;
+    // Indexierung wird nur auf abgeschlossene volle Jahre angewendet
+    const completedYears = Math.floor(yearsSinceStart);
+    return unit.monthlyRent * Math.pow(1 + annualIncrease, completedYears);
+  }
+  
+  // NACH Laufzeit:
+  if (unit.leaseEndAction === 'Leerstand') {
+    // Leerstand: keine Miete mehr
+    return 0;
+  }
+  
+  // Neuvermietung: 1 Monat Leerstand, dann weiter zur letzten indexierten Miete
+  const monthsAfterEnd = Math.round((currentDate.getTime() - leaseEndDate.getTime()) / (30.44 * 86400 * 1000));
+  
+  if (monthsAfterEnd <= 1) {
+    // Leerstandsmonat
+    return 0;
+  }
+  
+  // Ab Monat 2 nach Ende: Weiterführung mit letzter indexierter Miete
+  // Letzte indexierte Miete = Miete am Ende der Laufzeit
+  const yearsOfOriginalLease = unit.leaseDurationMonths / 12;
+  const completedYearsAtEnd = Math.floor(yearsOfOriginalLease);
+  const annualIncrease = opexInflation * unit.indexationPercent / 100 / 100;
+  const rentAtLeaseEnd = unit.monthlyRent * Math.pow(1 + annualIncrease, completedYearsAtEnd);
+  
+  // Weiter indexieren ab Neuvermietung
+  const yearsAfterRenewal = (monthsAfterEnd - 1) / 12;
+  const completedYearsAfterRenewal = Math.floor(yearsAfterRenewal);
+  return rentAtLeaseEnd * Math.pow(1 + annualIncrease, completedYearsAfterRenewal);
+}
+
+6. WALT-Berechnung anpassen
+WALT berechnet sich jetzt aus Mietstart + Laufzeit statt aus Mietende:
+typescriptfunction computeWALT(units: RentRollUnit[], referenceDate: string): number {
+  const ref = new Date(referenceDate);
+  let weightedSum = 0;
+  let totalArea = 0;
+  
+  units.forEach(u => {
+    if (u.tenant && u.leaseStart && u.leaseDurationMonths > 0) {
+      const leaseEnd = new Date(u.leaseStart);
+      leaseEnd.setMonth(leaseEnd.getMonth() + u.leaseDurationMonths);
+      const remainingYears = Math.max(0, (leaseEnd.getTime() - ref.getTime()) / (365.25 * 86400 * 1000));
+      weightedSum += u.area * remainingYears;
+      totalArea += u.area;
+    }
+  });
+  
+  return totalArea > 0 ? weightedSum / totalArea : 0;
+}
+
+7. Schnellerfassung anpassen
+Die Schnellerfassung (Modal) bekommt die neuen Felder:
+Anzahl Einheiten:       [___]
+Fläche pro Einheit:     [___] m²
+Nutzungsart:            [Dropdown ▼]
+Etage:                  [Dropdown ▼]
+Bereich:                ○ Ist-Miete  ○ Zielmiete
+Mieter:                 [___] (optional)
+Mietstart:              [Datepicker]
+Laufzeit:               [___] Monate
+Anschluss:              [Neuvermietung ▼]
+Ist-Miete:              [___] €/m²/Mon  ⟷  [___] €/Mon  (Toggle, bidirektional)
+ERV:                    [___] €/m²/Mon  ⟷  [___] €/Mon  (Toggle, bidirektional)
+Indexierung:            [100] % der Inflation
+NK nicht-umlagef.:      [___] €/Mon
+
+→ [X Einheiten erzeugen]
+
+Wichtig — NICHT ändern:
+
+Alle bestehenden UI-Komponenten, Farben, Fonts, Spacing

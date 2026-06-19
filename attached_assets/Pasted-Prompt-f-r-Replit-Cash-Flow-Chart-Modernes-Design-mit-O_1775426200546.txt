@@ -1,0 +1,89 @@
+Prompt für Replit:
+Cash Flow Chart — Modernes Design mit Outline-Style
+Ändere das Cash Flow Chart von gefüllten Balken zu einem modernen Outline-Style mit transparenter Füllung. Außerdem: Balken sollen korrekt nach Vorzeichen gestapelt werden (positiv nach oben, negativ nach unten).
+Visueller Stil
+Jedes Segment bekommt:
+
+Umrandung (Stroke): 2px in der Segment-Farbe
+Füllung: Gleiche Farbe aber mit 15% Opacity (transparent)
+Radius: Abgerundete Ecken (4px)
+
+Farben
+NOI:          Stroke #007aff, Fill rgba(0,122,255,0.15)
+Transactions: Stroke #c9a96e, Fill rgba(201,169,110,0.15)
+Debt:         Stroke #f87171, Fill rgba(248,113,113,0.15)
+Kum. Free CF: Stroke #4ade80, strokeWidth 4, durchgezogen
+Vorzeichen-korrektes Stacking
+Aktuell werden alle drei Segmente in einem stackId gestapelt — das führt dazu dass negative Werte falsch dargestellt werden. Ändere die Logik:
+Trenne positive und negative Werte in separate Datenfelder:
+typescriptconst chartData = years.map(year => {
+  const noi = computeNOI(year);           // fast immer positiv
+  const transactions = computeTx(year);    // negativ bei Ankauf, positiv bei Verkauf
+  const debt = computeDebt(year);          // negativ bei Zinsen/Tilgung, positiv bei Auszahlung
+
+  return {
+    year,
+    // Positive Teile (Balken nach oben)
+    noiPos: noi > 0 ? noi : 0,
+    txPos: transactions > 0 ? transactions : 0,
+    debtPos: debt > 0 ? debt : 0,
+    // Negative Teile (Balken nach unten)
+    noiNeg: noi < 0 ? noi : 0,
+    txNeg: transactions < 0 ? transactions : 0,
+    debtNeg: debt < 0 ? debt : 0,
+    // Linie
+    cumulativeFreeCF,
+  };
+});
+Zwei Stack-Gruppen:
+tsx<ComposedChart data={chartData}>
+  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+  <YAxis tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+  <ReferenceLine y={0} stroke="rgba(0,0,0,0.15)" strokeDasharray="4 4" />
+  <Tooltip content={<CustomTooltip />} />
+  <Legend />
+
+  {/* Positive Balken — nach oben */}
+  <Bar dataKey="noiPos" stackId="pos" name="NOI"
+    fill="rgba(0,122,255,0.15)" stroke="#007aff" strokeWidth={2} radius={[4,4,0,0]} />
+  <Bar dataKey="txPos" stackId="pos" name="Transactions"
+    fill="rgba(201,169,110,0.15)" stroke="#c9a96e" strokeWidth={2} />
+  <Bar dataKey="debtPos" stackId="pos" name="Debt"
+    fill="rgba(248,113,113,0.15)" stroke="#f87171" strokeWidth={2} radius={[4,4,0,0]} />
+
+  {/* Negative Balken — nach unten */}
+  <Bar dataKey="noiNeg" stackId="neg"
+    fill="rgba(0,122,255,0.15)" stroke="#007aff" strokeWidth={2} legendType="none" />
+  <Bar dataKey="txNeg" stackId="neg"
+    fill="rgba(201,169,110,0.15)" stroke="#c9a96e" strokeWidth={2} legendType="none" />
+  <Bar dataKey="debtNeg" stackId="neg"
+    fill="rgba(248,113,113,0.15)" stroke="#f87171" strokeWidth={2} radius={[0,0,4,4]} />
+
+  {/* Kumulative Linie */}
+  <Line dataKey="cumulativeFreeCF" stroke="#4ade80" strokeWidth={4}
+    dot={false} name="Kum. Free CF" />
+</ComposedChart>
+Legende
+Nur 4 Einträge (die neg-Balken haben legendType="none"):
+
+🟦 NOI (Blau, outline)
+🟨 Transactions (Gold, outline)
+🟥 Debt (Rot, outline)
+🟩 Kum. Free CF (Grün, Linie)
+
+Custom Tooltip — gleiches Format wie vorher
+2025
+─────────────────
+NOI:           + € 524.000
+Transactions:  − € 8.900.000
+Debt:          − € 180.000
+─────────────────
+Free CF:       − € 8.556.000
+Kum. Free CF:  − € 7.200.000
+Chart-Größe und Styling
+
+Höhe: 280px
+Volle Breite
+Null-Linie als gestrichelte graue Linie
+Hintergrund: transparent (kein weißer Hintergrund im Chart selbst)
+Grid: nur horizontale Linien, sehr dezent (rgba(0,0,0,0.05))
