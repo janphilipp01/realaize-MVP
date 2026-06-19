@@ -79,7 +79,7 @@ export function mountPortfolioRoutes(router: IRouter, mountPath: string, table: 
           .values({ orgId: req.org!.id, data })
           .returning(),
       );
-      res.status(201).json(flatten(rows[0] as any));
+      res.status(201).json(flatten((rows as any[])[0] as any));
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : "unknown" });
     }

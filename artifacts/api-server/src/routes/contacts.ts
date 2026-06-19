@@ -103,7 +103,7 @@ router.patch("/contacts/:id", requireRole("admin", "editor"), async (req, res) =
       tx
         .update(contacts)
         .set(patch)
-        .where(and(eq(contacts.id, req.params.id), eq(contacts.orgId, req.org!.id)))
+        .where(and(eq(contacts.id, String(req.params.id)), eq(contacts.orgId, req.org!.id)))
         .returning(),
     );
     if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
@@ -119,7 +119,7 @@ router.delete("/contacts/:id", requireRole("admin", "editor"), async (req, res) 
     const rows = await withUserScope(req.auth!.authId, (tx) =>
       tx
         .delete(contacts)
-        .where(and(eq(contacts.id, req.params.id), eq(contacts.orgId, req.org!.id)))
+        .where(and(eq(contacts.id, String(req.params.id)), eq(contacts.orgId, req.org!.id)))
         .returning({ id: contacts.id }),
     );
     if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }

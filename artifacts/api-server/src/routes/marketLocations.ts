@@ -91,7 +91,7 @@ router.patch("/market-locations/:id", requireRole("admin", "editor"), async (req
       tx
         .update(marketLocations)
         .set(patch)
-        .where(and(eq(marketLocations.locationKey, req.params.id), eq(marketLocations.orgId, req.org!.id)))
+        .where(and(eq(marketLocations.locationKey, String(req.params.id)), eq(marketLocations.orgId, req.org!.id)))
         .returning(),
     );
     if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
@@ -106,7 +106,7 @@ router.delete("/market-locations/:id", requireRole("admin", "editor"), async (re
     const rows = await withUserScope(req.auth!.authId, (tx) =>
       tx
         .delete(marketLocations)
-        .where(and(eq(marketLocations.locationKey, req.params.id), eq(marketLocations.orgId, req.org!.id)))
+        .where(and(eq(marketLocations.locationKey, String(req.params.id)), eq(marketLocations.orgId, req.org!.id)))
         .returning({ id: marketLocations.id }),
     );
     if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
@@ -127,7 +127,7 @@ router.post("/market-locations/:id/benchmarks", requireRole("admin", "editor"), 
       const existing = await tx
         .select()
         .from(marketLocations)
-        .where(and(eq(marketLocations.locationKey, req.params.id), eq(marketLocations.orgId, req.org!.id)))
+        .where(and(eq(marketLocations.locationKey, String(req.params.id)), eq(marketLocations.orgId, req.org!.id)))
         .limit(1);
       if (!existing[0]) return null;
 
