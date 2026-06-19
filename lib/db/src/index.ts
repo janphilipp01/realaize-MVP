@@ -19,9 +19,14 @@ const connectionString = process.env.DATABASE_URL.replace(
   "$1",
 ).replace(/[?&]$/, "");
 
+// Keep the pool small in serverless environments (e.g. Vercel Functions),
+// where many short-lived instances each open their own pool against the
+// Supabase transaction pooler. Override via DB_POOL_MAX (default 10 for
+// long-running servers; set to 1 on serverless).
 export const pool = new Pool({
   connectionString,
   ssl: { rejectUnauthorized: false },
+  max: Number(process.env.DB_POOL_MAX ?? 10),
 });
 export const db = drizzle(pool, { schema });
 
