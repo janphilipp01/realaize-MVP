@@ -1,0 +1,648 @@
+import { useMemo, useState } from 'react';
+import {
+  Activity,
+  AlertTriangle,
+  BadgeCheck,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Database,
+  FileText,
+  Newspaper,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  X,
+} from 'lucide-react';
+import { useStore } from '../store/useStore';
+import { useLanguage } from '../i18n/LanguageContext';
+import { CURRENT_PERIOD } from '../data/marketIntelData';
+import {
+  ASSET_CLASS_LABEL,
+  formatBenchmarkValue,
+  KPI_LABEL,
+} from '../utils/marketIntelligence';
+import type {
+  AssetClass,
+  BenchmarkRecord,
+  ConfidenceTier,
+  ImpactTier,
+  ValidationStatus,
+} from '../models/types';
+
+const REVIEWER = 'J. Pleuker';
+
+// ── Small style helpers ───────────────────────────────────────────────────────
+
+const TIER_STYLE: Record<ConfidenceTier, { bg: string; color: string; label: string }> = {
+  pipeline_validated: { bg: 'rgba(52,199,89,0.12)', color: '#1f9d4d', label: 'Pipeline validated' },
+  ai_indicative: { bg: 'rgba(255,149,0,0.14)', color: '#c2750a', label: 'AI indicative' },
+  manual_override: { bg: 'rgba(175,82,222,0.14)', color: '#8e3fc0', label: 'Manual override' },
+};
+
+const STATUS_STYLE: Record<ValidationStatus, { bg: string; color: string; label: string }> = {
+  auto_passed: { bg: 'rgba(52,199,89,0.12)', color: '#1f9d4d', label: 'Auto-passed' },
+  manual_approved: { bg: 'rgba(0,122,255,0.12)', color: '#0a6cff', label: 'Approved' },
+  pending: { bg: 'rgba(255,149,0,0.14)', color: '#c2750a', label: 'Pending' },
+  rejected: { bg: 'rgba(255,59,48,0.12)', color: '#d92c20', label: 'Rejected' },
+};
+
+const IMPACT_STYLE: Record<ImpactTier, { bg: string; color: string }> = {
+  high: { bg: 'rgba(255,59,48,0.12)', color: '#d92c20' },
+  medium: { bg: 'rgba(255,149,0,0.14)', color: '#c2750a' },
+  low: { bg: 'rgba(60,60,67,0.10)', color: 'rgba(60,60,67,0.7)' },
+};
+
+function Badge({ bg, color, children }: { bg: string; color: string; children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '2px 8px',
+        borderRadius: 6,
+        fontSize: 11,
+        fontWeight: 700,
+        background: bg,
+        color,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+const TABS = [
+  { key: 'benchmarks', label: 'Benchmarks', icon: Database },
+  { key: 'review', label: 'Review Queue', icon: ShieldCheck },
+  { key: 'news', label: 'News Layer', icon: Newspaper },
+  { key: 'crossval', label: 'Cross-Validation', icon: Activity },
+  { key: 'memo', label: 'IC Memo Block', icon: FileText },
+  { key: 'sources', label: 'Sources', icon: BadgeCheck },
+] as const;
+
+type TabKey = (typeof TABS)[number]['key'];
+
+export function MarketIntelligencePage() {
+  const { lang } = useLanguage();
+  const benchmarks = useStore(s => s.benchmarks);
+  const marketEvents = useStore(s => s.marketEvents);
+  const reportSources = useStore(s => s.reportSources);
+  const refreshJobs = useStore(s => s.refreshJobs);
+  const triggerRefresh = useStore(s => s.triggerQuarterlyRefresh);
+
+  const [tab, setTab] = useState<TabKey>('benchmarks');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const lastJob = refreshJobs[0];
+  const pendingCount = benchmarks.filter(b => b.validationStatus === 'pending').length;
+  const extracted = benchmarks.filter(b => b.sourceType === 'extracted_report');
+  const avgConfidence =
+    extracted.length > 0
+      ? extracted.reduce((a, b) => a + b.confidenceScore, 0) / extracted.length
+      : 0;
+  const coverage = new Set(extracted.map(b => `${b.city}·${b.assetClass}`)).size;
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    // Mirrors the Quarterly Refresh Job — manual override path.
+    setTimeout(() => {
+      triggerRefresh(REVIEWER);
+      setRefreshing(false);
+    }, 1100);
+  };
+
+  return (
+    <div className="p-8 max-w-[1400px] mx-auto">
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between mb-2 flex-wrap gap-4">
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#0a6cff', textTransform: 'uppercase' }}>
+            Module 06 · Market Intelligence
+          </div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 4 }}>
+            Market Intelligence Pipeline
+          </h1>
+          <p style={{ fontSize: 13, color: 'rgba(60,60,67,0.6)', marginTop: 6, maxWidth: 720 }}>
+            {lang === 'de'
+              ? 'Quelle-attribuierter, multi-broker-validierter Marktdaten-Layer. Eine reconciled Master-Quelle für Underwriting, IC-Memos und Investor-Briefe.'
+              : 'Source-attributed, multi-broker-validated market data layer. One reconciled master source for underwriting, IC memos and investor briefs.'}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2">
+            <Badge bg="rgba(0,122,255,0.10)" color="#0a6cff">{CURRENT_PERIOD}</Badge>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="btn-accent px-4 py-2 rounded-xl text-sm flex items-center gap-2"
+              style={{ opacity: refreshing ? 0.7 : 1, cursor: refreshing ? 'default' : 'pointer' }}
+            >
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing
+                ? lang === 'de' ? 'Aktualisiere…' : 'Refreshing…'
+                : lang === 'de' ? 'Quartals-Refresh starten' : 'Start Quarterly Refresh'}
+            </button>
+          </div>
+          {lastJob && (
+            <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.5)' }}>
+              {lang === 'de' ? 'Letzter Lauf' : 'Last run'}:{' '}
+              {new Date(lastJob.triggeredAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB')} ·{' '}
+              {lastJob.trigger} · {lastJob.reportsFetched} reports
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── KPI tiles ── */}
+      <div className="grid grid-cols-4 gap-4 my-6" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+        <KpiTile label={lang === 'de' ? 'Reconciled Werte' : 'Reconciled values'} value={String(extracted.length)} sub={`${benchmarks.length} ${lang === 'de' ? 'gesamt' : 'total'}`} />
+        <KpiTile label={lang === 'de' ? 'Abdeckung' : 'Coverage'} value={String(coverage)} sub={lang === 'de' ? 'Markt × Asset-Klasse' : 'market × asset class'} />
+        <KpiTile label={lang === 'de' ? 'Review offen' : 'Pending review'} value={String(pendingCount)} sub={lang === 'de' ? 'manuelle Freigabe' : 'manual approval'} accent={pendingCount > 0 ? '#c2750a' : undefined} />
+        <KpiTile label={lang === 'de' ? 'Ø Konfidenz' : 'Avg confidence'} value={avgConfidence ? avgConfidence.toFixed(2) : '—'} sub={lang === 'de' ? 'extrahierte Werte' : 'extracted values'} accent="#1f9d4d" />
+      </div>
+
+      {/* ── Tabs ── */}
+      <div className="flex gap-1 mb-5 flex-wrap" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+        {TABS.map(tb => {
+          const active = tab === tb.key;
+          const count = tb.key === 'review' ? pendingCount : undefined;
+          return (
+            <button
+              key={tb.key}
+              onClick={() => setTab(tb.key)}
+              className="flex items-center gap-2 text-sm"
+              style={{
+                padding: '9px 14px',
+                fontWeight: active ? 700 : 500,
+                color: active ? '#0a6cff' : 'rgba(60,60,67,0.6)',
+                borderBottom: active ? '2px solid #0a6cff' : '2px solid transparent',
+                marginBottom: -1,
+                cursor: 'pointer',
+                background: 'none',
+              }}
+            >
+              <tb.icon size={14} />
+              {tb.label}
+              {count !== undefined && count > 0 && (
+                <span style={{ background: 'rgba(255,149,0,0.16)', color: '#c2750a', borderRadius: 999, padding: '0 7px', fontSize: 11, fontWeight: 700 }}>{count}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === 'benchmarks' && <BenchmarksTab benchmarks={benchmarks} lang={lang} />}
+      {tab === 'review' && <ReviewTab benchmarks={benchmarks} lang={lang} />}
+      {tab === 'news' && <NewsTab events={marketEvents} lang={lang} />}
+      {tab === 'crossval' && <CrossValTab benchmarks={benchmarks} lang={lang} />}
+      {tab === 'memo' && <MemoTab benchmarks={benchmarks} events={marketEvents} lang={lang} />}
+      {tab === 'sources' && <SourcesTab reportSources={reportSources} refreshJobs={refreshJobs} lang={lang} />}
+    </div>
+  );
+}
+
+function KpiTile({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: string }) {
+  return (
+    <div className="kpi-card">
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.5)' }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 700, marginTop: 8, letterSpacing: '-0.02em', color: accent || '#1d1d1f' }}>{value}</div>
+      <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.5)', marginTop: 4 }}>{sub}</div>
+    </div>
+  );
+}
+
+// ── Benchmarks tab ────────────────────────────────────────────────────────────
+
+function BenchmarksTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
+  const [filterCity, setFilterCity] = useState('all');
+  const [filterClass, setFilterClass] = useState('all');
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const cities = useMemo(() => Array.from(new Set(benchmarks.map(b => b.city))).sort(), [benchmarks]);
+
+  const rows = benchmarks
+    .filter(b => b.sourceType !== 'portfolio_realised')
+    .filter(b => filterCity === 'all' || b.city === filterCity)
+    .filter(b => filterClass === 'all' || b.assetClass === filterClass);
+
+  return (
+    <div>
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <select className="input-glass" value={filterCity} onChange={e => setFilterCity(e.target.value)} style={{ width: 200 }}>
+          <option value="all">{lang === 'de' ? 'Alle Märkte' : 'All markets'}</option>
+          {cities.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select className="input-glass" value={filterClass} onChange={e => setFilterClass(e.target.value)} style={{ width: 180 }}>
+          <option value="all">{lang === 'de' ? 'Alle Asset-Klassen' : 'All asset classes'}</option>
+          {(['residential', 'office', 'retail', 'logistics'] as AssetClass[]).map(c => (
+            <option key={c} value={c}>{ASSET_CLASS_LABEL[c]}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="glass-card" style={{ overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.6fr 1.2fr 0.8fr 1.4fr 1.3fr 28px', padding: '12px 18px', borderBottom: '1px solid rgba(0,0,0,0.06)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.5)' }}>
+          <div>{lang === 'de' ? 'Markt' : 'Market'}</div>
+          <div>{lang === 'de' ? 'Asset-Klasse' : 'Asset class'}</div>
+          <div>KPI</div>
+          <div>{lang === 'de' ? 'Wert' : 'Value'}</div>
+          <div>Sources</div>
+          <div>{lang === 'de' ? 'Konfidenz' : 'Confidence'}</div>
+          <div>{lang === 'de' ? 'Status' : 'Status'}</div>
+          <div />
+        </div>
+        {rows.map(b => {
+          const isOpen = expanded === b.id;
+          const tier = TIER_STYLE[b.confidenceTier];
+          const status = STATUS_STYLE[b.validationStatus];
+          return (
+            <div key={b.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+              <div
+                onClick={() => setExpanded(isOpen ? null : b.id)}
+                style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.6fr 1.2fr 0.8fr 1.4fr 1.3fr 28px', padding: '12px 18px', alignItems: 'center', cursor: 'pointer', fontSize: 13 }}
+              >
+                <div style={{ fontWeight: 600 }}>
+                  {b.city}
+                  {b.submarket && <span style={{ color: 'rgba(60,60,67,0.5)', fontWeight: 400 }}> · {b.submarket}</span>}
+                </div>
+                <div>{ASSET_CLASS_LABEL[b.assetClass]}</div>
+                <div style={{ color: 'rgba(60,60,67,0.75)' }}>{KPI_LABEL[b.kpi]}</div>
+                <div style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatBenchmarkValue(b.value, b.unit)}</div>
+                <div style={{ color: 'rgba(60,60,67,0.6)', fontVariantNumeric: 'tabular-nums' }}>
+                  {b.sourceCount}
+                  {b.valueSpread !== undefined && b.valueSpread > 0 && (
+                    <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.4)' }}> · Δ{b.valueSpread}</span>
+                  )}
+                </div>
+                <div><Badge bg={tier.bg} color={tier.color}>{tier.label}</Badge></div>
+                <div><Badge bg={status.bg} color={status.color}>{status.label}</Badge></div>
+                <div style={{ color: 'rgba(60,60,67,0.4)' }}>{isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</div>
+              </div>
+              {isOpen && <ProvenanceDrilldown b={b} lang={lang} />}
+            </div>
+          );
+        })}
+        {rows.length === 0 && (
+          <div style={{ padding: 32, textAlign: 'center', color: 'rgba(60,60,67,0.5)', fontSize: 13 }}>
+            {lang === 'de' ? 'Keine Benchmarks für diese Auswahl.' : 'No benchmarks for this selection.'}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProvenanceDrilldown({ b, lang }: { b: BenchmarkRecord; lang: string }) {
+  return (
+    <div style={{ padding: '4px 18px 18px 18px', background: 'rgba(0,0,0,0.015)' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.5)', margin: '12px 0 8px' }}>
+        {lang === 'de' ? 'Provenance · Einzelquellen' : 'Provenance · individual sources'} ({b.consolidationMethod})
+      </div>
+      {b.sources.length === 0 && (
+        <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.55)' }}>
+          {b.sourceType === 'ai_qualitative'
+            ? lang === 'de' ? 'AI-qualitative Schätzung — keine Broker-Quellen.' : 'AI qualitative estimate — no broker sources.'
+            : lang === 'de' ? 'Direkt erfasster Wert.' : 'Directly captured value.'}
+        </div>
+      )}
+      {b.sources.map(s => (
+        <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '110px 90px 1fr 70px', gap: 12, padding: '8px 10px', alignItems: 'baseline', background: s.isOutlier ? 'rgba(255,59,48,0.05)' : 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.05)', borderRadius: 8, marginBottom: 6, fontSize: 12 }}>
+          <div style={{ fontWeight: 700 }}>
+            {s.provider}
+            {s.isOutlier && <span title="outlier" style={{ color: '#d92c20', marginLeft: 6 }}>⚠</span>}
+          </div>
+          <div style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatBenchmarkValue(s.value, s.unit)}</div>
+          <div style={{ color: 'rgba(60,60,67,0.6)', fontStyle: 'italic' }}>
+            „{s.originalText}"
+            <span style={{ color: 'rgba(60,60,67,0.4)', fontStyle: 'normal' }}> · {s.documentTitle}{s.pageNo ? `, p.${s.pageNo}` : ''}</span>
+          </div>
+          <div style={{ textAlign: 'right', color: 'rgba(60,60,67,0.5)' }}>trust {s.trustScore.toFixed(2)}</div>
+        </div>
+      ))}
+      {b.validationFlags && b.validationFlags.length > 0 && (
+        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {b.validationFlags.map((f, i) => (
+            <Badge key={i} bg="rgba(255,149,0,0.12)" color="#c2750a"><AlertTriangle size={11} /> {f}</Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Review queue tab ──────────────────────────────────────────────────────────
+
+function ReviewTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
+  const approve = useStore(s => s.approveBenchmark);
+  const reject = useStore(s => s.rejectBenchmark);
+  const correct = useStore(s => s.correctBenchmark);
+  const pending = benchmarks.filter(b => b.validationStatus === 'pending');
+
+  if (pending.length === 0) {
+    return (
+      <div className="glass-card" style={{ padding: 40, textAlign: 'center' }}>
+        <Check size={28} color="#1f9d4d" style={{ margin: '0 auto 10px' }} />
+        <div style={{ fontWeight: 600 }}>{lang === 'de' ? 'Keine offenen Reviews' : 'Review queue clear'}</div>
+        <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.55)', marginTop: 4 }}>
+          {lang === 'de' ? 'Alle Datenpunkte dieses Refresh sind freigegeben.' : 'All data points from this refresh are cleared.'}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', marginBottom: 4 }}>
+        {lang === 'de'
+          ? 'Werte außerhalb der Plausibilitätsspanne, mit niedriger Konfidenz oder qualitativer Schätzung. SLA: Review innerhalb 5 Werktagen.'
+          : 'Values out of plausibility range, low confidence, or qualitative estimates. SLA: review within 5 business days.'}
+      </p>
+      {pending.map(b => (
+        <ReviewCard key={b.id} b={b} lang={lang} onApprove={() => approve(b.id, REVIEWER)} onReject={() => reject(b.id, REVIEWER)} onCorrect={v => correct(b.id, v, REVIEWER)} />
+      ))}
+    </div>
+  );
+}
+
+function ReviewCard({ b, lang, onApprove, onReject, onCorrect }: { b: BenchmarkRecord; lang: string; onApprove: () => void; onReject: () => void; onCorrect: (v: number) => void }) {
+  const [editVal, setEditVal] = useState(String(b.value));
+  return (
+    <div className="glass-card" style={{ padding: 18 }}>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>
+            {b.city}{b.submarket ? ` · ${b.submarket}` : ''} — {ASSET_CLASS_LABEL[b.assetClass]} · {KPI_LABEL[b.kpi]}
+          </div>
+          <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.7)', marginTop: 4 }}>
+            {lang === 'de' ? 'Reconciled' : 'Reconciled'}: <strong>{formatBenchmarkValue(b.value, b.unit)}</strong> · {b.consolidationMethod} · {b.sourceCount} {lang === 'de' ? 'Quellen' : 'sources'}
+            {b.valueSpread !== undefined && b.valueSpread > 0 ? ` · spread Δ${b.valueSpread}` : ''}
+          </div>
+          {b.validationFlags && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              {b.validationFlags.map((f, i) => (
+                <Badge key={i} bg="rgba(255,149,0,0.12)" color="#c2750a"><AlertTriangle size={11} /> {f}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
+        <Badge bg={STATUS_STYLE.pending.bg} color={STATUS_STYLE.pending.color}>{STATUS_STYLE.pending.label}</Badge>
+      </div>
+
+      {/* Broker spread */}
+      {b.sources.length > 0 && (
+        <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {b.sources.map(s => (
+            <div key={s.id} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 8, background: s.isOutlier ? 'rgba(255,59,48,0.08)' : 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.05)' }}>
+              <strong>{s.provider}</strong> {formatBenchmarkValue(s.value, s.unit)}{s.isOutlier ? ' ⚠' : ''}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mt-4 flex-wrap">
+        <input className="input-glass" value={editVal} onChange={e => setEditVal(e.target.value)} style={{ width: 110 }} />
+        <button className="btn-glass px-3 py-2 rounded-lg text-sm" style={{ cursor: 'pointer' }} onClick={() => { const v = parseFloat(editVal); if (!Number.isNaN(v)) onCorrect(v); }}>
+          {lang === 'de' ? 'Korrigieren & Freigeben' : 'Correct & approve'}
+        </button>
+        <button className="btn-accent px-3 py-2 rounded-lg text-sm flex items-center gap-1.5" style={{ cursor: 'pointer' }} onClick={onApprove}>
+          <Check size={14} /> {lang === 'de' ? 'Freigeben' : 'Approve'}
+        </button>
+        <button className="btn-glass px-3 py-2 rounded-lg text-sm flex items-center gap-1.5" style={{ cursor: 'pointer', color: '#d92c20' }} onClick={onReject}>
+          <X size={14} /> {lang === 'de' ? 'Ablehnen' : 'Reject'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── News tab ──────────────────────────────────────────────────────────────────
+
+function NewsTab({ events, lang }: { events: ReturnType<typeof useStore.getState>['marketEvents']; lang: string }) {
+  return (
+    <div>
+      <p style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', marginBottom: 14 }}>
+        {lang === 'de'
+          ? 'Der News Intelligence Agent schreibt market_events parallel zur Pipeline. Verbindung zu Benchmarks ist rein deskriptiv (JOIN) — niemals eine numerische Anpassung.'
+          : 'The News Intelligence Agent writes market_events in parallel to the pipeline. Link to benchmarks is descriptive only (JOIN) — never a numerical modification.'}
+      </p>
+      <div className="space-y-3">
+        {events.map(e => {
+          const im = IMPACT_STYLE[e.impactTier];
+          return (
+            <div key={e.id} className="glass-card" style={{ padding: 16 }}>
+              <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 6 }}>
+                <Badge bg={im.bg} color={im.color}>{e.impactTier.toUpperCase()} IMPACT</Badge>
+                <Badge bg="rgba(0,0,0,0.06)" color="rgba(60,60,67,0.7)">{e.eventType}</Badge>
+                {e.city && <Badge bg="rgba(0,122,255,0.10)" color="#0a6cff">{e.city}</Badge>}
+                {e.assetClass && <Badge bg="rgba(0,0,0,0.06)" color="rgba(60,60,67,0.7)">{ASSET_CLASS_LABEL[e.assetClass]}</Badge>}
+                <span style={{ marginLeft: 'auto', fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>
+                  {new Date(e.publishedAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB')}
+                </span>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>{e.headline}</div>
+              <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.7)', marginTop: 4 }}>{e.summary}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Cross-validation tab ──────────────────────────────────────────────────────
+
+function CrossValTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
+  const realised = benchmarks.find(b => b.sourceType === 'portfolio_realised');
+  const broker = benchmarks.find(
+    b => b.sourceType === 'extracted_report' && b.submarket === realised?.submarket && b.kpi === realised?.kpi && b.assetClass === realised?.assetClass,
+  );
+
+  if (!realised || !broker) {
+    return <div className="glass-card" style={{ padding: 32, textAlign: 'center', color: 'rgba(60,60,67,0.55)' }}>No cross-validation pair available yet.</div>;
+  }
+
+  const delta = ((realised.value - broker.value) / broker.value) * 100;
+
+  return (
+    <div>
+      <p style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', marginBottom: 16, maxWidth: 820 }}>
+        {lang === 'de'
+          ? 'Die Schicht, die aggregierte Drittdaten in proprietäres Marktverständnis verwandelt: extrahierte Broker-Werte vs. tatsächlich von Lestate realisierte Werte. Phase 3 — statistisch robust ab 10–15 Deals.'
+          : 'The layer that turns aggregated third-party data into proprietary market understanding: extracted broker values vs. values actually realized by Lestate. Phase 3 — statistically robust after 10–15 deals.'}
+      </p>
+      <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 60px 1fr', alignItems: 'center' }}>
+        <div className="glass-card" style={{ padding: 22 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#0a6cff', letterSpacing: '0.05em' }}>Extracted · broker</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: '#0a6cff', margin: '8px 0' }}>{formatBenchmarkValue(broker.value, broker.unit)}</div>
+          <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)' }}>
+            {KPI_LABEL[broker.kpi]} {broker.city}-{broker.submarket}, {ASSET_CLASS_LABEL[broker.assetClass]} · {broker.sourceCount} {lang === 'de' ? 'Quellen' : 'sources'}, {broker.periodQuarter}
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', fontWeight: 700, color: 'rgba(60,60,67,0.4)' }}>vs.</div>
+        <div className="glass-card" style={{ padding: 22 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#1f9d4d', letterSpacing: '0.05em' }}>Realized · Lestate</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: '#1f9d4d', margin: '8px 0' }}>{formatBenchmarkValue(realised.value, realised.unit)}</div>
+          <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)' }}>{realised.reviewNote}</div>
+        </div>
+      </div>
+      <div style={{ marginTop: 18, padding: '18px 22px', borderLeft: '3px solid #0a6cff', background: 'rgba(0,122,255,0.05)', borderRadius: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#0a6cff', letterSpacing: '0.05em' }}>
+          Δ {delta >= 0 ? '+' : ''}{delta.toFixed(1)}% {lang === 'de' ? 'proprietäres Delta' : 'proprietary delta'}
+        </div>
+        <p style={{ fontSize: 13, marginTop: 6, color: 'rgba(60,60,67,0.8)' }}>
+          {lang === 'de'
+            ? `${realised.submarket}-Refurbishment-Objekte realisieren systematisch über der publizierten ERV. Der Effekt fließt als „Lestate Premium Factor" in Underwriting-Annahmen für vergleichbare Lagen.`
+            : `${realised.submarket} refurbishment assets systematically realize above published ERV. The effect feeds underwriting assumptions for comparable locations as a “Lestate Premium Factor”.`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── IC memo block tab ─────────────────────────────────────────────────────────
+
+function MemoTab({ benchmarks, events, lang }: { benchmarks: BenchmarkRecord[]; events: ReturnType<typeof useStore.getState>['marketEvents']; lang: string }) {
+  const cities = useMemo(() => Array.from(new Set(benchmarks.map(b => b.city))).sort(), [benchmarks]);
+  const [city, setCity] = useState('Düsseldorf');
+  const [assetClass, setAssetClass] = useState<AssetClass>('residential');
+  const [copied, setCopied] = useState(false);
+
+  const memo = useMemo(() => buildMemoBlock(benchmarks, events, city, assetClass), [benchmarks, events, city, assetClass]);
+
+  return (
+    <div>
+      <p style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', marginBottom: 14 }}>
+        {lang === 'de'
+          ? 'Auto-generierter Markt-Block pro Deal: Submarkt-Benchmarks, News-Kontext, mit Quellen und Datum. Spart 1–2 Stunden Recherche.'
+          : 'Auto-generated market block per deal: submarket benchmarks, news context, with sources and dates. Saves 1–2 hours of research.'}
+      </p>
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <select className="input-glass" value={city} onChange={e => setCity(e.target.value)} style={{ width: 200 }}>
+          {cities.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select className="input-glass" value={assetClass} onChange={e => setAssetClass(e.target.value as AssetClass)} style={{ width: 180 }}>
+          {(['residential', 'office', 'retail', 'logistics'] as AssetClass[]).map(c => (
+            <option key={c} value={c}>{ASSET_CLASS_LABEL[c]}</option>
+          ))}
+        </select>
+        <button
+          className="btn-glass px-3 py-2 rounded-lg text-sm flex items-center gap-1.5"
+          style={{ cursor: 'pointer' }}
+          onClick={() => { navigator.clipboard?.writeText(memo); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+        >
+          {copied ? <Check size={14} color="#1f9d4d" /> : <Copy size={14} />} {copied ? (lang === 'de' ? 'Kopiert' : 'Copied') : (lang === 'de' ? 'Kopieren' : 'Copy')}
+        </button>
+      </div>
+      <div className="glass-card" style={{ padding: 22 }}>
+        <div className="flex items-center gap-2" style={{ marginBottom: 12 }}>
+          <Sparkles size={15} color="#0a6cff" />
+          <span style={{ fontWeight: 700 }}>IC Memo · Market Block</span>
+        </div>
+        <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, lineHeight: 1.7, color: 'rgba(29,29,31,0.9)', margin: 0 }}>{memo}</pre>
+      </div>
+    </div>
+  );
+}
+
+function buildMemoBlock(
+  benchmarks: BenchmarkRecord[],
+  events: ReturnType<typeof useStore.getState>['marketEvents'],
+  city: string,
+  assetClass: AssetClass,
+): string {
+  const rows = benchmarks.filter(
+    b => b.city === city && b.assetClass === assetClass && b.sourceType !== 'portfolio_realised' && b.validationStatus !== 'rejected',
+  );
+  if (rows.length === 0) return `No validated benchmarks for ${city} · ${ASSET_CLASS_LABEL[assetClass]} yet.`;
+
+  const period = rows[0].periodQuarter;
+  const lines: string[] = [];
+  lines.push(`MARKET CONTEXT — ${city.toUpperCase()} · ${ASSET_CLASS_LABEL[assetClass].toUpperCase()} (${period})`);
+  lines.push('');
+  for (const b of rows) {
+    const where = b.submarket ? `${b.city}-${b.submarket}` : b.city;
+    const prov = b.sourceCount > 1 ? `${b.sourceCount}-broker ${b.consolidationMethod}` : b.sourceProvider;
+    const flag = b.confidenceTier === 'ai_indicative' ? ' [INDICATIVE — not IC-quotable]' : '';
+    lines.push(`• ${KPI_LABEL[b.kpi]} (${where}): ${formatBenchmarkValue(b.value, b.unit)} — ${prov}, conf. ${b.confidenceScore.toFixed(2)}${flag}`);
+  }
+  const relevant = events.filter(e => !e.city || e.city === city).slice(0, 3);
+  if (relevant.length) {
+    lines.push('');
+    lines.push('NEWS CONTEXT (descriptive):');
+    for (const e of relevant) {
+      lines.push(`• [${e.impactTier.toUpperCase()}] ${e.headline} (${new Date(e.publishedAt).toLocaleDateString('en-GB')})`);
+    }
+  }
+  lines.push('');
+  lines.push(`Source: realaize Market Intelligence Pipeline · multi-broker reconciled · ${period}. All figures source-attributed; drill-down available per value.`);
+  return lines.join('\n');
+}
+
+// ── Sources tab ───────────────────────────────────────────────────────────────
+
+function SourcesTab({ reportSources, refreshJobs, lang }: { reportSources: ReturnType<typeof useStore.getState>['reportSources']; refreshJobs: ReturnType<typeof useStore.getState>['refreshJobs']; lang: string }) {
+  const byProvider = useMemo(() => {
+    const m = new Map<string, typeof reportSources>();
+    for (const r of reportSources) {
+      const arr = m.get(r.provider) || [];
+      arr.push(r);
+      m.set(r.provider, arr);
+    }
+    return Array.from(m.entries());
+  }, [reportSources]);
+
+  return (
+    <div className="grid gap-5" style={{ gridTemplateColumns: '1.4fr 1fr' }}>
+      <div>
+        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>{lang === 'de' ? 'report_sources Katalog' : 'report_sources catalog'}</h3>
+        <div className="space-y-3">
+          {byProvider.map(([provider, rows]) => (
+            <div key={provider} className="glass-card" style={{ padding: 14 }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+                <span style={{ fontWeight: 700 }}>{provider}</span>
+                <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.5)' }}>{rows.length} {lang === 'de' ? 'Konfigurationen' : 'configs'}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {rows.map(r => (
+                  <Badge
+                    key={r.id}
+                    bg={r.status === 'broken' ? 'rgba(255,59,48,0.10)' : 'rgba(52,199,89,0.10)'}
+                    color={r.status === 'broken' ? '#d92c20' : '#1f9d4d'}
+                  >
+                    {ASSET_CLASS_LABEL[r.assetClass]}{r.status === 'broken' ? ' · broken' : ''}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>{lang === 'de' ? 'Refresh-Historie' : 'Refresh history'}</h3>
+        <div className="space-y-3">
+          {refreshJobs.map(j => (
+            <div key={j.id} className="glass-card" style={{ padding: 14 }}>
+              <div className="flex items-center justify-between">
+                <span style={{ fontWeight: 700 }}>{j.periodQuarter}</span>
+                <Badge bg={j.trigger === 'manual' ? 'rgba(88,86,214,0.12)' : 'rgba(0,122,255,0.10)'} color={j.trigger === 'manual' ? '#5856d6' : '#0a6cff'}>{j.trigger}</Badge>
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', marginTop: 6 }}>
+                {new Date(j.triggeredAt).toLocaleString(lang === 'de' ? 'de-DE' : 'en-GB')}
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.7)', marginTop: 6 }}>
+                {j.reportsFetched} reports · {j.dataPointsExtracted} {lang === 'de' ? 'Datenpunkte' : 'data points'} · {j.autoPassed} auto-passed · {j.pendingReview} pending
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default MarketIntelligencePage;

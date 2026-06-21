@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Building2, TrendingUp, BarChart3, CreditCard,
   LineChart, FolderOpen, Bot, Settings, ChevronLeft, ChevronRight,
   AlertTriangle, BookUser, HardHat, ShoppingBag, Newspaper, Radar, CalendarDays,
-  GripVertical, Pencil, Check
+  GripVertical, Pencil, Check, Database
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -91,7 +91,12 @@ export default function Layout({ children }: LayoutProps) {
         { key: 'radar', label: t('radar.nav'), icon: Radar, path: '/radar' },
       ],
     },
-    { key: 'markt', label: t('nav.market'), icon: BarChart3, path: '/markt' },
+    {
+      key: 'markt', label: t('nav.market'), icon: BarChart3, path: '/markt',
+      sub: [
+        { key: 'market-intelligence', label: 'Market Intelligence', icon: Database, path: '/market-intelligence' },
+      ],
+    },
     { key: 'documents', label: t('nav.documents'), icon: FolderOpen, path: '/documents' },
     { key: 'ai', label: t('nav.ai'), icon: Bot, path: '/ai' },
     { key: 'news', label: t('news.nav'), icon: Newspaper, path: '/news' },

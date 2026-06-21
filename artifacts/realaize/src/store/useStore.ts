@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Asset, AcquisitionDeal, AuditLogEntry, ActivityEntry, DevelopmentProject, SaleObject, Contact, ProjectImage, GeverkPosition, BuyerLead, DailyIntelligenceReport, Document, DealRadarListing, DealRadarSearchCriteria, PropertyData, Offer, Invoice, GewerkePosition, Unit } from '../models/types';
+import type { Asset, AcquisitionDeal, AuditLogEntry, ActivityEntry, DevelopmentProject, SaleObject, Contact, ProjectImage, GeverkPosition, BuyerLead, DailyIntelligenceReport, Document, DealRadarListing, DealRadarSearchCriteria, PropertyData, Offer, Invoice, GewerkePosition, Unit, BenchmarkRecord, MarketEventRecord, ReportSource, RefreshJob } from '../models/types';
 import { mockAssets, mockDeals, mockAuditLog, mockDevelopments, mockSales, mockContacts, mockNewsReports, mockDealRadarListings } from '../data/mockData';
+import { mockBenchmarks, mockPortfolioBenchmark, mockMarketEvents, mockReportSources, mockRefreshJobs, CURRENT_PERIOD } from '../data/marketIntelData';
 import { DEFAULT_ACQUISITION_COSTS } from '../models/types';
 
 interface AppSettings {
@@ -43,6 +44,16 @@ interface AppState {
   dealRadarListings: DealRadarListing[];
   dealRadarCriteria: DealRadarSearchCriteria;
   settings: AppSettings;
+
+  // Market Intelligence Pipeline (Module 06)
+  benchmarks: BenchmarkRecord[];
+  marketEvents: MarketEventRecord[];
+  reportSources: ReportSource[];
+  refreshJobs: RefreshJob[];
+  triggerQuarterlyRefresh: (user: string) => void;
+  approveBenchmark: (id: string, user: string) => void;
+  rejectBenchmark: (id: string, user: string, note?: string) => void;
+  correctBenchmark: (id: string, newValue: number, user: string, note?: string) => void;
 
   // Asset
   updateAsset: (id: string, patch: Partial<Asset>) => void;
@@ -175,6 +186,72 @@ export const useStore = create<AppState>()(
         maxArea: 50_000,
       },
       settings: defaultSettings,
+
+      // ── Market Intelligence Pipeline ──
+      benchmarks: [...mockBenchmarks, mockPortfolioBenchmark],
+      marketEvents: mockMarketEvents,
+      reportSources: mockReportSources,
+      refreshJobs: mockRefreshJobs,
+
+      triggerQuarterlyRefresh: (user) =>
+        set(s => {
+          const now = new Date().toISOString();
+          const okSources = s.reportSources.filter(r => r.status !== 'broken').length;
+          const pending = s.benchmarks.filter(b => b.validationStatus === 'pending').length;
+          const job: RefreshJob = {
+            id: `rj-${Date.now()}`,
+            triggeredAt: now,
+            trigger: 'manual',
+            triggeredBy: user,
+            status: 'completed',
+            periodQuarter: CURRENT_PERIOD,
+            reportsFetched: okSources,
+            dataPointsExtracted: s.benchmarks.length,
+            autoPassed: s.benchmarks.filter(b => b.validationStatus === 'auto_passed').length,
+            pendingReview: pending,
+            completedAt: now,
+          };
+          return {
+            refreshJobs: [job, ...s.refreshJobs],
+            reportSources: s.reportSources.map(r =>
+              r.status === 'broken' ? r : { ...r, lastFetchedAt: now },
+            ),
+          };
+        }),
+
+      approveBenchmark: (id, user) =>
+        set(s => ({
+          benchmarks: s.benchmarks.map(b =>
+            b.id === id
+              ? { ...b, validationStatus: 'manual_approved' as const, reviewNote: `Approved by ${user}` }
+              : b,
+          ),
+        })),
+
+      rejectBenchmark: (id, user, note) =>
+        set(s => ({
+          benchmarks: s.benchmarks.map(b =>
+            b.id === id
+              ? { ...b, validationStatus: 'rejected' as const, reviewNote: note || `Rejected by ${user}` }
+              : b,
+          ),
+        })),
+
+      correctBenchmark: (id, newValue, user, note) =>
+        set(s => ({
+          benchmarks: s.benchmarks.map(b =>
+            b.id === id
+              ? {
+                  ...b,
+                  value: newValue,
+                  validationStatus: 'manual_approved' as const,
+                  confidenceTier: 'manual_override' as const,
+                  sourceType: 'manual' as const,
+                  reviewNote: note || `Corrected by ${user}`,
+                }
+              : b,
+          ),
+        })),
 
       updateAsset: (id, patch) =>
         set(s => ({ assets: s.assets.map(a => a.id === id ? { ...a, ...patch } : a) })),
@@ -560,12 +637,12 @@ export const useStore = create<AppState>()(
 
       updateSettings: (patch) => set(s => ({ settings: { ...s.settings, ...patch } })),
 
-      resetToMockData: () => set({ assets: mockAssets, deals: mockDeals, developments: mockDevelopments, sales: mockSales, contacts: mockContacts, images: [], auditLog: mockAuditLog, newsReports: mockNewsReports, dealRadarListings: mockDealRadarListings, dealRadarCriteria: { cities: ['Berlin', 'München', 'Hamburg', 'Frankfurt am Main', 'Düsseldorf'], usageTypes: ['Wohnen', 'Büro', 'Logistik'], priceMin: 2_000_000, priceMax: 50_000_000, minArea: 500, maxArea: 50_000 }, settings: defaultSettings }),
+      resetToMockData: () => set({ assets: mockAssets, deals: mockDeals, developments: mockDevelopments, sales: mockSales, contacts: mockContacts, images: [], auditLog: mockAuditLog, newsReports: mockNewsReports, dealRadarListings: mockDealRadarListings, dealRadarCriteria: { cities: ['Berlin', 'München', 'Hamburg', 'Frankfurt am Main', 'Düsseldorf'], usageTypes: ['Wohnen', 'Büro', 'Logistik'], priceMin: 2_000_000, priceMax: 50_000_000, minArea: 500, maxArea: 50_000 }, settings: defaultSettings, benchmarks: [...mockBenchmarks, mockPortfolioBenchmark], marketEvents: mockMarketEvents, reportSources: mockReportSources, refreshJobs: mockRefreshJobs }),
     }),
     {
       name: 'restate-storage-v3',
       // contacts removed from partialize — now served by /api/contacts (React Query)
-      partialize: (s) => ({ assets: s.assets, deals: s.deals, developments: s.developments, sales: s.sales, images: s.images, auditLog: s.auditLog, newsReports: s.newsReports, dealRadarListings: s.dealRadarListings, dealRadarCriteria: s.dealRadarCriteria, settings: s.settings }),
+      partialize: (s) => ({ assets: s.assets, deals: s.deals, developments: s.developments, sales: s.sales, images: s.images, auditLog: s.auditLog, newsReports: s.newsReports, dealRadarListings: s.dealRadarListings, dealRadarCriteria: s.dealRadarCriteria, settings: s.settings, benchmarks: s.benchmarks, marketEvents: s.marketEvents, reportSources: s.reportSources, refreshJobs: s.refreshJobs }),
     }
   )
 );

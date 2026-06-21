@@ -10,6 +10,7 @@ import DealDashboard from './pages/DealDashboard';
 import { DevelopmentsPage, DevelopmentDetailPage } from './pages/Developments';
 import { SalesPage, SaleDetailPage } from './pages/Sales';
 import { MarktPage, DebtPage, CashFlowPage, DocumentsPage, AICopilotPage, DealRadarPage, NewsPage, SettingsPage } from './pages/OtherPages';
+import { MarketIntelligencePage } from './pages/MarketIntelligence';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
@@ -38,6 +39,7 @@ export default function App() {
                     <Route path="/acquisition/:id" element={<DealDashboard />} />
                     <Route path="/radar" element={<DealRadarPage />} />
                     <Route path="/markt" element={<MarktPage />} />
+                    <Route path="/market-intelligence" element={<MarketIntelligencePage />} />
                     <Route path="/documents" element={<DocumentsPage />} />
                     <Route path="/ai" element={<AICopilotPage />} />
                     <Route path="/news" element={<NewsPage />} />
