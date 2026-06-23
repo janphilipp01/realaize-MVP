@@ -14,6 +14,8 @@ tags:
     description: AI copilot operations
   - name: contacts
     description: Address book contacts
+  - name: dealSourcing
+    description: Deal sourcing & screening pipeline (profiles, candidates, matcher)
 paths:
   /healthz:
     get:
@@ -585,6 +587,182 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /acquisition-profiles:
+    get:
+      operationId: listAcquisitionProfiles
+      tags: [dealSourcing]
+      summary: List acquisition profiles for the org
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      responses:
+        "200":
+          description: Profile list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AcquisitionProfile"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createAcquisitionProfile
+      tags: [dealSourcing]
+      summary: Create an acquisition profile
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcquisitionProfileWrite"
+      responses:
+        "201":
+          description: Created profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcquisitionProfile"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /acquisition-profiles/{id}:
+    patch:
+      operationId: updateAcquisitionProfile
+      tags: [dealSourcing]
+      summary: Update an acquisition profile
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcquisitionProfileWrite"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcquisitionProfile"
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteAcquisitionProfile
+      tags: [dealSourcing]
+      summary: Delete an acquisition profile
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /candidate-deals:
+    get:
+      operationId: listCandidateDeals
+      tags: [dealSourcing]
+      summary: List candidate deals (with profile matches) for the org
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      responses:
+        "200":
+          description: Candidate list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CandidateDeal"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /candidate-deals/{id}:
+    get:
+      operationId: getCandidateDeal
+      tags: [dealSourcing]
+      summary: Get a single candidate deal with its matches
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Candidate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateDeal"
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateCandidateDeal
+      tags: [dealSourcing]
+      summary: Update candidate status (shortlist / reject / promote / liveness)
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateDealPatch"
+      responses:
+        "200":
+          description: Updated candidate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateDeal"
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /screening/ingest:
+    post:
+      operationId: ingestRawDocument
+      tags: [dealSourcing]
+      summary: Ingest a raw document (webhook / crawler / manual upload), idempotent on content hash
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScreeningIngestRequest"
+      responses:
+        "200":
+          description: Deduplicated (content hash already seen)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreeningIngestResult"
+        "201":
+          description: Raw document stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RawDocument"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /screening/run:
+    post:
+      operationId: runScreening
+      tags: [dealSourcing]
+      summary: Run the batch matcher over all screenable candidates
+      parameters:
+        - $ref: "#/components/parameters/XOrgId"
+      responses:
+        "200":
+          description: Screening run summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreeningRunResult"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
 components:
   parameters:
     XOrgId:
@@ -1075,3 +1253,260 @@ components:
         - date
         - time
         - category
+
+    AcquisitionProfile:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        orgId: { type: string, format: uuid }
+        name: { type: string }
+        screeningMode:
+          type: string
+          enum: [discount_to_market, absolute_yield_threshold]
+        cities:
+          type: array
+          items: { type: string }
+        submarkets:
+          type: array
+          items: { type: string }
+        assetClasses:
+          type: array
+          items: { type: string }
+        priceMin: { type: number }
+        priceMax: { type: number }
+        areaMin: { type: number }
+        areaMax: { type: number }
+        minDiscountPricePct: { type: number }
+        minDiscountFactorPct: { type: number, nullable: true }
+        minGrossYieldPct: { type: number, nullable: true }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required:
+        - id
+        - orgId
+        - name
+        - screeningMode
+        - cities
+        - assetClasses
+        - priceMin
+        - priceMax
+        - areaMin
+        - areaMax
+        - minDiscountPricePct
+        - active
+        - createdAt
+        - updatedAt
+
+    AcquisitionProfileWrite:
+      type: object
+      properties:
+        name: { type: string }
+        screeningMode:
+          type: string
+          enum: [discount_to_market, absolute_yield_threshold]
+        cities:
+          type: array
+          items: { type: string }
+        submarkets:
+          type: array
+          items: { type: string }
+        assetClasses:
+          type: array
+          items: { type: string }
+        priceMin: { type: number }
+        priceMax: { type: number }
+        areaMin: { type: number }
+        areaMax: { type: number }
+        minDiscountPricePct: { type: number }
+        minDiscountFactorPct: { type: number, nullable: true }
+        minGrossYieldPct: { type: number, nullable: true }
+        active: { type: boolean }
+      required:
+        - name
+        - screeningMode
+        - cities
+        - assetClasses
+        - priceMin
+        - priceMax
+        - areaMin
+        - areaMax
+
+    ProfileMatch:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        orgId: { type: string, format: uuid }
+        candidateId: { type: string, format: uuid }
+        profileId: { type: string, format: uuid }
+        benchmarkAsOf: { type: string }
+        benchmarkConfidence:
+          type: string
+          enum: [submarket, city_fallback]
+        askingPricePerSqm: { type: number }
+        benchmarkPricePerSqm: { type: number, nullable: true }
+        discountPricePct: { type: number }
+        annualErv: { type: number, nullable: true }
+        impliedFactor: { type: number }
+        impliedGrossYield: { type: number }
+        benchmarkFactor: { type: number, nullable: true }
+        discountFactorPct: { type: number, nullable: true }
+        passA: { type: boolean }
+        passB: { type: boolean }
+        signal:
+          type: string
+          enum: [green, amber, none]
+        matchedAt: { type: string, format: date-time }
+      required:
+        - id
+        - orgId
+        - candidateId
+        - profileId
+        - benchmarkAsOf
+        - benchmarkConfidence
+        - askingPricePerSqm
+        - discountPricePct
+        - impliedFactor
+        - impliedGrossYield
+        - passA
+        - passB
+        - signal
+        - matchedAt
+
+    CandidateDeal:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        orgId: { type: string, format: uuid }
+        sourceChannel:
+          type: string
+          enum: [platform_immoscout, platform_immowelt, broker_crawl, inbox, manual_upload]
+        sourceRef: { type: string }
+        sourceLabel: { type: string, nullable: true }
+        rawDocumentId: { type: string, format: uuid, nullable: true }
+        title: { type: string }
+        address: { type: string }
+        city: { type: string }
+        submarket: { type: string, nullable: true }
+        lat: { type: number, nullable: true }
+        lon: { type: number, nullable: true }
+        assetClass:
+          type: string
+          enum: [residential, mixed_use, office, retail, logistics]
+        askingPrice: { type: number }
+        areaSqm: { type: number }
+        currentRentPa: { type: number, nullable: true }
+        yearBuilt: { type: integer, nullable: true }
+        vacancyState: { type: string, nullable: true }
+        numUnits: { type: integer, nullable: true }
+        description: { type: string, nullable: true }
+        extractionConfidence: { type: object, additionalProperties: true }
+        dedupHash: { type: string }
+        status:
+          type: string
+          enum: [pending_extraction, new, matched, unmatched, shortlisted, rejected, promoted, inactive]
+        listingActive: { type: boolean }
+        rejectReason: { type: string, nullable: true }
+        reviewNote: { type: string, nullable: true }
+        firstSeenAt: { type: string, format: date-time }
+        lastSeenAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileMatch"
+      required:
+        - id
+        - orgId
+        - sourceChannel
+        - sourceRef
+        - title
+        - address
+        - city
+        - assetClass
+        - askingPrice
+        - areaSqm
+        - dedupHash
+        - status
+        - listingActive
+        - firstSeenAt
+        - lastSeenAt
+        - createdAt
+        - updatedAt
+
+    CandidateDealPatch:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending_extraction, new, matched, unmatched, shortlisted, rejected, promoted, inactive]
+        rejectReason: { type: string, nullable: true }
+        reviewNote: { type: string, nullable: true }
+        listingActive: { type: boolean }
+
+    RawDocument:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        orgId: { type: string, format: uuid }
+        kind:
+          type: string
+          enum: [email_html, email_attachment, crawl_html, manual_pdf]
+        contentHash: { type: string }
+        storagePath: { type: string, nullable: true }
+        sourceRef: { type: string, nullable: true }
+        rawPayload: { type: string, nullable: true }
+        extractionStatus:
+          type: string
+          enum: [pending_extraction, extracted, review_queue]
+        receivedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+      required:
+        - id
+        - orgId
+        - kind
+        - contentHash
+        - extractionStatus
+        - receivedAt
+        - createdAt
+
+    ScreeningIngestRequest:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [email_html, email_attachment, crawl_html, manual_pdf]
+        contentHash: { type: string }
+        storagePath: { type: string, nullable: true }
+        sourceRef: { type: string, nullable: true }
+        rawPayload: { type: string, nullable: true }
+      required:
+        - kind
+        - contentHash
+
+    ScreeningIngestResult:
+      type: object
+      properties:
+        deduplicated: { type: boolean }
+      required:
+        - deduplicated
+
+    ScreeningRunResult:
+      type: object
+      properties:
+        ranAt: { type: string, format: date-time }
+        profilesEvaluated: { type: integer }
+        candidatesScreened: { type: integer }
+        matched: { type: integer }
+        unmatched: { type: integer }
+        skippedNoBenchmark: { type: integer }
+        matchRows: { type: integer }
+      required:
+        - ranAt
+        - profilesEvaluated
+        - candidatesScreened
+        - matched
+        - unmatched
+        - skippedNoBenchmark
+        - matchRows

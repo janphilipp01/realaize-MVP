@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Asset, AcquisitionDeal, AuditLogEntry, ActivityEntry, DevelopmentProject, SaleObject, Contact, ProjectImage, GeverkPosition, BuyerLead, DailyIntelligenceReport, Document, DealRadarListing, DealRadarSearchCriteria, PropertyData, Offer, Invoice, GewerkePosition, Unit, BenchmarkRecord, MarketEventRecord, ReportSource, RefreshJob } from '../models/types';
+import type { Asset, AcquisitionDeal, AuditLogEntry, ActivityEntry, DevelopmentProject, SaleObject, Contact, ProjectImage, GeverkPosition, BuyerLead, DailyIntelligenceReport, Document, DealRadarListing, DealRadarSearchCriteria, PropertyData, Offer, Invoice, GewerkePosition, Unit, BenchmarkRecord, MarketEventRecord, ReportSource, RefreshJob, CandidateDeal, AcquisitionProfile, UsageType } from '../models/types';
 import { mockAssets, mockDeals, mockAuditLog, mockDevelopments, mockSales, mockContacts, mockNewsReports, mockDealRadarListings } from '../data/mockData';
 import { mockBenchmarks, mockPortfolioBenchmark, mockMarketEvents, mockReportSources, mockRefreshJobs, CURRENT_PERIOD } from '../data/marketIntelData';
+import { mockCandidateDeals, defaultAcquisitionProfiles, screeningBenchmarks, listingToCandidate } from '../data/dealSourcingData';
+import { runLocalMatcher } from '../utils/screening';
 import { DEFAULT_ACQUISITION_COSTS } from '../models/types';
 
 interface AppSettings {
@@ -134,6 +136,17 @@ interface AppState {
   convertToAcquisition: (listingId: string) => void;
   updateRadarCriteria: (criteria: Partial<DealRadarSearchCriteria>) => void;
 
+  // Deal Sourcing & Screening (Module 07)
+  candidateDeals: CandidateDeal[];
+  acquisitionProfiles: AcquisitionProfile[];
+  lastScreeningAt: string | null;
+  runScreening: () => void;                                   // re-run the matcher over all candidates
+  ingestCandidatesFromListings: (listings: DealRadarListing[]) => void; // AI websearch → candidates
+  shortlistCandidate: (id: string, note?: string) => void;
+  rejectCandidate: (id: string, reason: string) => void;
+  promoteCandidate: (id: string) => void;                     // → new deal in Acquisition Wizard
+  updateAcquisitionProfile: (id: string, patch: Partial<AcquisitionProfile>) => void;
+
   // Settings
   updateSettings: (patch: Partial<AppSettings>) => void;
 
@@ -186,6 +199,11 @@ export const useStore = create<AppState>()(
         maxArea: 50_000,
       },
       settings: defaultSettings,
+
+      // ── Deal Sourcing & Screening (Module 07) ──
+      candidateDeals: mockCandidateDeals,
+      acquisitionProfiles: defaultAcquisitionProfiles,
+      lastScreeningAt: '2026-06-23T07:00:00.000Z',
 
       // ── Market Intelligence Pipeline ──
       benchmarks: [...mockBenchmarks, mockPortfolioBenchmark],
@@ -635,14 +653,102 @@ export const useStore = create<AppState>()(
       updateRadarCriteria: (criteria) =>
         set(s => ({ dealRadarCriteria: { ...s.dealRadarCriteria, ...criteria } })),
 
+      // ── Deal Sourcing & Screening (Module 07) ──
+      runScreening: () =>
+        set(s => ({
+          candidateDeals: runLocalMatcher(s.candidateDeals, s.acquisitionProfiles, screeningBenchmarks),
+          lastScreeningAt: new Date().toISOString(),
+        })),
+
+      ingestCandidatesFromListings: (listings) =>
+        set(s => {
+          const existingRefs = new Set(s.candidateDeals.map(c => c.sourceRef));
+          const fresh = listings
+            .map(listingToCandidate)
+            .filter(c => !existingRefs.has(c.sourceRef))
+            .map(c => ({ ...c, matches: [] }));
+          const merged = runLocalMatcher([...fresh, ...s.candidateDeals], s.acquisitionProfiles, screeningBenchmarks);
+          return { candidateDeals: merged, lastScreeningAt: new Date().toISOString() };
+        }),
+
+      shortlistCandidate: (id, note) =>
+        set(s => ({ candidateDeals: s.candidateDeals.map(c =>
+          c.id === id ? { ...c, status: 'shortlisted' as const, reviewNote: note ?? c.reviewNote } : c) })),
+
+      rejectCandidate: (id, reason) =>
+        set(s => ({ candidateDeals: s.candidateDeals.map(c =>
+          c.id === id ? { ...c, status: 'rejected' as const, rejectReason: reason } : c) })),
+
+      promoteCandidate: (id) =>
+        set(s => {
+          const c = s.candidateDeals.find(x => x.id === id);
+          if (!c) return {};
+          const now = new Date().toISOString();
+          // Seed Market Assumptions from the benchmark used for screening.
+          const m = c.matches[0];
+          const usageMap: Record<typeof c.assetClass, UsageType> = { residential: 'Wohnen', mixed_use: 'Mixed Use', office: 'Büro', retail: 'Einzelhandel', logistics: 'Logistik' };
+          const usageType: UsageType = usageMap[c.assetClass];
+          const benchRentPerSqm = m && m.annualErv ? m.annualErv / c.areaSqm / 12 : 0;
+          const newDeal: AcquisitionDeal = {
+            id: `deal-${Date.now()}`,
+            name: c.title,
+            address: c.address,
+            city: c.city,
+            zip: '',
+            usageType,
+            dealType: 'Investment',
+            stage: 'Screening',
+            askingPrice: c.askingPrice,
+            underwritingAssumptions: {
+              purchasePrice: c.askingPrice,
+              closingCostPercent: s.settings.defaultClosingCostPct,
+              brokerFeePercent: s.settings.defaultBrokerFeePct,
+              initialCapex: 0,
+              annualGrossRent: m && m.annualErv ? Math.round(m.annualErv) : (c.currentRentPa ?? 0),
+              vacancyRatePercent: s.settings.defaultVacancyRate,
+              managementCostPercent: s.settings.defaultMgmtCostPct,
+              maintenanceReservePerSqm: s.settings.defaultMaintenancePerSqm,
+              nonRecoverableOpex: 0,
+              area: c.areaSqm,
+              rentPerSqm: benchRentPerSqm ? Math.round(benchRentPerSqm * 100) / 100 : 0,
+              otherOperatingIncome: 0,
+            },
+            financingAssumptions: { loanAmount: Math.round(c.askingPrice * 0.65), interestRate: 4.0, amortizationRate: 2.0, loanTerm: 10, lenderName: '', fixedRatePeriod: 5 },
+            documents: [],
+            activityLog: [{
+              id: `act-${Date.now()}`, timestamp: now, type: 'Note',
+              title: 'Aus Deal Radar übernommen',
+              description: `Quelle: ${c.sourceLabel}\nRef: ${c.sourceRef}` +
+                (m ? `\nScreening (${m.profileName}): €/m² ${m.askingPricePerSqm} (${m.discountPricePct > 0 ? '−' : ''}${Math.abs(m.discountPricePct)} %), Faktor ${m.impliedFactor}×, Brutto-Rendite ${m.impliedGrossYield} % · Benchmark ${m.benchmarkAsOf}` : ''),
+              user: 'M. Wagner',
+            }],
+            aiRecommendations: [], completenessScore: 30, createdAt: now, updatedAt: now,
+            totalArea: c.areaSqm, broker: c.sourceLabel,
+          };
+          return {
+            deals: [...s.deals, newDeal],
+            candidateDeals: s.candidateDeals.map(x => x.id === id ? { ...x, status: 'promoted' as const } : x),
+          };
+        }),
+
+      updateAcquisitionProfile: (id, patch) =>
+        set(s => {
+          const profiles = s.acquisitionProfiles.map(p => p.id === id ? { ...p, ...patch } : p);
+          return {
+            acquisitionProfiles: profiles,
+            candidateDeals: runLocalMatcher(s.candidateDeals, profiles, screeningBenchmarks),
+            lastScreeningAt: new Date().toISOString(),
+          };
+        }),
+
       updateSettings: (patch) => set(s => ({ settings: { ...s.settings, ...patch } })),
 
-      resetToMockData: () => set({ assets: mockAssets, deals: mockDeals, developments: mockDevelopments, sales: mockSales, contacts: mockContacts, images: [], auditLog: mockAuditLog, newsReports: mockNewsReports, dealRadarListings: mockDealRadarListings, dealRadarCriteria: { cities: ['Berlin', 'München', 'Hamburg', 'Frankfurt am Main', 'Düsseldorf'], usageTypes: ['Wohnen', 'Büro', 'Logistik'], priceMin: 2_000_000, priceMax: 50_000_000, minArea: 500, maxArea: 50_000 }, settings: defaultSettings, benchmarks: [...mockBenchmarks, mockPortfolioBenchmark], marketEvents: mockMarketEvents, reportSources: mockReportSources, refreshJobs: mockRefreshJobs }),
+      resetToMockData: () => set({ assets: mockAssets, deals: mockDeals, developments: mockDevelopments, sales: mockSales, contacts: mockContacts, images: [], auditLog: mockAuditLog, newsReports: mockNewsReports, dealRadarListings: mockDealRadarListings, dealRadarCriteria: { cities: ['Berlin', 'München', 'Hamburg', 'Frankfurt am Main', 'Düsseldorf'], usageTypes: ['Wohnen', 'Büro', 'Logistik'], priceMin: 2_000_000, priceMax: 50_000_000, minArea: 500, maxArea: 50_000 }, settings: defaultSettings, benchmarks: [...mockBenchmarks, mockPortfolioBenchmark], marketEvents: mockMarketEvents, reportSources: mockReportSources, refreshJobs: mockRefreshJobs, candidateDeals: mockCandidateDeals, acquisitionProfiles: defaultAcquisitionProfiles, lastScreeningAt: '2026-06-23T07:00:00.000Z' }),
     }),
     {
       name: 'restate-storage-v3',
       // contacts removed from partialize — now served by /api/contacts (React Query)
-      partialize: (s) => ({ assets: s.assets, deals: s.deals, developments: s.developments, sales: s.sales, images: s.images, auditLog: s.auditLog, newsReports: s.newsReports, dealRadarListings: s.dealRadarListings, dealRadarCriteria: s.dealRadarCriteria, settings: s.settings, benchmarks: s.benchmarks, marketEvents: s.marketEvents, reportSources: s.reportSources, refreshJobs: s.refreshJobs }),
+      partialize: (s) => ({ assets: s.assets, deals: s.deals, developments: s.developments, sales: s.sales, images: s.images, auditLog: s.auditLog, newsReports: s.newsReports, dealRadarListings: s.dealRadarListings, dealRadarCriteria: s.dealRadarCriteria, settings: s.settings, benchmarks: s.benchmarks, marketEvents: s.marketEvents, reportSources: s.reportSources, refreshJobs: s.refreshJobs, candidateDeals: s.candidateDeals, acquisitionProfiles: s.acquisitionProfiles, lastScreeningAt: s.lastScreeningAt }),
     }
   )
 );

@@ -188,6 +188,253 @@ export interface AppointmentWrite {
   notes?: string | null;
 }
 
+export type AcquisitionProfileScreeningMode =
+  (typeof AcquisitionProfileScreeningMode)[keyof typeof AcquisitionProfileScreeningMode];
+
+export const AcquisitionProfileScreeningMode = {
+  discount_to_market: "discount_to_market",
+  absolute_yield_threshold: "absolute_yield_threshold",
+} as const;
+
+export interface AcquisitionProfile {
+  id: string;
+  orgId: string;
+  name: string;
+  screeningMode: AcquisitionProfileScreeningMode;
+  cities: string[];
+  submarkets?: string[];
+  assetClasses: string[];
+  priceMin: number;
+  priceMax: number;
+  areaMin: number;
+  areaMax: number;
+  minDiscountPricePct: number;
+  minDiscountFactorPct?: number | null;
+  minGrossYieldPct?: number | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AcquisitionProfileWriteScreeningMode =
+  (typeof AcquisitionProfileWriteScreeningMode)[keyof typeof AcquisitionProfileWriteScreeningMode];
+
+export const AcquisitionProfileWriteScreeningMode = {
+  discount_to_market: "discount_to_market",
+  absolute_yield_threshold: "absolute_yield_threshold",
+} as const;
+
+export interface AcquisitionProfileWrite {
+  name: string;
+  screeningMode: AcquisitionProfileWriteScreeningMode;
+  cities: string[];
+  submarkets?: string[];
+  assetClasses: string[];
+  priceMin: number;
+  priceMax: number;
+  areaMin: number;
+  areaMax: number;
+  minDiscountPricePct?: number;
+  minDiscountFactorPct?: number | null;
+  minGrossYieldPct?: number | null;
+  active?: boolean;
+}
+
+export type ProfileMatchBenchmarkConfidence =
+  (typeof ProfileMatchBenchmarkConfidence)[keyof typeof ProfileMatchBenchmarkConfidence];
+
+export const ProfileMatchBenchmarkConfidence = {
+  submarket: "submarket",
+  city_fallback: "city_fallback",
+} as const;
+
+export type ProfileMatchSignal =
+  (typeof ProfileMatchSignal)[keyof typeof ProfileMatchSignal];
+
+export const ProfileMatchSignal = {
+  green: "green",
+  amber: "amber",
+  none: "none",
+} as const;
+
+export interface ProfileMatch {
+  id: string;
+  orgId: string;
+  candidateId: string;
+  profileId: string;
+  benchmarkAsOf: string;
+  benchmarkConfidence: ProfileMatchBenchmarkConfidence;
+  askingPricePerSqm: number;
+  benchmarkPricePerSqm?: number | null;
+  discountPricePct: number;
+  annualErv?: number | null;
+  impliedFactor: number;
+  impliedGrossYield: number;
+  benchmarkFactor?: number | null;
+  discountFactorPct?: number | null;
+  passA: boolean;
+  passB: boolean;
+  signal: ProfileMatchSignal;
+  matchedAt: string;
+}
+
+export type CandidateDealSourceChannel =
+  (typeof CandidateDealSourceChannel)[keyof typeof CandidateDealSourceChannel];
+
+export const CandidateDealSourceChannel = {
+  platform_immoscout: "platform_immoscout",
+  platform_immowelt: "platform_immowelt",
+  broker_crawl: "broker_crawl",
+  inbox: "inbox",
+  manual_upload: "manual_upload",
+} as const;
+
+export type CandidateDealAssetClass =
+  (typeof CandidateDealAssetClass)[keyof typeof CandidateDealAssetClass];
+
+export const CandidateDealAssetClass = {
+  residential: "residential",
+  mixed_use: "mixed_use",
+  office: "office",
+  retail: "retail",
+  logistics: "logistics",
+} as const;
+
+export type CandidateDealExtractionConfidence = { [key: string]: unknown };
+
+export type CandidateDealStatus =
+  (typeof CandidateDealStatus)[keyof typeof CandidateDealStatus];
+
+export const CandidateDealStatus = {
+  pending_extraction: "pending_extraction",
+  new: "new",
+  matched: "matched",
+  unmatched: "unmatched",
+  shortlisted: "shortlisted",
+  rejected: "rejected",
+  promoted: "promoted",
+  inactive: "inactive",
+} as const;
+
+export interface CandidateDeal {
+  id: string;
+  orgId: string;
+  sourceChannel: CandidateDealSourceChannel;
+  sourceRef: string;
+  sourceLabel?: string | null;
+  rawDocumentId?: string | null;
+  title: string;
+  address: string;
+  city: string;
+  submarket?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+  assetClass: CandidateDealAssetClass;
+  askingPrice: number;
+  areaSqm: number;
+  currentRentPa?: number | null;
+  yearBuilt?: number | null;
+  vacancyState?: string | null;
+  numUnits?: number | null;
+  description?: string | null;
+  extractionConfidence?: CandidateDealExtractionConfidence;
+  dedupHash: string;
+  status: CandidateDealStatus;
+  listingActive: boolean;
+  rejectReason?: string | null;
+  reviewNote?: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  createdAt: string;
+  updatedAt: string;
+  matches?: ProfileMatch[];
+}
+
+export type CandidateDealPatchStatus =
+  (typeof CandidateDealPatchStatus)[keyof typeof CandidateDealPatchStatus];
+
+export const CandidateDealPatchStatus = {
+  pending_extraction: "pending_extraction",
+  new: "new",
+  matched: "matched",
+  unmatched: "unmatched",
+  shortlisted: "shortlisted",
+  rejected: "rejected",
+  promoted: "promoted",
+  inactive: "inactive",
+} as const;
+
+export interface CandidateDealPatch {
+  status?: CandidateDealPatchStatus;
+  rejectReason?: string | null;
+  reviewNote?: string | null;
+  listingActive?: boolean;
+}
+
+export type RawDocumentKind =
+  (typeof RawDocumentKind)[keyof typeof RawDocumentKind];
+
+export const RawDocumentKind = {
+  email_html: "email_html",
+  email_attachment: "email_attachment",
+  crawl_html: "crawl_html",
+  manual_pdf: "manual_pdf",
+} as const;
+
+export type RawDocumentExtractionStatus =
+  (typeof RawDocumentExtractionStatus)[keyof typeof RawDocumentExtractionStatus];
+
+export const RawDocumentExtractionStatus = {
+  pending_extraction: "pending_extraction",
+  extracted: "extracted",
+  review_queue: "review_queue",
+} as const;
+
+export interface RawDocument {
+  id: string;
+  orgId: string;
+  kind: RawDocumentKind;
+  contentHash: string;
+  storagePath?: string | null;
+  sourceRef?: string | null;
+  rawPayload?: string | null;
+  extractionStatus: RawDocumentExtractionStatus;
+  receivedAt: string;
+  createdAt: string;
+}
+
+export type ScreeningIngestRequestKind =
+  (typeof ScreeningIngestRequestKind)[keyof typeof ScreeningIngestRequestKind];
+
+export const ScreeningIngestRequestKind = {
+  email_html: "email_html",
+  email_attachment: "email_attachment",
+  crawl_html: "crawl_html",
+  manual_pdf: "manual_pdf",
+} as const;
+
+export interface ScreeningIngestRequest {
+  kind: ScreeningIngestRequestKind;
+  contentHash: string;
+  storagePath?: string | null;
+  sourceRef?: string | null;
+  rawPayload?: string | null;
+}
+
+export interface ScreeningIngestResult {
+  deduplicated: boolean;
+}
+
+export interface ScreeningRunResult {
+  ranAt: string;
+  profilesEvaluated: number;
+  candidatesScreened: number;
+  matched: number;
+  unmatched: number;
+  skippedNoBenchmark: number;
+  matchRows: number;
+}
+
 /**
  * Missing or invalid token
  */

@@ -790,3 +790,439 @@ export const RefreshMarketBenchmarksResponse = zod.object({
     }),
   ),
 });
+
+/**
+ * @summary List acquisition profiles for the org
+ */
+export const ListAcquisitionProfilesHeader = zod.object({
+  "X-Org-Id": zod.string().uuid(),
+});
+
+export const ListAcquisitionProfilesResponseItem = zod.object({
+  id: zod.string().uuid(),
+  orgId: zod.string().uuid(),
+  name: zod.string(),
+  screeningMode: zod.enum(["discount_to_market", "absolute_yield_threshold"]),
+  cities: zod.array(zod.string()),
+  submarkets: zod.array(zod.string()).optional(),
+  assetClasses: zod.array(zod.string()),
+  priceMin: zod.number(),
+  priceMax: zod.number(),
+  areaMin: zod.number(),
+  areaMax: zod.number(),
+  minDiscountPricePct: zod.number(),
+  minDiscountFactorPct: zod.number().nullish(),
+  minGrossYieldPct: zod.number().nullish(),
+  active: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListAcquisitionProfilesResponse = zod.array(
+  ListAcquisitionProfilesResponseItem,
+);
+
+/**
+ * @summary Create an acquisition profile
+ */
+export const CreateAcquisitionProfileHeader = zod.object({
+  "X-Org-Id": zod.string().uuid(),
+});
+
+export const CreateAcquisitionProfileBody = zod.object({
+  name: zod.string(),
+  screeningMode: zod.enum(["discount_to_market", "absolute_yield_threshold"]),
+  cities: zod.array(zod.string()),
+  submarkets: zod.array(zod.string()).optional(),
+  assetClasses: zod.array(zod.string()),
+  priceMin: zod.number(),
+  priceMax: zod.number(),
+  areaMin: zod.number(),
+  areaMax: zod.number(),
+  minDiscountPricePct: zod.number().optional(),
+  minDiscountFactorPct: zod.number().nullish(),
+  minGrossYieldPct: zod.number().nullish(),
+  active: zod.boolean().optional(),
+});
+
+/**
+ * @summary Update an acquisition profile
+ */
+export const UpdateAcquisitionProfileParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const UpdateAcquisitionProfileHeader = zod.object({
+  "X-Org-Id": zod.string().uuid(),
+});
+
+export const UpdateAcquisitionProfileBody = zod.object({
+  name: zod.string(),
+  screeningMode: zod.enum(["discount_to_market", "absolute_yield_threshold"]),
+  cities: zod.array(zod.string()),
+  submarkets: zod.array(zod.string()).optional(),
+  assetClasses: zod.array(zod.string()),
+  priceMin: zod.number(),
+  priceMax: zod.number(),
+  areaMin: zod.number(),
+  areaMax: zod.number(),
+  minDiscountPricePct: zod.number().optional(),
+  minDiscountFactorPct: zod.number().nullish(),
+  minGrossYieldPct: zod.number().nullish(),
+  active: zod.boolean().optional(),
+});
+
+export const UpdateAcquisitionProfileResponse = zod.object({
+  id: zod.string().uuid(),
+  orgId: zod.string().uuid(),
+  name: zod.string(),
+  screeningMode: zod.enum(["discount_to_market", "absolute_yield_threshold"]),
+  cities: zod.array(zod.string()),
+  submarkets: zod.array(zod.string()).optional(),
+  assetClasses: zod.array(zod.string()),
+  priceMin: zod.number(),
+  priceMax: zod.number(),
+  areaMin: zod.number(),
+  areaMax: zod.number(),
+  minDiscountPricePct: zod.number(),
+  minDiscountFactorPct: zod.number().nullish(),
+  minGrossYieldPct: zod.number().nullish(),
+  active: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete an acquisition profile
+ */
+export const DeleteAcquisitionProfileParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const DeleteAcquisitionProfileHeader = zod.object({
+  "X-Org-Id": zod.string().uuid(),
+});
+
+/**
+ * @summary List candidate deals (with profile matches) for the org
+ */
+export const ListCandidateDealsHeader = zod.object({
+  "X-Org-Id": zod.string().uuid(),
+});
+
+export const ListCandidateDealsResponseItem = zod.object({
+  id: zod.string().uuid(),
+  orgId: zod.string().uuid(),
+  sourceChannel: zod.enum([
+    "platform_immoscout",
+    "platform_immowelt",
+    "broker_crawl",
+    "inbox",
+    "manual_upload",
+  ]),
+  sourceRef: zod.string(),
+  sourceLabel: zod.string().nullish(),
+  rawDocumentId: zod.string().uuid().nullish(),
+  title: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  submarket: zod.string().nullish(),
+  lat: zod.number().nullish(),
+  lon: zod.number().nullish(),
+  assetClass: zod.enum([
+    "residential",
+    "mixed_use",
+    "office",
+    "retail",
+    "logistics",
+  ]),
+  askingPrice: zod.number(),
+  areaSqm: zod.number(),
+  currentRentPa: zod.number().nullish(),
+  yearBuilt: zod.number().nullish(),
+  vacancyState: zod.string().nullish(),
+  numUnits: zod.number().nullish(),
+  description: zod.string().nullish(),
+  extractionConfidence: zod.record(zod.string(), zod.unknown()).optional(),
+  dedupHash: zod.string(),
+  status: zod.enum([
+    "pending_extraction",
+    "new",
+    "matched",
+    "unmatched",
+    "shortlisted",
+    "rejected",
+    "promoted",
+    "inactive",
+  ]),
+  listingActive: zod.boolean(),
+  rejectReason: zod.string().nullish(),
+  reviewNote: zod.string().nullish(),
+  firstSeenAt: zod.coerce.date(),
+  lastSeenAt: zod.coerce.date(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  matches: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        orgId: zod.string().uuid(),
+        candidateId: zod.string().uuid(),
+        profileId: zod.string().uuid(),
+        benchmarkAsOf: zod.string(),
+        benchmarkConfidence: zod.enum(["submarket", "city_fallback"]),
+        askingPricePerSqm: zod.number(),
+        benchmarkPricePerSqm: zod.number().nullish(),
+        discountPricePct: zod.number(),
+        annualErv: zod.number().nullish(),
+        impliedFactor: zod.number(),
+        impliedGrossYield: zod.number(),
+        benchmarkFactor: zod.number().nullish(),
+        discountFactorPct: zod.number().nullish(),
+        passA: zod.boolean(),
+        passB: zod.boolean(),
+        signal: zod.enum(["green", "amber", "none"]),
+        matchedAt: zod.coerce.date(),
+      }),
+    )
+    .optional(),
+});
+export const ListCandidateDealsResponse = zod.array(
+  ListCandidateDealsResponseItem,
+);
+
+/**
+ * @summary Get a single candidate deal with its matches
+ */
+export const GetCandidateDealParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const GetCandidateDealHeader = zod.object({
+  "X-Org-Id": zod.string().uuid(),
+});
+
+export const GetCandidateDealResponse = zod.object({
+  id: zod.string().uuid(),
+  orgId: zod.string().uuid(),
+  sourceChannel: zod.enum([
+    "platform_immoscout",
+    "platform_immowelt",
+    "broker_crawl",
+    "inbox",
+    "manual_upload",
+  ]),
+  sourceRef: zod.string(),
+  sourceLabel: zod.string().nullish(),
+  rawDocumentId: zod.string().uuid().nullish(),
+  title: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  submarket: zod.string().nullish(),
+  lat: zod.number().nullish(),
+  lon: zod.number().nullish(),
+  assetClass: zod.enum([
+    "residential",
+    "mixed_use",
+    "office",
+    "retail",
+    "logistics",
+  ]),
+  askingPrice: zod.number(),
+  areaSqm: zod.number(),
+  currentRentPa: zod.number().nullish(),
+  yearBuilt: zod.number().nullish(),
+  vacancyState: zod.string().nullish(),
+  numUnits: zod.number().nullish(),
+  description: zod.string().nullish(),
+  extractionConfidence: zod.record(zod.string(), zod.unknown()).optional(),
+  dedupHash: zod.string(),
+  status: zod.enum([
+    "pending_extraction",
+    "new",
+    "matched",
+    "unmatched",
+    "shortlisted",
+    "rejected",
+    "promoted",
+    "inactive",
+  ]),
+  listingActive: zod.boolean(),
+  rejectReason: zod.string().nullish(),
+  reviewNote: zod.string().nullish(),
+  firstSeenAt: zod.coerce.date(),
+  lastSeenAt: zod.coerce.date(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  matches: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        orgId: zod.string().uuid(),
+        candidateId: zod.string().uuid(),
+        profileId: zod.string().uuid(),
+        benchmarkAsOf: zod.string(),
+        benchmarkConfidence: zod.enum(["submarket", "city_fallback"]),
+        askingPricePerSqm: zod.number(),
+        benchmarkPricePerSqm: zod.number().nullish(),
+        discountPricePct: zod.number(),
+        annualErv: zod.number().nullish(),
+        impliedFactor: zod.number(),
+        impliedGrossYield: zod.number(),
+        benchmarkFactor: zod.number().nullish(),
+        discountFactorPct: zod.number().nullish(),
+        passA: zod.boolean(),
+        passB: zod.boolean(),
+        signal: zod.enum(["green", "amber", "none"]),
+        matchedAt: zod.coerce.date(),
+      }),
+    )
+    .optional(),
+});
+
+/**
+ * @summary Update candidate status (shortlist / reject / promote / liveness)
+ */
+export const UpdateCandidateDealParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const UpdateCandidateDealHeader = zod.object({
+  "X-Org-Id": zod.string().uuid(),
+});
+
+export const UpdateCandidateDealBody = zod.object({
+  status: zod
+    .enum([
+      "pending_extraction",
+      "new",
+      "matched",
+      "unmatched",
+      "shortlisted",
+      "rejected",
+      "promoted",
+      "inactive",
+    ])
+    .optional(),
+  rejectReason: zod.string().nullish(),
+  reviewNote: zod.string().nullish(),
+  listingActive: zod.boolean().optional(),
+});
+
+export const UpdateCandidateDealResponse = zod.object({
+  id: zod.string().uuid(),
+  orgId: zod.string().uuid(),
+  sourceChannel: zod.enum([
+    "platform_immoscout",
+    "platform_immowelt",
+    "broker_crawl",
+    "inbox",
+    "manual_upload",
+  ]),
+  sourceRef: zod.string(),
+  sourceLabel: zod.string().nullish(),
+  rawDocumentId: zod.string().uuid().nullish(),
+  title: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  submarket: zod.string().nullish(),
+  lat: zod.number().nullish(),
+  lon: zod.number().nullish(),
+  assetClass: zod.enum([
+    "residential",
+    "mixed_use",
+    "office",
+    "retail",
+    "logistics",
+  ]),
+  askingPrice: zod.number(),
+  areaSqm: zod.number(),
+  currentRentPa: zod.number().nullish(),
+  yearBuilt: zod.number().nullish(),
+  vacancyState: zod.string().nullish(),
+  numUnits: zod.number().nullish(),
+  description: zod.string().nullish(),
+  extractionConfidence: zod.record(zod.string(), zod.unknown()).optional(),
+  dedupHash: zod.string(),
+  status: zod.enum([
+    "pending_extraction",
+    "new",
+    "matched",
+    "unmatched",
+    "shortlisted",
+    "rejected",
+    "promoted",
+    "inactive",
+  ]),
+  listingActive: zod.boolean(),
+  rejectReason: zod.string().nullish(),
+  reviewNote: zod.string().nullish(),
+  firstSeenAt: zod.coerce.date(),
+  lastSeenAt: zod.coerce.date(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  matches: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        orgId: zod.string().uuid(),
+        candidateId: zod.string().uuid(),
+        profileId: zod.string().uuid(),
+        benchmarkAsOf: zod.string(),
+        benchmarkConfidence: zod.enum(["submarket", "city_fallback"]),
+        askingPricePerSqm: zod.number(),
+        benchmarkPricePerSqm: zod.number().nullish(),
+        discountPricePct: zod.number(),
+        annualErv: zod.number().nullish(),
+        impliedFactor: zod.number(),
+        impliedGrossYield: zod.number(),
+        benchmarkFactor: zod.number().nullish(),
+        discountFactorPct: zod.number().nullish(),
+        passA: zod.boolean(),
+        passB: zod.boolean(),
+        signal: zod.enum(["green", "amber", "none"]),
+        matchedAt: zod.coerce.date(),
+      }),
+    )
+    .optional(),
+});
+
+/**
+ * @summary Ingest a raw document (webhook / crawler / manual upload), idempotent on content hash
+ */
+export const IngestRawDocumentHeader = zod.object({
+  "X-Org-Id": zod.string().uuid(),
+});
+
+export const IngestRawDocumentBody = zod.object({
+  kind: zod.enum([
+    "email_html",
+    "email_attachment",
+    "crawl_html",
+    "manual_pdf",
+  ]),
+  contentHash: zod.string(),
+  storagePath: zod.string().nullish(),
+  sourceRef: zod.string().nullish(),
+  rawPayload: zod.string().nullish(),
+});
+
+export const IngestRawDocumentResponse = zod.object({
+  deduplicated: zod.boolean(),
+});
+
+/**
+ * @summary Run the batch matcher over all screenable candidates
+ */
+export const RunScreeningHeader = zod.object({
+  "X-Org-Id": zod.string().uuid(),
+});
+
+export const RunScreeningResponse = zod.object({
+  ranAt: zod.coerce.date(),
+  profilesEvaluated: zod.number(),
+  candidatesScreened: zod.number(),
+  matched: zod.number(),
+  unmatched: zod.number(),
+  skippedNoBenchmark: zod.number(),
+  matchRows: zod.number(),
+});

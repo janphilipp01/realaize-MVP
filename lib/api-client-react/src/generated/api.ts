@@ -17,10 +17,14 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AcquisitionProfile,
+  AcquisitionProfileWrite,
   AiChatRequest,
   AiChatResult,
   Appointment,
   AppointmentWrite,
+  CandidateDeal,
+  CandidateDealPatch,
   Contact,
   ContactWrite,
   ErrorResponse,
@@ -33,6 +37,10 @@ import type {
   NotFoundResponse,
   PortfolioObject,
   PortfolioObjectWrite,
+  RawDocument,
+  ScreeningIngestRequest,
+  ScreeningIngestResult,
+  ScreeningRunResult,
   UnauthorizedResponse,
 } from "./api.schemas";
 
@@ -2997,4 +3005,768 @@ export const useRefreshMarketBenchmarks = <
   TContext
 > => {
   return useMutation(getRefreshMarketBenchmarksMutationOptions(options));
+};
+
+/**
+ * @summary List acquisition profiles for the org
+ */
+export const getListAcquisitionProfilesUrl = () => {
+  return `/api/acquisition-profiles`;
+};
+
+export const listAcquisitionProfiles = async (
+  options?: RequestInit,
+): Promise<AcquisitionProfile[]> => {
+  return customFetch<AcquisitionProfile[]>(getListAcquisitionProfilesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAcquisitionProfilesQueryKey = () => {
+  return [`/api/acquisition-profiles`] as const;
+};
+
+export const getListAcquisitionProfilesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAcquisitionProfiles>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAcquisitionProfiles>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListAcquisitionProfilesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAcquisitionProfiles>>
+  > = ({ signal }) => listAcquisitionProfiles({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAcquisitionProfiles>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAcquisitionProfilesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAcquisitionProfiles>>
+>;
+export type ListAcquisitionProfilesQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary List acquisition profiles for the org
+ */
+
+export function useListAcquisitionProfiles<
+  TData = Awaited<ReturnType<typeof listAcquisitionProfiles>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAcquisitionProfiles>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAcquisitionProfilesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create an acquisition profile
+ */
+export const getCreateAcquisitionProfileUrl = () => {
+  return `/api/acquisition-profiles`;
+};
+
+export const createAcquisitionProfile = async (
+  acquisitionProfileWrite: AcquisitionProfileWrite,
+  options?: RequestInit,
+): Promise<AcquisitionProfile> => {
+  return customFetch<AcquisitionProfile>(getCreateAcquisitionProfileUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(acquisitionProfileWrite),
+  });
+};
+
+export const getCreateAcquisitionProfileMutationOptions = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAcquisitionProfile>>,
+    TError,
+    { data: BodyType<AcquisitionProfileWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAcquisitionProfile>>,
+  TError,
+  { data: BodyType<AcquisitionProfileWrite> },
+  TContext
+> => {
+  const mutationKey = ["createAcquisitionProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAcquisitionProfile>>,
+    { data: BodyType<AcquisitionProfileWrite> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createAcquisitionProfile(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateAcquisitionProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAcquisitionProfile>>
+>;
+export type CreateAcquisitionProfileMutationBody =
+  BodyType<AcquisitionProfileWrite>;
+export type CreateAcquisitionProfileMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary Create an acquisition profile
+ */
+export const useCreateAcquisitionProfile = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAcquisitionProfile>>,
+    TError,
+    { data: BodyType<AcquisitionProfileWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createAcquisitionProfile>>,
+  TError,
+  { data: BodyType<AcquisitionProfileWrite> },
+  TContext
+> => {
+  return useMutation(getCreateAcquisitionProfileMutationOptions(options));
+};
+
+/**
+ * @summary Update an acquisition profile
+ */
+export const getUpdateAcquisitionProfileUrl = (id: string) => {
+  return `/api/acquisition-profiles/${id}`;
+};
+
+export const updateAcquisitionProfile = async (
+  id: string,
+  acquisitionProfileWrite: AcquisitionProfileWrite,
+  options?: RequestInit,
+): Promise<AcquisitionProfile> => {
+  return customFetch<AcquisitionProfile>(getUpdateAcquisitionProfileUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(acquisitionProfileWrite),
+  });
+};
+
+export const getUpdateAcquisitionProfileMutationOptions = <
+  TError = ErrorType<NotFoundResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAcquisitionProfile>>,
+    TError,
+    { id: string; data: BodyType<AcquisitionProfileWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAcquisitionProfile>>,
+  TError,
+  { id: string; data: BodyType<AcquisitionProfileWrite> },
+  TContext
+> => {
+  const mutationKey = ["updateAcquisitionProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAcquisitionProfile>>,
+    { id: string; data: BodyType<AcquisitionProfileWrite> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateAcquisitionProfile(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAcquisitionProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAcquisitionProfile>>
+>;
+export type UpdateAcquisitionProfileMutationBody =
+  BodyType<AcquisitionProfileWrite>;
+export type UpdateAcquisitionProfileMutationError = ErrorType<NotFoundResponse>;
+
+/**
+ * @summary Update an acquisition profile
+ */
+export const useUpdateAcquisitionProfile = <
+  TError = ErrorType<NotFoundResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAcquisitionProfile>>,
+    TError,
+    { id: string; data: BodyType<AcquisitionProfileWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAcquisitionProfile>>,
+  TError,
+  { id: string; data: BodyType<AcquisitionProfileWrite> },
+  TContext
+> => {
+  return useMutation(getUpdateAcquisitionProfileMutationOptions(options));
+};
+
+/**
+ * @summary Delete an acquisition profile
+ */
+export const getDeleteAcquisitionProfileUrl = (id: string) => {
+  return `/api/acquisition-profiles/${id}`;
+};
+
+export const deleteAcquisitionProfile = async (
+  id: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteAcquisitionProfileUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteAcquisitionProfileMutationOptions = <
+  TError = ErrorType<NotFoundResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAcquisitionProfile>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteAcquisitionProfile>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deleteAcquisitionProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteAcquisitionProfile>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteAcquisitionProfile(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteAcquisitionProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteAcquisitionProfile>>
+>;
+
+export type DeleteAcquisitionProfileMutationError = ErrorType<NotFoundResponse>;
+
+/**
+ * @summary Delete an acquisition profile
+ */
+export const useDeleteAcquisitionProfile = <
+  TError = ErrorType<NotFoundResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAcquisitionProfile>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteAcquisitionProfile>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDeleteAcquisitionProfileMutationOptions(options));
+};
+
+/**
+ * @summary List candidate deals (with profile matches) for the org
+ */
+export const getListCandidateDealsUrl = () => {
+  return `/api/candidate-deals`;
+};
+
+export const listCandidateDeals = async (
+  options?: RequestInit,
+): Promise<CandidateDeal[]> => {
+  return customFetch<CandidateDeal[]>(getListCandidateDealsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCandidateDealsQueryKey = () => {
+  return [`/api/candidate-deals`] as const;
+};
+
+export const getListCandidateDealsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCandidateDeals>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listCandidateDeals>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListCandidateDealsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listCandidateDeals>>
+  > = ({ signal }) => listCandidateDeals({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCandidateDeals>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCandidateDealsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCandidateDeals>>
+>;
+export type ListCandidateDealsQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary List candidate deals (with profile matches) for the org
+ */
+
+export function useListCandidateDeals<
+  TData = Awaited<ReturnType<typeof listCandidateDeals>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listCandidateDeals>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCandidateDealsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a single candidate deal with its matches
+ */
+export const getGetCandidateDealUrl = (id: string) => {
+  return `/api/candidate-deals/${id}`;
+};
+
+export const getCandidateDeal = async (
+  id: string,
+  options?: RequestInit,
+): Promise<CandidateDeal> => {
+  return customFetch<CandidateDeal>(getGetCandidateDealUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateDealQueryKey = (id: string) => {
+  return [`/api/candidate-deals/${id}`] as const;
+};
+
+export const getGetCandidateDealQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateDeal>>,
+  TError = ErrorType<NotFoundResponse>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateDeal>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateDealQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCandidateDeal>>
+  > = ({ signal }) => getCandidateDeal(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateDeal>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateDealQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateDeal>>
+>;
+export type GetCandidateDealQueryError = ErrorType<NotFoundResponse>;
+
+/**
+ * @summary Get a single candidate deal with its matches
+ */
+
+export function useGetCandidateDeal<
+  TData = Awaited<ReturnType<typeof getCandidateDeal>>,
+  TError = ErrorType<NotFoundResponse>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateDeal>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateDealQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update candidate status (shortlist / reject / promote / liveness)
+ */
+export const getUpdateCandidateDealUrl = (id: string) => {
+  return `/api/candidate-deals/${id}`;
+};
+
+export const updateCandidateDeal = async (
+  id: string,
+  candidateDealPatch: CandidateDealPatch,
+  options?: RequestInit,
+): Promise<CandidateDeal> => {
+  return customFetch<CandidateDeal>(getUpdateCandidateDealUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(candidateDealPatch),
+  });
+};
+
+export const getUpdateCandidateDealMutationOptions = <
+  TError = ErrorType<NotFoundResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCandidateDeal>>,
+    TError,
+    { id: string; data: BodyType<CandidateDealPatch> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateCandidateDeal>>,
+  TError,
+  { id: string; data: BodyType<CandidateDealPatch> },
+  TContext
+> => {
+  const mutationKey = ["updateCandidateDeal"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateCandidateDeal>>,
+    { id: string; data: BodyType<CandidateDealPatch> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateCandidateDeal(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateCandidateDealMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateCandidateDeal>>
+>;
+export type UpdateCandidateDealMutationBody = BodyType<CandidateDealPatch>;
+export type UpdateCandidateDealMutationError = ErrorType<NotFoundResponse>;
+
+/**
+ * @summary Update candidate status (shortlist / reject / promote / liveness)
+ */
+export const useUpdateCandidateDeal = <
+  TError = ErrorType<NotFoundResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCandidateDeal>>,
+    TError,
+    { id: string; data: BodyType<CandidateDealPatch> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateCandidateDeal>>,
+  TError,
+  { id: string; data: BodyType<CandidateDealPatch> },
+  TContext
+> => {
+  return useMutation(getUpdateCandidateDealMutationOptions(options));
+};
+
+/**
+ * @summary Ingest a raw document (webhook / crawler / manual upload), idempotent on content hash
+ */
+export const getIngestRawDocumentUrl = () => {
+  return `/api/screening/ingest`;
+};
+
+export const ingestRawDocument = async (
+  screeningIngestRequest: ScreeningIngestRequest,
+  options?: RequestInit,
+): Promise<ScreeningIngestResult | RawDocument> => {
+  return customFetch<ScreeningIngestResult | RawDocument>(
+    getIngestRawDocumentUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(screeningIngestRequest),
+    },
+  );
+};
+
+export const getIngestRawDocumentMutationOptions = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof ingestRawDocument>>,
+    TError,
+    { data: BodyType<ScreeningIngestRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof ingestRawDocument>>,
+  TError,
+  { data: BodyType<ScreeningIngestRequest> },
+  TContext
+> => {
+  const mutationKey = ["ingestRawDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof ingestRawDocument>>,
+    { data: BodyType<ScreeningIngestRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return ingestRawDocument(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type IngestRawDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof ingestRawDocument>>
+>;
+export type IngestRawDocumentMutationBody = BodyType<ScreeningIngestRequest>;
+export type IngestRawDocumentMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary Ingest a raw document (webhook / crawler / manual upload), idempotent on content hash
+ */
+export const useIngestRawDocument = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof ingestRawDocument>>,
+    TError,
+    { data: BodyType<ScreeningIngestRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof ingestRawDocument>>,
+  TError,
+  { data: BodyType<ScreeningIngestRequest> },
+  TContext
+> => {
+  return useMutation(getIngestRawDocumentMutationOptions(options));
+};
+
+/**
+ * @summary Run the batch matcher over all screenable candidates
+ */
+export const getRunScreeningUrl = () => {
+  return `/api/screening/run`;
+};
+
+export const runScreening = async (
+  options?: RequestInit,
+): Promise<ScreeningRunResult> => {
+  return customFetch<ScreeningRunResult>(getRunScreeningUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRunScreeningMutationOptions = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runScreening>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof runScreening>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["runScreening"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runScreening>>,
+    void
+  > = () => {
+    return runScreening(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RunScreeningMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runScreening>>
+>;
+
+export type RunScreeningMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary Run the batch matcher over all screenable candidates
+ */
+export const useRunScreening = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runScreening>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof runScreening>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getRunScreeningMutationOptions(options));
 };
