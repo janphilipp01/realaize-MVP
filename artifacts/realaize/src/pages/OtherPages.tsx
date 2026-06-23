@@ -17,6 +17,9 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { researchCityMarketData, GERMAN_TOP_CITIES } from '../utils/marketResearchAgent';
 import { generateDailyIntelligenceReport } from '../utils/newsAgent';
 import { searchDealRadar } from '../utils/dealRadarAgent';
+import { bestSignal, discountTone } from '../utils/screening';
+import { screeningBenchmarks } from '../data/dealSourcingData';
+import type { CandidateDeal, ProfileMatch } from '../models/types';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   aiChat,
@@ -1315,40 +1318,107 @@ Important: Your recommendations are advisory only. All KPIs are calculated deter
 // DEAL RADAR PAGE
 // ══════════════════════════════════════════════════════════
 
-const STATUS_STYLES: Record<string, { bg: string; border: string; color: string; label_de: string; label_en: string }> = {
-  new: { bg: 'rgba(0,122,255,0.08)', border: 'rgba(0,122,255,0.2)', color: '#007aff', label_de: 'Neu', label_en: 'New' },
-  reviewed: { bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.2)', color: '#fbbf24', label_de: 'Gesichtet', label_en: 'Reviewed' },
-  shortlisted: { bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.2)', color: '#4ade80', label_de: 'Vorgemerkt', label_en: 'Shortlisted' },
-  dismissed: { bg: 'rgba(248,113,113,0.06)', border: 'rgba(248,113,113,0.15)', color: '#f87171', label_de: 'Abgelehnt', label_en: 'Dismissed' },
-  converted: { bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)', color: '#a78bfa', label_de: 'Übernommen', label_en: 'Converted' },
+const SIGNAL_COLORS = { green: '#34C759', amber: '#FF9500', red: '#FF3B30', gray: 'rgba(60,60,67,0.5)' } as const;
+
+const CAND_STATUS_STYLES: Record<string, { bg: string; color: string; label_de: string; label_en: string }> = {
+  new: { bg: 'rgba(0,122,255,0.10)', color: '#007aff', label_de: 'Neu', label_en: 'New' },
+  matched: { bg: 'rgba(0,122,255,0.10)', color: '#007aff', label_de: 'Neu', label_en: 'New' },
+  shortlisted: { bg: 'rgba(52,199,89,0.12)', color: '#34C759', label_de: 'Vorgemerkt', label_en: 'Shortlisted' },
+  rejected: { bg: 'rgba(255,59,48,0.10)', color: '#FF3B30', label_de: 'Abgelehnt', label_en: 'Rejected' },
+  promoted: { bg: 'rgba(88,86,214,0.12)', color: '#5856D6', label_de: 'Übernommen', label_en: 'Promoted' },
+  unmatched: { bg: 'rgba(0,0,0,0.05)', color: 'rgba(60,60,67,0.5)', label_de: 'Kein Match', label_en: 'No match' },
+  inactive: { bg: 'rgba(0,0,0,0.05)', color: 'rgba(60,60,67,0.4)', label_de: 'Inaktiv', label_en: 'Inactive' },
+  pending_extraction: { bg: 'rgba(255,204,0,0.18)', color: '#8C7654', label_de: 'In Bearbeitung', label_en: 'Pending' },
 };
 
+const SOURCE_COLORS: Record<string, string> = {
+  platform_immoscout: '#007aff',
+  platform_immowelt: '#007aff',
+  broker_crawl: '#5856D6',
+  inbox: '#34C759',
+  manual_upload: 'rgba(60,60,67,0.55)',
+};
+
+const REJECT_REASONS = ['price too high', 'wrong submarket', 'stock condition', 'broker quality', 'timing', 'regulatory', 'other'];
+
+// Strongest match drives the card's headline numbers (green preferred, then amber).
+function primaryMatch(c: CandidateDeal): ProfileMatch | undefined {
+  return c.matches.find(m => m.signal === 'green') ?? c.matches.find(m => m.signal === 'amber') ?? c.matches[0];
+}
+
 export function DealRadarPage() {
-  const { dealRadarListings, dealRadarCriteria, addRadarListings, updateRadarListing, dismissRadarListing, convertToAcquisition, updateRadarCriteria } = useStore();
-  const { t, lang } = useLanguage();
+  const {
+    candidateDeals, acquisitionProfiles, lastScreeningAt,
+    runScreening, ingestCandidatesFromListings, shortlistCandidate, rejectCandidate, promoteCandidate,
+  } = useStore();
+  const { lang } = useLanguage();
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [showCriteria, setShowCriteria] = useState(false);
+  const [statusTab, setStatusTab] = useState<'all' | 'neu' | 'vorgemerkt' | 'abgelehnt' | 'uebernommen'>('all');
+  const [activeProfiles, setActiveProfiles] = useState<string[]>(acquisitionProfiles.map(p => p.id));
+  const [rejecting, setRejecting] = useState(false);
 
-  const allCities = ['Berlin', 'Hamburg', 'München', 'Köln', 'Frankfurt am Main', 'Stuttgart', 'Düsseldorf', 'Leipzig', 'Dortmund', 'Essen', 'Bremen', 'Dresden', 'Hannover', 'Nürnberg', 'Duisburg', 'Bochum', 'Wuppertal', 'Bielefeld', 'Bonn', 'Münster'];
-  const allUsageTypes: Array<'Wohnen' | 'Büro' | 'Einzelhandel' | 'Logistik' | 'Mixed Use'> = ['Wohnen', 'Büro', 'Einzelhandel', 'Logistik', 'Mixed Use'];
+  const de = lang === 'de';
 
-  const filtered = dealRadarListings.filter(l => filterStatus === 'all' || l.status === filterStatus);
-  const selectedListing = dealRadarListings.find(l => l.id === selectedId);
+  // Candidates that have at least one match (or have been actioned) are "on the Radar".
+  const onRadar = candidateDeals.filter(c =>
+    c.listingActive && (c.matches.length > 0 || ['shortlisted', 'rejected', 'promoted'].includes(c.status)));
 
-  const handleSearch = async () => {
+  const inStatusTab = (c: CandidateDeal) => {
+    switch (statusTab) {
+      case 'neu': return c.status === 'new' || c.status === 'matched';
+      case 'vorgemerkt': return c.status === 'shortlisted';
+      case 'abgelehnt': return c.status === 'rejected';
+      case 'uebernommen': return c.status === 'promoted';
+      default: return true;
+    }
+  };
+  const inProfileFilter = (c: CandidateDeal) =>
+    activeProfiles.length === acquisitionProfiles.length ||
+    c.matches.some(m => activeProfiles.includes(m.profileId));
+
+  const filtered = onRadar.filter(c => inStatusTab(c) && inProfileFilter(c));
+  const selected = candidateDeals.find(c => c.id === selectedId) ?? null;
+
+  const newCount = onRadar.filter(c => c.status === 'new' || c.status === 'matched').length;
+
+  const tabCount = (key: typeof statusTab) => {
+    const prev = statusTab;
+    return onRadar.filter(c => {
+      switch (key) {
+        case 'neu': return c.status === 'new' || c.status === 'matched';
+        case 'vorgemerkt': return c.status === 'shortlisted';
+        case 'abgelehnt': return c.status === 'rejected';
+        case 'uebernommen': return c.status === 'promoted';
+        default: return true;
+      }
+    }).length;
+    void prev;
+  };
+  const profileCount = (pid: string) => onRadar.filter(c => c.matches.some(m => m.profileId === pid)).length;
+
+  const handleRunScreening = () => { runScreening(); };
+
+  const handleLiveSearch = async () => {
     setSearching(true);
     setError(null);
     try {
-      const result = await searchDealRadar(dealRadarCriteria);
+      const profile = acquisitionProfiles[0];
+      const result = await searchDealRadar({
+        cities: profile.cities,
+        usageTypes: ['Wohnen', 'Mixed Use'],
+        priceMin: profile.priceMin,
+        priceMax: profile.priceMax,
+        minArea: profile.areaMin,
+        maxArea: profile.areaMax,
+      });
       if (result.success && result.listings.length > 0) {
-        addRadarListings(result.listings);
+        ingestCandidatesFromListings(result.listings);
       } else if (!result.success) {
-        setError(result.error || 'Search failed');
+        setError(result.error || (de ? 'Suche fehlgeschlagen' : 'Search failed'));
       } else {
-        setError(lang === 'de' ? 'Keine Angebote gefunden. Versuche breitere Suchkriterien.' : 'No listings found. Try broader criteria.');
+        setError(de ? 'Keine neuen Angebote gefunden.' : 'No new listings found.');
       }
     } catch (err: any) {
       setError(err.message);
@@ -1357,80 +1427,36 @@ export function DealRadarPage() {
     }
   };
 
-  const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 5, letterSpacing: '0.04em', textTransform: 'uppercase' };
+  const fmtClock = (iso: string | null) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleString(de ? 'de-DE' : 'en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+  const discPctLabel = (pct: number) => `${pct >= 0 ? '−' : '+'}${Math.abs(pct).toFixed(1)} %`;
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto">
       <PageHeader
-        title={t('radar.title')}
-        subtitle={t('radar.subtitle')}
-        badge={dealRadarListings.filter(l => l.status === 'new').length > 0 ? `${dealRadarListings.filter(l => l.status === 'new').length} ${lang === 'de' ? 'neu' : 'new'}` : undefined}
+        title="Deal Radar"
+        subtitle={de ? 'AI-gestützte Suche nach Investmentangeboten · Düsseldorf + Speckgürtel' : 'AI-driven deal sourcing · Düsseldorf + commuter belt'}
+        badge={newCount > 0 ? `${newCount} ${de ? 'neu' : 'new'}` : undefined}
         actions={
-          <div className="flex gap-2">
-            <button onClick={() => setShowCriteria(!showCriteria)} className="btn-glass px-4 py-2 rounded-xl text-sm flex items-center gap-2" style={{ cursor: 'pointer' }}>
-              <Filter size={14} /> {t('radar.criteria')}
+          <div className="flex gap-2 items-center">
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 11px', borderRadius: 8, background: 'rgba(52,199,89,0.10)', color: '#34C759', whiteSpace: 'nowrap' }}>
+              {de ? 'Gescreent: Mo & Do 07:00' : 'Screened: Mon & Thu 07:00'}
+            </span>
+            <button onClick={handleLiveSearch} disabled={searching}
+              className="btn-glass px-4 py-2 rounded-xl text-sm flex items-center gap-2" style={{ cursor: searching ? 'wait' : 'pointer', opacity: searching ? 0.7 : 1 }}>
+              {searching ? <RefreshCw size={14} className="animate-spin" /> : <Search size={14} />}
+              {de ? 'Live-Suche (AI)' : 'Live search (AI)'}
             </button>
-            <button onClick={handleSearch} disabled={searching}
-              className="btn-accent px-4 py-2 rounded-xl text-sm flex items-center gap-2"
-              style={{ cursor: searching ? 'wait' : 'pointer', opacity: searching ? 0.7 : 1 }}>
-              {searching ? <RefreshCw size={14} className="animate-spin" /> : <Radar size={14} />}
-              {searching ? t('radar.searching') : t('radar.search')}
+            <button onClick={handleRunScreening} className="btn-accent px-4 py-2 rounded-xl text-sm flex items-center gap-2" style={{ cursor: 'pointer' }}>
+              <Radar size={14} /> {de ? 'Screening starten' : 'Run screening'}
             </button>
           </div>
         }
       />
 
-      {/* Search Criteria Panel */}
-      {showCriteria && (
-        <GlassPanel style={{ padding: 20, marginBottom: 16 }} className="animate-fade-in">
-          <div className="flex items-center justify-between mb-4">
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#1c1c1e' }}>{t('radar.criteria')}</span>
-            <button onClick={() => setShowCriteria(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={14} /></button>
-          </div>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label style={labelStyle}>{lang === 'de' ? 'Städte' : 'Cities'}</label>
-              <div className="flex flex-wrap gap-1.5">
-                {allCities.map(city => (
-                  <button key={city} onClick={() => {
-                    const has = dealRadarCriteria.cities.includes(city);
-                    updateRadarCriteria({ cities: has ? dealRadarCriteria.cities.filter(c => c !== city) : [...dealRadarCriteria.cities, city] });
-                  }} style={{
-                    fontSize: 11, padding: '3px 8px', borderRadius: 6, cursor: 'pointer',
-                    background: dealRadarCriteria.cities.includes(city) ? 'rgba(0,122,255,0.12)' : 'rgba(0,0,0,0.04)',
-                    color: dealRadarCriteria.cities.includes(city) ? '#007aff' : 'rgba(60,60,67,0.55)',
-                    border: `1px solid ${dealRadarCriteria.cities.includes(city) ? 'rgba(0,122,255,0.25)' : 'rgba(0,0,0,0.06)'}`,
-                  }}>{city}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label style={labelStyle}>{lang === 'de' ? 'Nutzungsarten' : 'Usage Types'}</label>
-              <div className="flex flex-wrap gap-1.5">
-                {allUsageTypes.map(ut => (
-                  <button key={ut} onClick={() => {
-                    const has = dealRadarCriteria.usageTypes.includes(ut);
-                    updateRadarCriteria({ usageTypes: has ? dealRadarCriteria.usageTypes.filter(u => u !== ut) : [...dealRadarCriteria.usageTypes, ut] });
-                  }} style={{
-                    fontSize: 11, padding: '3px 8px', borderRadius: 6, cursor: 'pointer',
-                    background: dealRadarCriteria.usageTypes.includes(ut) ? 'rgba(201,169,110,0.15)' : 'rgba(0,0,0,0.04)',
-                    color: dealRadarCriteria.usageTypes.includes(ut) ? 'var(--accent)' : 'rgba(60,60,67,0.55)',
-                    border: `1px solid ${dealRadarCriteria.usageTypes.includes(ut) ? 'rgba(201,169,110,0.3)' : 'rgba(0,0,0,0.06)'}`,
-                  }}>{ut}</button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            <div><label style={labelStyle}>Min. Preis (€)</label><input type="number" className="input-glass" style={{ width: '100%' }} value={dealRadarCriteria.priceMin} onChange={e => updateRadarCriteria({ priceMin: parseInt(e.target.value) || 0 })} /></div>
-            <div><label style={labelStyle}>Max. Preis (€)</label><input type="number" className="input-glass" style={{ width: '100%' }} value={dealRadarCriteria.priceMax} onChange={e => updateRadarCriteria({ priceMax: parseInt(e.target.value) || 0 })} /></div>
-            <div><label style={labelStyle}>Min. Fläche (m²)</label><input type="number" className="input-glass" style={{ width: '100%' }} value={dealRadarCriteria.minArea} onChange={e => updateRadarCriteria({ minArea: parseInt(e.target.value) || 0 })} /></div>
-            <div><label style={labelStyle}>Max. Fläche (m²)</label><input type="number" className="input-glass" style={{ width: '100%' }} value={dealRadarCriteria.maxArea} onChange={e => updateRadarCriteria({ maxArea: parseInt(e.target.value) || 0 })} /></div>
-          </div>
-        </GlassPanel>
-      )}
-
-      {/* Error */}
       {error && (
         <div className="mb-4 p-3 rounded-xl flex items-center gap-3" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)' }}>
           <AlertTriangle size={14} color="#f87171" />
@@ -1439,64 +1465,115 @@ export function DealRadarPage() {
         </div>
       )}
 
-      {/* Filter tabs */}
-      {dealRadarListings.length > 0 && (
-        <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ background: 'rgba(0,0,0,0.03)', display: 'inline-flex' }}>
-          {[{ key: 'all', label: lang === 'de' ? 'Alle' : 'All', count: dealRadarListings.length },
-            { key: 'new', label: lang === 'de' ? 'Neu' : 'New', count: dealRadarListings.filter(l => l.status === 'new').length },
-            { key: 'shortlisted', label: lang === 'de' ? 'Vorgemerkt' : 'Shortlisted', count: dealRadarListings.filter(l => l.status === 'shortlisted').length },
-            { key: 'dismissed', label: lang === 'de' ? 'Abgelehnt' : 'Dismissed', count: dealRadarListings.filter(l => l.status === 'dismissed').length },
-            { key: 'converted', label: lang === 'de' ? 'Übernommen' : 'Converted', count: dealRadarListings.filter(l => l.status === 'converted').length },
-          ].map(tab => (
-            <button key={tab.key} onClick={() => setFilterStatus(tab.key)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium"
-              style={{ background: filterStatus === tab.key ? 'rgba(0,122,255,0.12)' : 'transparent', color: filterStatus === tab.key ? '#007aff' : 'rgba(60,60,67,0.55)', border: '1px solid transparent', cursor: 'pointer' }}>
-              {tab.label} {tab.count > 0 && <span style={{ fontSize: 10, opacity: 0.7 }}>({tab.count})</span>}
+      {/* Status tabs */}
+      <div className="flex gap-1 p-1 rounded-xl mb-3" style={{ background: 'rgba(0,0,0,0.03)', display: 'inline-flex' }}>
+        {([
+          { key: 'all', label: de ? 'Alle' : 'All' },
+          { key: 'neu', label: de ? 'Neu' : 'New' },
+          { key: 'vorgemerkt', label: de ? 'Vorgemerkt' : 'Shortlisted' },
+          { key: 'abgelehnt', label: de ? 'Abgelehnt' : 'Rejected' },
+          { key: 'uebernommen', label: de ? 'Übernommen' : 'Promoted' },
+        ] as const).map(tab => (
+          <button key={tab.key} onClick={() => setStatusTab(tab.key)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+            style={{ background: statusTab === tab.key ? 'white' : 'transparent', color: statusTab === tab.key ? '#1c1c1e' : 'rgba(60,60,67,0.55)', boxShadow: statusTab === tab.key ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', border: '1px solid transparent', cursor: 'pointer' }}>
+            {tab.label} <span style={{ fontSize: 10, opacity: 0.6 }}>{tabCount(tab.key)}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Profile filter chips */}
+      <div className="flex gap-2 items-center mb-3 flex-wrap">
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(60,60,67,0.5)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{de ? 'Profil ·' : 'Profile ·'}</span>
+        <button onClick={() => setActiveProfiles(acquisitionProfiles.map(p => p.id))}
+          style={{ fontSize: 11, fontWeight: 700, padding: '4px 11px', borderRadius: 999, cursor: 'pointer',
+            background: activeProfiles.length === acquisitionProfiles.length ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.6)',
+            color: activeProfiles.length === acquisitionProfiles.length ? '#1c1c1e' : 'rgba(60,60,67,0.55)',
+            border: '1px solid rgba(0,0,0,0.06)' }}>
+          {de ? 'Alle Profile' : 'All profiles'}
+        </button>
+        {acquisitionProfiles.map(p => {
+          const on = activeProfiles.includes(p.id);
+          const isVA = p.screeningMode === 'discount_to_market';
+          const col = isVA ? '#007aff' : '#34C759';
+          return (
+            <button key={p.id} onClick={() => setActiveProfiles(on ? activeProfiles.filter(x => x !== p.id) : [...activeProfiles, p.id])}
+              style={{ fontSize: 11, fontWeight: 700, padding: '4px 11px', borderRadius: 999, cursor: 'pointer',
+                background: on ? (isVA ? 'rgba(0,122,255,0.10)' : 'rgba(52,199,89,0.10)') : 'rgba(255,255,255,0.6)',
+                color: on ? col : 'rgba(60,60,67,0.55)',
+                border: `1px solid ${on ? (isVA ? 'rgba(0,122,255,0.2)' : 'rgba(52,199,89,0.2)') : 'rgba(0,0,0,0.06)'}` }}>
+              {p.shortLabel} · {profileCount(p.id)}
             </button>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
+
+      {/* Cadence banner */}
+      <div className="flex items-center gap-2.5 mb-6 p-3 rounded-xl" style={{ background: 'rgba(0,122,255,0.05)', border: '1px solid rgba(0,122,255,0.10)' }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: '#34C759' }} />
+        <span style={{ fontSize: 12, color: '#1c1c1e' }}>
+          <strong style={{ color: '#007aff' }}>{newCount} {de ? 'neue Deals' : 'new deals'}</strong>
+          {de ? ` · letztes Screening ${fmtClock(lastScreeningAt)} · nächstes Screening Mo 07:00` : ` · last screening ${fmtClock(lastScreeningAt)} · next Mon 07:00`}
+        </span>
+      </div>
 
       <div className="flex gap-6">
-        {/* Listings grid */}
-        <div style={{ flex: selectedListing ? '0 0 55%' : 1 }}>
+        {/* Cards grid */}
+        <div style={{ flex: selected ? '0 0 55%' : 1 }}>
           {filtered.length === 0 ? (
             <GlassPanel style={{ padding: 48, textAlign: 'center' }}>
               <Radar size={36} color="rgba(60,60,67,0.25)" />
-              <div style={{ fontSize: 14, color: 'rgba(60,60,67,0.50)', marginTop: 16, maxWidth: 400, margin: '16px auto 0', lineHeight: 1.6 }}>{t('radar.noResults')}</div>
-              <button onClick={handleSearch} disabled={searching} className="btn-accent px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 mx-auto mt-5" style={{ cursor: searching ? 'wait' : 'pointer' }}>
-                {searching ? <RefreshCw size={14} className="animate-spin" /> : <Radar size={14} />}
-                {searching ? t('radar.searching') : t('radar.search')}
-              </button>
+              <div style={{ fontSize: 14, color: 'rgba(60,60,67,0.50)', marginTop: 16, maxWidth: 420, margin: '16px auto 0', lineHeight: 1.6 }}>
+                {de ? 'Keine Kandidaten in dieser Ansicht. Starte ein Screening oder eine Live-Suche.' : 'No candidates in this view. Run screening or a live search.'}
+              </div>
             </GlassPanel>
           ) : (
             <div className="grid grid-cols-2 gap-4">
-              {filtered.map(listing => {
-                const st = STATUS_STYLES[listing.status];
+              {filtered.map(c => {
+                const pm = primaryMatch(c);
+                const sig = bestSignal(c.matches);
+                const sigCol = sig === 'green' ? SIGNAL_COLORS.green : sig === 'amber' ? SIGNAL_COLORS.amber : SIGNAL_COLORS.gray;
+                const st = CAND_STATUS_STYLES[c.status] ?? CAND_STATUS_STYLES.new;
+                const tone = pm ? discountTone(pm.discountPricePct) : 'gray';
+                const toneCol = tone === 'green' ? SIGNAL_COLORS.green : tone === 'amber' ? SIGNAL_COLORS.amber : SIGNAL_COLORS.gray;
                 return (
-                  <div key={listing.id} onClick={() => setSelectedId(listing.id === selectedId ? null : listing.id)}
+                  <div key={c.id} onClick={() => { setSelectedId(c.id === selectedId ? null : c.id); setRejecting(false); }}
                     className="glass-card glass-hover"
-                    style={{ padding: 0, overflow: 'hidden', cursor: 'pointer', border: listing.id === selectedId ? '2px solid #007aff' : '1px solid rgba(0,0,0,0.06)' }}>
+                    style={{ padding: 0, overflow: 'hidden', cursor: 'pointer', border: c.id === selectedId ? '2px solid #007aff' : `1px solid ${sig === 'green' ? 'rgba(52,199,89,0.35)' : sig === 'amber' ? 'rgba(255,149,0,0.30)' : 'rgba(0,0,0,0.06)'}` }}>
                     <div style={{ padding: '16px 18px 12px' }}>
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#1c1c1e', lineHeight: 1.3, flex: 1 }}>{listing.title}</div>
-                        <span style={{ fontSize: 9, fontWeight: 600, padding: '2px 7px', borderRadius: 5, background: st.bg, color: st.color, border: `1px solid ${st.border}`, whiteSpace: 'nowrap' }}>
-                          {lang === 'de' ? st.label_de : st.label_en}
-                        </span>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1c1c1e', lineHeight: 1.35, flex: 1 }}>{c.title}</div>
+                        <div className="flex flex-col items-end gap-1">
+                          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: st.bg, color: st.color, whiteSpace: 'nowrap' }}>{de ? st.label_de : st.label_en}</span>
+                          {c.matches.length > 0 && (
+                            <div className="flex gap-1">
+                              {c.matches.map(m => (
+                                <span key={m.profileId} style={{ fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 999,
+                                  background: m.profileLabel === 'V-A' ? 'rgba(0,122,255,0.08)' : 'rgba(52,199,89,0.08)',
+                                  color: m.profileLabel === 'V-A' ? '#007aff' : '#34C759' }}>{m.profileLabel}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)', marginBottom: 8 }}>{listing.city}{listing.address ? ` · ${listing.address}` : ''}</div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                        <div><span style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', textTransform: 'uppercase' }}>Asking Price</span><div style={{ fontSize: 15, fontWeight: 700, color: '#007aff' }}>{formatEUR(listing.askingPrice, true)}</div></div>
-                        <div><span style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', textTransform: 'uppercase' }}>{lang === 'de' ? 'Fläche' : 'Area'}</span><div style={{ fontSize: 14, fontWeight: 600, color: '#1c1c1e' }}>{listing.totalArea.toLocaleString()} m²</div></div>
-                        <div><span style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', textTransform: 'uppercase' }}>€/m²</span><div style={{ fontSize: 13, fontWeight: 600, color: '#1c1c1e' }}>{formatEUR(listing.pricePerSqm)}</div></div>
-                        {listing.estimatedYield ? (
-                          <div><span style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', textTransform: 'uppercase' }}>Est. Yield</span><div style={{ fontSize: 13, fontWeight: 600, color: listing.estimatedYield > 4.5 ? '#4ade80' : '#fbbf24' }}>{listing.estimatedYield.toFixed(1)}%</div></div>
-                        ) : null}
+                      <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)', marginBottom: 10 }}>{c.city}{c.address ? ` · ${c.address.split(',')[0]}` : ''}</div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                        <div><span style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', textTransform: 'uppercase' }}>Asking price</span><div style={{ fontSize: 15, fontWeight: 700, color: '#007aff' }}>{formatEUR(c.askingPrice, true)}</div></div>
+                        <div><span style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', textTransform: 'uppercase' }}>{de ? 'Fläche' : 'Area'}</span><div style={{ fontSize: 14, fontWeight: 600, color: '#1c1c1e' }}>{c.areaSqm.toLocaleString()} m²</div></div>
+                        <div>
+                          <span style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', textTransform: 'uppercase' }}>€/m²</span>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#1c1c1e' }}>{pm ? formatEUR(pm.askingPricePerSqm) : '—'}</div>
+                          {pm && <div style={{ fontSize: 11, fontWeight: 700, color: toneCol }}>{discPctLabel(pm.discountPricePct)} {de ? 'zu Markt' : 'to market'}</div>}
+                        </div>
+                        <div>
+                          <span style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', textTransform: 'uppercase' }}>Faktor / Brutto</span>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: sigCol }}>{pm ? `${pm.impliedFactor.toFixed(1)}× · ${pm.impliedGrossYield.toFixed(2)} %` : '—'}</div>
+                        </div>
                       </div>
                     </div>
                     <div style={{ padding: '8px 18px', borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="badge-neutral" style={{ fontSize: 10 }}>{listing.usageType}</span>
-                      <span style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)' }}>{listing.sourceLabel}</span>
+                      <span className="badge-neutral" style={{ fontSize: 10 }}>{c.assetClass === 'residential' ? 'Wohnen' : c.assetClass === 'mixed_use' ? 'Mixed Use' : c.assetClass}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: SOURCE_COLORS[c.sourceChannel] ?? 'rgba(60,60,67,0.5)' }}>{c.sourceLabel}</span>
                     </div>
                   </div>
                 );
@@ -1506,92 +1583,146 @@ export function DealRadarPage() {
         </div>
 
         {/* Detail panel */}
-        {selectedListing && (
+        {selected && (
           <div style={{ flex: '0 0 42%' }} className="animate-fade-in">
-            <GlassPanel style={{ padding: 24, position: 'sticky', top: 24 }}>
-              <div className="flex items-center justify-between mb-4">
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#1c1c1e', lineHeight: 1.3 }}>{selectedListing.title}</div>
+            <GlassPanel style={{ padding: 24, position: 'sticky', top: 24, maxHeight: 'calc(100vh - 48px)', overflowY: 'auto' }}>
+              <div className="flex items-start justify-between gap-3 mb-1">
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#1c1c1e', lineHeight: 1.3 }}>{selected.title}</div>
                 <button onClick={() => setSelectedId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
               </div>
+              <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.55)', marginBottom: 16 }}>{selected.address}</div>
 
-              <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.55)', marginBottom: 16 }}>{selectedListing.address}{selectedListing.address && ', '}{selectedListing.city} {selectedListing.zip}</div>
-
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="p-3 rounded-xl" style={{ background: 'rgba(0,122,255,0.05)' }}>
-                  <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>Asking Price</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: '#007aff' }}>{formatEUR(selectedListing.askingPrice, true)}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>Asking price</div>
+                  <div style={{ fontSize: 19, fontWeight: 700, color: '#007aff' }}>{formatEUR(selected.askingPrice, true)}</div>
                 </div>
                 <div className="p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
-                  <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>{lang === 'de' ? 'Fläche' : 'Area'}</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: '#1c1c1e' }}>{selectedListing.totalArea.toLocaleString()} m²</div>
+                  <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>{de ? 'Fläche' : 'Area'}</div>
+                  <div style={{ fontSize: 19, fontWeight: 700, color: '#1c1c1e' }}>{selected.areaSqm.toLocaleString()} m²</div>
                 </div>
-                <div className="p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
-                  <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>€/m²</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#1c1c1e' }}>{formatEUR(selectedListing.pricePerSqm)}</div>
-                </div>
-                {selectedListing.estimatedYield ? (
-                  <div className="p-3 rounded-xl" style={{ background: selectedListing.estimatedYield > 4.5 ? 'rgba(74,222,128,0.08)' : 'rgba(251,191,36,0.08)' }}>
-                    <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>Est. NIY</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: selectedListing.estimatedYield > 4.5 ? '#4ade80' : '#fbbf24' }}>{selectedListing.estimatedYield.toFixed(1)}%</div>
-                  </div>
-                ) : null}
+                {primaryMatch(selected) && (() => { const pm = primaryMatch(selected)!; return (
+                  <>
+                    <div className="p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
+                      <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>€/m²</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: '#1c1c1e' }}>{formatEUR(pm.askingPricePerSqm)}</div>
+                    </div>
+                    <div className="p-3 rounded-xl" style={{ background: 'rgba(255,149,0,0.06)' }}>
+                      <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>Brutto-Rendite</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: '#FF9500' }}>{pm.impliedGrossYield.toFixed(2)} %</div>
+                    </div>
+                  </>
+                ); })()}
               </div>
 
-              <div className="flex gap-2 mb-4">
-                <span className="badge-neutral">{selectedListing.usageType}</span>
-                {selectedListing.yearBuilt && <span className="badge-neutral">{lang === 'de' ? 'Bj.' : 'Built'} {selectedListing.yearBuilt}</span>}
-                <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 5, background: STATUS_STYLES[selectedListing.status].bg, color: STATUS_STYLES[selectedListing.status].color }}>{lang === 'de' ? STATUS_STYLES[selectedListing.status].label_de : STATUS_STYLES[selectedListing.status].label_en}</span>
+              <div className="flex gap-2 mb-4 flex-wrap">
+                <span className="badge-neutral">{selected.assetClass === 'residential' ? 'Wohnen' : selected.assetClass === 'mixed_use' ? 'Mixed Use' : selected.assetClass}</span>
+                {selected.yearBuilt && <span className="badge-neutral">{de ? 'Bj.' : 'Built'} {selected.yearBuilt}</span>}
+                {selected.numUnits && <span className="badge-neutral">{selected.numUnits} {de ? 'Einheiten' : 'units'}</span>}
               </div>
 
-              {/* Description */}
-              <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.70)', lineHeight: 1.6, marginBottom: 16 }}>{selectedListing.description}</div>
+              {selected.description && (
+                <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.70)', lineHeight: 1.65, marginBottom: 16 }}>{selected.description}</div>
+              )}
 
-              {/* AI Assessment */}
-              {selectedListing.aiNotes && (
-                <div className="p-3 rounded-xl mb-4" style={{ background: 'rgba(0,122,255,0.05)', border: '1px solid rgba(0,122,255,0.12)' }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Bot size={13} color="#007aff" />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#007aff' }}>{t('radar.aiAssessment')}</span>
+              {/* Screening read-out per matched profile */}
+              {selected.matches.map(m => {
+                const sigCol = m.signal === 'green' ? SIGNAL_COLORS.green : SIGNAL_COLORS.amber;
+                const isVA = m.screeningMode === 'discount_to_market';
+                return (
+                  <div key={m.profileId} className="mb-4 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)' }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(60,60,67,0.55)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Screening · {m.profileName}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: m.signal === 'green' ? 'rgba(52,199,89,0.15)' : 'rgba(255,149,0,0.15)', color: sigCol }}>● {m.signal === 'green' ? 'Green' : 'Amber'}</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.2fr auto', gap: 10, alignItems: 'baseline', padding: '6px 0', borderBottom: '1px dashed rgba(0,0,0,0.10)' }}>
+                      <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.6)' }}>Test A · €/m² vs. Benchmark</span>
+                      <span style={{ fontSize: 11, fontFamily: 'ui-monospace, monospace' }}>{formatEUR(m.askingPricePerSqm)} · vs {formatEUR(m.benchmarkPricePerSqm)}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: m.passA ? SIGNAL_COLORS.green : SIGNAL_COLORS.red }}>{discPctLabel(m.discountPricePct)} · {m.passA ? 'PASS' : 'FAIL'}</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.2fr auto', gap: 10, alignItems: 'baseline', padding: '6px 0' }}>
+                      <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.6)' }}>{isVA ? 'Test B · Implied Faktor' : 'Test B · Brutto-Rendite'}</span>
+                      <span style={{ fontSize: 11, fontFamily: 'ui-monospace, monospace' }}>{isVA ? `${m.impliedFactor.toFixed(2)}× · vs ${m.benchmarkFactor.toFixed(1)}×` : `${m.impliedGrossYield.toFixed(2)} % · vs ≥ 5,00 %`}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: m.passB ? SIGNAL_COLORS.green : SIGNAL_COLORS.red }}>{isVA ? discPctLabel(m.discountFactorPct) : ''} {m.passB ? 'PASS' : 'FAIL'}</span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.70)', lineHeight: 1.5 }}>{selectedListing.aiNotes}</div>
+                );
+              })}
+
+              {/* AI assessment */}
+              {selected.aiNotes && (
+                <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(0,122,255,0.05)', border: '1px solid rgba(0,122,255,0.10)' }}>
+                  <div className="flex items-center gap-2 mb-2"><Bot size={13} color="#007aff" /><span style={{ fontSize: 11, fontWeight: 700, color: '#007aff' }}>AI-Einschätzung</span></div>
+                  <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.75)', lineHeight: 1.65 }}>{selected.aiNotes}</div>
                 </div>
               )}
 
+              {/* Market context */}
+              {(() => {
+                const b = screeningBenchmarks.find(x => x.city === selected.city && x.submarket === selected.submarket && x.assetClass === selected.assetClass)
+                  ?? screeningBenchmarks.find(x => x.city === selected.city && !x.submarket && x.assetClass === selected.assetClass);
+                if (!b) return null;
+                return (
+                  <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(52,199,89,0.04)', border: '1px solid rgba(52,199,89,0.10)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#34C759', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 10 }}>
+                      Market Context · {selected.submarket ?? selected.city} · {b.asOf}
+                    </div>
+                    {[
+                      [de ? '€/m² · transaction benchmark' : '€/m² · transaction benchmark', formatEUR(b.pricePerSqm)],
+                      [de ? '€/m²/mo · Marktmiete' : '€/m²/mo · market rent', `${b.rentPerSqmMonth.toFixed(2).replace('.', ',')} €`],
+                      ['Faktor median', `${b.factorMedian.toFixed(1).replace('.', ',')} ×`],
+                      [de ? 'Mietwachstum p.a.' : 'Rent growth p.a.', `+ ${(b.rentGrowthPaPct ?? 0).toFixed(1).replace('.', ',')} %`],
+                    ].map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px dashed rgba(0,0,0,0.10)' }}>
+                        <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.6)' }}>{k}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace' }}>{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
               {/* Source */}
-              <div className="flex items-center gap-2 mb-6">
-                <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>{t('radar.source')}: {selectedListing.sourceLabel}</span>
-                {selectedListing.sourceUrl && (
-                  <a href={selectedListing.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#007aff', display: 'flex', alignItems: 'center', gap: 3, textDecoration: 'none' }}>
-                    {lang === 'de' ? 'Zum Angebot' : 'View Listing'} <ExternalLink size={10} />
+              <div className="flex items-center gap-2 mb-4">
+                <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>{de ? 'Quelle' : 'Source'}: {selected.sourceLabel}</span>
+                {selected.sourceRef.startsWith('http') && (
+                  <a href={selected.sourceRef} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#007aff', display: 'flex', alignItems: 'center', gap: 3, textDecoration: 'none' }}>
+                    {de ? 'Zum Angebot' : 'View listing'} <ExternalLink size={10} />
                   </a>
                 )}
               </div>
 
-              {/* Action buttons */}
-              {selectedListing.status !== 'converted' && selectedListing.status !== 'dismissed' && (
-                <div className="flex gap-3">
-                  <button onClick={() => convertToAcquisition(selectedListing.id)}
-                    className="btn-accent px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 flex-1 justify-center" style={{ cursor: 'pointer' }}>
-                    <ArrowRight size={14} /> {t('radar.convert')}
-                  </button>
-                  <button onClick={() => updateRadarListing(selectedListing.id, { status: 'shortlisted', reviewedAt: new Date().toISOString() })}
-                    className="btn-glass px-4 py-2.5 rounded-xl text-sm flex items-center gap-2" style={{ cursor: 'pointer', color: '#4ade80' }}>
-                    <Target size={14} /> {t('radar.shortlist')}
-                  </button>
-                  <button onClick={() => dismissRadarListing(selectedListing.id)}
-                    className="btn-glass px-4 py-2.5 rounded-xl text-sm flex items-center gap-2" style={{ cursor: 'pointer', color: '#f87171' }}>
-                    <ThumbsDown size={14} /> {t('radar.dismiss')}
-                  </button>
+              {/* Actions */}
+              {selected.status === 'promoted' ? (
+                <div className="p-3 rounded-xl text-center" style={{ background: 'rgba(88,86,214,0.08)', border: '1px solid rgba(88,86,214,0.2)' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#5856D6' }}>{de ? '✓ In Acquisition übernommen' : '✓ Promoted to Acquisition'}</span>
                 </div>
-              )}
-              {selectedListing.status === 'converted' && (
-                <div className="p-3 rounded-xl text-center" style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#a78bfa' }}>{lang === 'de' ? '✓ In Acquisition Pipeline übernommen' : '✓ Added to Acquisition Pipeline'}</span>
+              ) : selected.status === 'rejected' ? (
+                <div className="p-3 rounded-xl text-center" style={{ background: 'rgba(255,59,48,0.06)' }}>
+                  <span style={{ fontSize: 13, color: '#FF3B30' }}>{de ? 'Abgelehnt' : 'Rejected'}{selected.rejectReason ? ` — ${selected.rejectReason}` : ''}</span>
                 </div>
-              )}
-              {selectedListing.status === 'dismissed' && (
-                <div className="p-3 rounded-xl text-center" style={{ background: 'rgba(248,113,113,0.06)' }}>
-                  <span style={{ fontSize: 13, color: '#f87171' }}>{lang === 'de' ? 'Abgelehnt' : 'Dismissed'}{selectedListing.reviewNote ? ` — ${selectedListing.reviewNote}` : ''}</span>
+              ) : rejecting ? (
+                <div className="p-3 rounded-xl" style={{ background: 'rgba(255,59,48,0.04)', border: '1px solid rgba(255,59,48,0.12)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.6)', marginBottom: 8 }}>{de ? 'Ablehnungsgrund wählen' : 'Choose reject reason'}</div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {REJECT_REASONS.map(r => (
+                      <button key={r} onClick={() => { rejectCandidate(selected.id, r); setRejecting(false); }}
+                        style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 999, background: 'white', color: '#FF3B30', border: '1px solid rgba(255,59,48,0.25)', cursor: 'pointer' }}>{r}</button>
+                    ))}
+                    <button onClick={() => setRejecting(false)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 999, background: 'transparent', color: 'rgba(60,60,67,0.5)', border: '1px solid rgba(0,0,0,0.06)', cursor: 'pointer' }}>{de ? 'Abbrechen' : 'Cancel'}</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-2" style={{ gridTemplateColumns: '1.4fr 1fr 1fr' }}>
+                  <button onClick={() => promoteCandidate(selected.id)} className="btn-accent px-3 py-2.5 rounded-xl text-sm flex items-center gap-1.5 justify-center" style={{ cursor: 'pointer' }}>
+                    <ArrowRight size={14} /> {de ? 'Übernehmen' : 'Promote'}
+                  </button>
+                  <button onClick={() => shortlistCandidate(selected.id)} className="btn-glass px-3 py-2.5 rounded-xl text-sm flex items-center gap-1.5 justify-center" style={{ cursor: 'pointer', color: '#34C759' }}>
+                    <Target size={14} /> {de ? 'Vormerken' : 'Shortlist'}
+                  </button>
+                  <button onClick={() => setRejecting(true)} className="btn-glass px-3 py-2.5 rounded-xl text-sm flex items-center gap-1.5 justify-center" style={{ cursor: 'pointer', color: '#FF3B30' }}>
+                    <ThumbsDown size={14} /> {de ? 'Ablehnen' : 'Reject'}
+                  </button>
                 </div>
               )}
             </GlassPanel>

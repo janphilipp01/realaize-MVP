@@ -12,6 +12,9 @@ import assetsRouter from "./assets";
 import dealsRouter from "./deals";
 import developmentsRouter from "./developments";
 import salesRouter from "./sales";
+import acquisitionProfilesRouter from "./acquisitionProfiles";
+import candidateDealsRouter from "./candidateDeals";
+import screeningRouter from "./screening";
 
 const router: IRouter = Router();
 
@@ -27,6 +30,9 @@ router.use(assetsRouter);
 router.use(dealsRouter);
 router.use(developmentsRouter);
 router.use(salesRouter);
+router.use(acquisitionProfilesRouter);
+router.use(candidateDealsRouter);
+router.use(screeningRouter);
 router.use(aiChatRouter);
 
 export default router;

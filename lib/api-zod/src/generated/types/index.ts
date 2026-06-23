@@ -6,12 +6,23 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./acquisitionProfile";
+export * from "./acquisitionProfileScreeningMode";
+export * from "./acquisitionProfileWrite";
+export * from "./acquisitionProfileWriteScreeningMode";
 export * from "./aiChatMessage";
 export * from "./aiChatMessageRole";
 export * from "./aiChatRequest";
 export * from "./aiChatResult";
 export * from "./appointment";
 export * from "./appointmentWrite";
+export * from "./candidateDeal";
+export * from "./candidateDealAssetClass";
+export * from "./candidateDealExtractionConfidence";
+export * from "./candidateDealPatch";
+export * from "./candidateDealPatchStatus";
+export * from "./candidateDealSourceChannel";
+export * from "./candidateDealStatus";
 export * from "./contact";
 export * from "./contactWrite";
 export * from "./errorResponse";
@@ -26,5 +37,15 @@ export * from "./marketUpdateEntry";
 export * from "./notFoundResponse";
 export * from "./portfolioObject";
 export * from "./portfolioObjectWrite";
+export * from "./profileMatch";
+export * from "./profileMatchBenchmarkConfidence";
+export * from "./profileMatchSignal";
+export * from "./rawDocument";
+export * from "./rawDocumentExtractionStatus";
+export * from "./rawDocumentKind";
+export * from "./screeningIngestRequest";
+export * from "./screeningIngestRequestKind";
+export * from "./screeningIngestResult";
+export * from "./screeningRunResult";
 export * from "./unauthorizedResponse";
 export * from "./xOrgIdParameter";

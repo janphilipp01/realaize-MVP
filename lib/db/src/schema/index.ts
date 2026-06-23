@@ -8,3 +8,7 @@ export * from "./assets";
 export * from "./deals";
 export * from "./developments";
 export * from "./sales";
+export * from "./acquisitionProfiles";
+export * from "./rawDocuments";
+export * from "./candidateDeals";
+export * from "./profileMatches";
