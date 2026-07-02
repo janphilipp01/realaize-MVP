@@ -11,6 +11,7 @@ import {
   StatusBadge, Modal, Tabs, SectionHeader, CompletenessRing, FreshnessBadge
 } from '../components/shared';
 import { computeDealKPIs, getKPIFormulaDetails, formatEUR, formatPct, formatX } from '../utils/kpiEngine';
+import { screenValueAdd, lookupMarketAssumptions } from '../utils/valueAddScreening';
 import { computeDealCashFlow } from '../utils/propertyCashFlowModel';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { exportInvestmentMemoPDF, exportDealExcel } from '../utils/exportUtils';
@@ -24,6 +25,8 @@ export default function DealDashboard() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { deals, updateDeal, deleteDeal, transferToBestand, transferToDevelopment, addActivityToDeal, addAuditEntry, updateDealPropertyData } = useStore();
+  const benchmarks = useStore(s => s.benchmarks);
+  const targetNIY = useStore(s => s.settings.targetNIY);
   const { t, lang } = useLanguage();
   const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
   const deal = deals.find(d => d.id === id);
@@ -138,6 +141,20 @@ export default function DealDashboard() {
               {deal.aiRecommendations.some(r => r.isAlert) && (
                 <span className="badge-warning flex items-center gap-1"><AlertTriangle size={10} /> AI Warnung</span>
               )}
+              {(() => {
+                const area = deal.underwritingAssumptions.area || deal.totalArea || 0;
+                const price = deal.underwritingAssumptions.purchasePrice || deal.askingPrice || 0;
+                const m = lookupMarketAssumptions(benchmarks, deal.city, deal.usageType);
+                if (!m.marketRent || area <= 0 || price <= 0) return null;
+                const r = screenValueAdd({ area, purchasePrice: price, marketRent: m.marketRent, marketNIY: m.marketNIY ?? targetNIY, scope: 'sanierung' });
+                return (
+                  <span title={lang === 'de' ? 'Value-Add Screening (Profil, Scope: Sanierung) — Detail im Underwriting → Market' : 'Value-add screening (profile, scope: refurbishment)'}
+                    className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
+                      background: r.pass ? 'rgba(22,163,74,0.10)' : 'rgba(220,38,38,0.09)', color: r.pass ? '#16a34a' : '#dc2626' }}>
+                    {r.pass ? '✓' : '✗'} Value-Add {r.marginPct.toFixed(0)}%
+                  </span>
+                );
+              })()}
             </div>
           </div>
         </div>
