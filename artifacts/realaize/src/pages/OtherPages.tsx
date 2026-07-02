@@ -20,6 +20,7 @@ import { searchDealRadar } from '../utils/dealRadarAgent';
 import { bestSignal, discountTone } from '../utils/screening';
 import { screeningBenchmarks } from '../data/dealSourcingData';
 import type { CandidateDeal, ProfileMatch } from '../models/types';
+import { screenValueAdd, BUILD_COST_RATES, SCOPE_LABEL, DEFAULT_SCREEN_PROFILE, type RenovationScope } from '../utils/valueAddScreening';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   aiChat,
@@ -1358,6 +1359,7 @@ export function DealRadarPage() {
   const [statusTab, setStatusTab] = useState<'all' | 'neu' | 'vorgemerkt' | 'abgelehnt' | 'uebernommen'>('all');
   const [activeProfiles, setActiveProfiles] = useState<string[]>(acquisitionProfiles.map(p => p.id));
   const [rejecting, setRejecting] = useState(false);
+  const [vaScope, setVaScope] = useState<RenovationScope>('sanierung');
 
   const de = lang === 'de';
 
@@ -1678,6 +1680,70 @@ export function DealRadarPage() {
                         <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace' }}>{v}</span>
                       </div>
                     ))}
+                  </div>
+                );
+              })()}
+
+              {/* Value-Add Screening (20% margin residual) */}
+              {(() => {
+                const b = screeningBenchmarks.find(x => x.city === selected.city && x.submarket === selected.submarket && x.assetClass === selected.assetClass)
+                  ?? screeningBenchmarks.find(x => x.city === selected.city && !x.submarket && x.assetClass === selected.assetClass);
+                if (!b || selected.areaSqm <= 0 || selected.askingPrice <= 0) return null;
+                // Market NIY derived from the transaction multiplier: NIY = (1 − non-recoverable) / factor.
+                const marketNIY = ((1 - DEFAULT_SCREEN_PROFILE.nonRecoverablePct) / b.factorMedian) * 100;
+                const r = screenValueAdd({ area: selected.areaSqm, purchasePrice: selected.askingPrice, marketRent: b.rentPerSqmMonth, marketNIY, scope: vaScope });
+                const green = '#16a34a', red = '#dc2626';
+                const rows: Array<[string, number, boolean]> = [
+                  [de ? 'Potentieller Exit-Wert' : 'Potential exit value', r.exitValue, false],
+                  [de ? '− Kaufpreis' : '− Purchase price', -selected.askingPrice, true],
+                  [de ? '− Kaufnebenkosten (10%)' : '− Purchase costs (10%)', -r.knk, true],
+                  [`− ${SCOPE_LABEL[vaScope][de ? 'de' : 'en']} (${BUILD_COST_RATES[vaScope]} €/m²)`, -r.buildCost, true],
+                  [de ? '− Finanzierung (5%)' : '− Financing (5%)', -r.financing, true],
+                  [de ? '− Contingency (10%)' : '− Contingency (10%)', -r.contingency, true],
+                ];
+                return (
+                  <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.08)' }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Target size={13} color="#007aff" />
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#007aff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Value-Add Screening · 20% Marge</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {(Object.keys(BUILD_COST_RATES) as RenovationScope[]).map(sc => (
+                        <button key={sc} onClick={() => setVaScope(sc)}
+                          style={{ fontSize: 11, fontWeight: 600, padding: '4px 9px', borderRadius: 7, cursor: 'pointer',
+                            background: vaScope === sc ? 'rgba(0,122,255,0.12)' : 'rgba(0,0,0,0.04)',
+                            color: vaScope === sc ? '#007aff' : 'rgba(60,60,67,0.6)',
+                            border: `1px solid ${vaScope === sc ? 'rgba(0,122,255,0.3)' : 'rgba(0,0,0,0.06)'}` }}>
+                          {SCOPE_LABEL[sc][de ? 'de' : 'en']} · {BUILD_COST_RATES[sc]}€
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', marginBottom: 8 }}>
+                      {de ? 'Basis' : 'Basis'}: {b.rentPerSqmMonth.toFixed(2).replace('.', ',')} €/m²/Mt · Faktor {b.factorMedian.toFixed(1).replace('.', ',')}× · {selected.areaSqm.toLocaleString('de-DE')} m² · {selected.submarket ?? selected.city}
+                    </div>
+                    <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                      {rows.map(([label, val, dim], i) => (
+                        <div key={i} className="flex items-center justify-between" style={{ padding: '5px 0', fontSize: 12, color: dim ? 'rgba(60,60,67,0.7)' : '#1c1c1e', fontWeight: dim ? 400 : 600 }}>
+                          <span>{label}</span>
+                          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatEUR(val, true)}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between" style={{ padding: '8px 0 4px', borderTop: '1px solid rgba(0,0,0,0.06)', fontSize: 13, fontWeight: 700, color: r.profit >= 0 ? green : red }}>
+                        <span>= Profit ({r.marginPct.toFixed(1)}% {de ? 'Marge' : 'margin'})</span>
+                        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatEUR(r.profit, true)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 p-2.5 rounded-lg" style={{ background: r.pass ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.07)' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: r.pass ? green : red }}>
+                        {r.pass ? `✓ ${de ? 'Trifft 20%-Hürde' : 'Clears 20% hurdle'} (+${formatEUR(r.surplus, true)})` : `✗ ${de ? 'Verfehlt 20%-Hürde' : 'Misses 20% hurdle'} (${formatEUR(r.surplus, true)})`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-2" style={{ fontSize: 12 }}>
+                      <span style={{ color: 'rgba(60,60,67,0.6)' }}>{de ? 'Max. Kaufpreis (20% Marge)' : 'Max bid (20% margin)'}</span>
+                      <span style={{ fontWeight: 700, color: selected.askingPrice <= r.maxBid ? green : red, fontVariantNumeric: 'tabular-nums' }}>
+                        {formatEUR(r.maxBid, true)}<span style={{ color: 'rgba(60,60,67,0.45)', fontWeight: 400 }}> {de ? 'vs. Angebot' : 'vs. asking'} {formatEUR(selected.askingPrice, true)}</span>
+                      </span>
+                    </div>
                   </div>
                 );
               })()}
