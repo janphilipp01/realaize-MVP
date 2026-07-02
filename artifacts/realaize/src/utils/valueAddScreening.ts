@@ -34,6 +34,7 @@ export interface ScreenProfile {
   profitMarginPct: number;   // required profit, of exit value (GDV)
   contingencyPct: number;    // contingency, of (build + financing)
   financingPct: number;      // financing, of (purchase + KNK + build)
+  exitYieldBufferPct: number; // added to market NIY for a conservative exit yield (bps as %)
 }
 
 export const DEFAULT_SCREEN_PROFILE: ScreenProfile = {
@@ -42,6 +43,7 @@ export const DEFAULT_SCREEN_PROFILE: ScreenProfile = {
   profitMarginPct: 0.20,
   contingencyPct: 0.10,
   financingPct: 0.05,
+  exitYieldBufferPct: 0.50, // exit ~50 bps softer than the (hot) market entry yield
 };
 
 export interface ValueAddInput {
@@ -67,6 +69,8 @@ export interface ValueAddResult {
   surplus: number;        // profit − profitHurdle  (≥0 ⇒ pass)
   pass: boolean;
   maxBid: number;         // max purchase price that still meets the hurdle
+  marketNIY: number;      // market entry NIY (%), as supplied
+  exitNIY: number;        // conservative exit NIY used for the valuation (%)
   profile: ScreenProfile;
 }
 
@@ -77,8 +81,10 @@ export function screenValueAdd(input: ValueAddInput): ValueAddResult {
   // Stabilized NOI (simplified: single non-recoverable haircut on gross rent).
   const noi = area * marketRent * 12 * (1 - p.nonRecoverablePct);
 
-  // Potential stabilized value (Exit = NOI / market NIY). Decision 1a: no KNK factor.
-  const exitValue = marketNIY > 0 ? noi / (marketNIY / 100) : 0;
+  // Potential stabilized value (Exit = NOI / exit NIY). Decision 1a: no KNK factor.
+  // Exit yield is deliberately softer than the (currently hot) market entry yield.
+  const exitNIY = marketNIY + p.exitYieldBufferPct;
+  const exitValue = exitNIY > 0 ? noi / (exitNIY / 100) : 0;
 
   const buildCost = area * BUILD_COST_RATES[scope];
   const knk = purchasePrice * p.knkPct;
@@ -105,6 +111,8 @@ export function screenValueAdd(input: ValueAddInput): ValueAddResult {
     surplus,
     pass: surplus >= 0,
     maxBid: computeMaxBid(exitValue, buildCost, p),
+    marketNIY,
+    exitNIY,
     profile: p,
   };
 }
