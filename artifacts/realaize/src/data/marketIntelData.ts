@@ -157,6 +157,27 @@ function makeBenchmark(input: BenchmarkInput): BenchmarkRecord {
 
 // ── Benchmarks ────────────────────────────────────────────────────────────────
 
+// Compact submarket comp: one ERV + one multiplier record (single provider).
+function makeComp(
+  city: string,
+  submarket: string | undefined,
+  assetClass: AssetClass,
+  erv: number,
+  multiplier: number,
+): BenchmarkRecord[] {
+  const where = submarket ?? city;
+  return [
+    makeBenchmark({
+      city, submarket, assetClass, kpi: 'erv',
+      brokers: [{ provider: 'Colliers', value: erv, pageNo: 1, originalText: `${where} Durchschnittsmiete ${erv.toFixed(2)} €/m²` }],
+    }),
+    makeBenchmark({
+      city, submarket, assetClass, kpi: 'multiplier',
+      brokers: [{ provider: 'Colliers', value: multiplier, pageNo: 1, originalText: `${where} Vervielfältiger ${multiplier.toFixed(1)}×` }],
+    }),
+  ];
+}
+
 export const mockBenchmarks: BenchmarkRecord[] = [
   // ── Düsseldorf · residential · full Big-Six ──
   makeBenchmark({
@@ -332,6 +353,15 @@ export const mockBenchmarks: BenchmarkRecord[] = [
       { provider: 'BNP', value: 34.8, pageNo: 4, originalText: 'Ausreißertransaktion Faktor 34,8', confidence: 0.7 },
     ],
   }),
+
+  // ── Sourcing submarket comps (ERV + multiplier) — feed the Deal Radar screen ──
+  // Single source of market assumptions for the sourcing stage; values carried
+  // over from the former Module-07 screening seed so screening stays consistent.
+  ...makeComp('Düsseldorf', 'Flingern', 'residential', 12.80, 22.5),
+  ...makeComp('Düsseldorf', 'Bilk', 'residential', 12.92, 24.0),
+  ...makeComp('Meerbusch', 'Büderich', 'residential', 15.22, 19.5),
+  ...makeComp('Ratingen', undefined, 'mixed_use', 13.02, 23.0),
+  ...makeComp('Düsseldorf', undefined, 'mixed_use', 13.50, 22.0),
 ];
 
 // ── Cross-validation · portfolio_realised vs broker (Phase 3 preview) ──

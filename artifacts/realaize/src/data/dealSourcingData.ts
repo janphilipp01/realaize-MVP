@@ -13,6 +13,8 @@ import type {
   DealRadarListing,
 } from '../models/types';
 import { screenCandidateAllProfiles } from '../utils/screening';
+import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
+import { mockBenchmarks } from './marketIntelData';
 
 export const BENCHMARK_AS_OF = '2026-Q2';
 
@@ -56,16 +58,10 @@ export const defaultAcquisitionProfiles: AcquisitionProfile[] = [
   },
 ];
 
-// Reconciled benchmark inputs (Market Intelligence) per submarket × asset class.
-export const screeningBenchmarks: ScreeningBenchmarkSeed[] = [
-  { city: 'Düsseldorf', submarket: 'Flingern', assetClass: 'residential', pricePerSqm: 3600, rentPerSqmMonth: 12.80, factorMedian: 22.5, rentGrowthPaPct: 3.8, asOf: BENCHMARK_AS_OF },
-  { city: 'Düsseldorf', submarket: 'Bilk', assetClass: 'residential', pricePerSqm: 3800, rentPerSqmMonth: 12.92, factorMedian: 24.0, rentGrowthPaPct: 3.5, asOf: BENCHMARK_AS_OF },
-  { city: 'Meerbusch', submarket: 'Büderich', assetClass: 'residential', pricePerSqm: 3520, rentPerSqmMonth: 15.22, factorMedian: 19.5, rentGrowthPaPct: 3.0, asOf: BENCHMARK_AS_OF },
-  { city: 'Ratingen', assetClass: 'mixed_use', pricePerSqm: 3500, rentPerSqmMonth: 13.02, factorMedian: 23.0, rentGrowthPaPct: 2.8, asOf: BENCHMARK_AS_OF },
-  // City-level fallbacks for off-submarket / AI-sourced candidates.
-  { city: 'Düsseldorf', assetClass: 'residential', pricePerSqm: 3500, rentPerSqmMonth: 13.00, factorMedian: 23.0, rentGrowthPaPct: 3.5, asOf: BENCHMARK_AS_OF },
-  { city: 'Düsseldorf', assetClass: 'mixed_use', pricePerSqm: 3400, rentPerSqmMonth: 13.50, factorMedian: 22.0, rentGrowthPaPct: 3.2, asOf: BENCHMARK_AS_OF },
-];
+// Screening benchmark inputs are now DERIVED from the Market Intelligence master
+// (Module 06) — one single source of market assumptions across every stage.
+// rentPerSqmMonth = ERV, factorMedian = multiplier, pricePerSqm = ERV×12×factor.
+export const screeningBenchmarks: ScreeningBenchmarkSeed[] = benchmarksToScreeningSeeds(mockBenchmarks);
 
 const now = '2026-06-23T07:00:00.000Z';
 const lastThu = '2026-06-18T07:00:00.000Z';

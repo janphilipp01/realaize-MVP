@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, AreaChart, Area, ComposedChart, ReferenceLine, CartesianGrid
@@ -18,7 +18,7 @@ import { researchCityMarketData, GERMAN_TOP_CITIES } from '../utils/marketResear
 import { generateDailyIntelligenceReport } from '../utils/newsAgent';
 import { searchDealRadar } from '../utils/dealRadarAgent';
 import { bestSignal, discountTone } from '../utils/screening';
-import { screeningBenchmarks } from '../data/dealSourcingData';
+import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
 import type { CandidateDeal, ProfileMatch } from '../models/types';
 import { screenValueAdd, BUILD_COST_RATES, SCOPE_LABEL, DEFAULT_SCREEN_PROFILE, type RenovationScope } from '../utils/valueAddScreening';
 import { useQueryClient } from '@tanstack/react-query';
@@ -1360,6 +1360,9 @@ export function DealRadarPage() {
   const [activeProfiles, setActiveProfiles] = useState<string[]>(acquisitionProfiles.map(p => p.id));
   const [rejecting, setRejecting] = useState(false);
   const [vaScope, setVaScope] = useState<RenovationScope>('sanierung');
+  // Market assumptions come live from Market Intelligence (Module 06).
+  const benchmarks = useStore(s => s.benchmarks);
+  const screenSeeds = useMemo(() => benchmarksToScreeningSeeds(benchmarks), [benchmarks]);
 
   const de = lang === 'de';
 
@@ -1661,8 +1664,8 @@ export function DealRadarPage() {
 
               {/* Market context */}
               {(() => {
-                const b = screeningBenchmarks.find(x => x.city === selected.city && x.submarket === selected.submarket && x.assetClass === selected.assetClass)
-                  ?? screeningBenchmarks.find(x => x.city === selected.city && !x.submarket && x.assetClass === selected.assetClass);
+                const b = screenSeeds.find(x => x.city === selected.city && x.submarket === selected.submarket && x.assetClass === selected.assetClass)
+                  ?? screenSeeds.find(x => x.city === selected.city && !x.submarket && x.assetClass === selected.assetClass);
                 if (!b) return null;
                 return (
                   <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(52,199,89,0.04)', border: '1px solid rgba(52,199,89,0.10)' }}>
@@ -1686,8 +1689,8 @@ export function DealRadarPage() {
 
               {/* Value-Add Screening (20% margin residual) */}
               {(() => {
-                const b = screeningBenchmarks.find(x => x.city === selected.city && x.submarket === selected.submarket && x.assetClass === selected.assetClass)
-                  ?? screeningBenchmarks.find(x => x.city === selected.city && !x.submarket && x.assetClass === selected.assetClass);
+                const b = screenSeeds.find(x => x.city === selected.city && x.submarket === selected.submarket && x.assetClass === selected.assetClass)
+                  ?? screenSeeds.find(x => x.city === selected.city && !x.submarket && x.assetClass === selected.assetClass);
                 if (!b || selected.areaSqm <= 0 || selected.askingPrice <= 0) return null;
                 // Market NIY derived from the transaction multiplier: NIY = (1 − non-recoverable) / factor.
                 const marketNIY = ((1 - DEFAULT_SCREEN_PROFILE.nonRecoverablePct) / b.factorMedian) * 100;

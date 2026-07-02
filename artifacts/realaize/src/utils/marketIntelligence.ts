@@ -11,6 +11,7 @@ import type {
   ConsolidationMethod,
   BenchmarkSourceType,
   ValidationStatus,
+  ScreeningBenchmarkSeed,
 } from '../models/types';
 
 // ── Labels ──────────────────────────────────────────────────────────────────
@@ -20,6 +21,7 @@ export const ASSET_CLASS_LABEL: Record<AssetClass, string> = {
   office: 'Office',
   retail: 'Retail',
   logistics: 'Logistics',
+  mixed_use: 'Mixed Use',
 };
 
 export const KPI_LABEL: Record<BenchmarkKpi, string> = {
@@ -233,4 +235,56 @@ export function validateBenchmark(
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+// ── Adapter → Deal Sourcing screening benchmarks ──────────────────────────────
+// Makes Market Intelligence the single source of market assumptions across every
+// stage. Derives the screening benchmark seeds the Deal Radar / matcher consume
+// from the validated benchmark master:
+//   rentPerSqmMonth = ERV, factorMedian = multiplier (or (1−nonRec)/NIY),
+//   pricePerSqm     = ERV × 12 × factor.
+
+const SCREEN_NON_RECOVERABLE = 0.10;
+
+export function benchmarksToScreeningSeeds(
+  benchmarks: BenchmarkRecord[],
+): ScreeningBenchmarkSeed[] {
+  const groups = new Map<string, BenchmarkRecord[]>();
+  for (const b of benchmarks) {
+    if (b.validationStatus === 'rejected') continue;
+    if (b.sourceType === 'portfolio_realised') continue; // realized, not a market comp
+    const key = `${b.city}|${b.submarket ?? ''}|${b.assetClass}`;
+    const arr = groups.get(key);
+    if (arr) arr.push(b);
+    else groups.set(key, [b]);
+  }
+
+  const seeds: ScreeningBenchmarkSeed[] = [];
+  for (const recs of groups.values()) {
+    const pick = (kpi: BenchmarkKpi) => recs.find(r => r.kpi === kpi);
+    const ervRec = pick('erv') ?? pick('prime_rent');
+    if (!ervRec) continue; // rent basis is required
+
+    const multRec = pick('multiplier');
+    const niyRec = pick('net_initial_yield') ?? pick('prime_yield');
+    let factorMedian: number;
+    if (multRec) {
+      factorMedian = multRec.value;
+    } else if (niyRec && niyRec.value > 0) {
+      factorMedian = (1 - SCREEN_NON_RECOVERABLE) / (niyRec.value / 100);
+    } else {
+      continue; // no factor derivable
+    }
+
+    seeds.push({
+      city: ervRec.city,
+      submarket: ervRec.submarket,
+      assetClass: ervRec.assetClass,
+      pricePerSqm: Math.round(ervRec.value * 12 * factorMedian),
+      rentPerSqmMonth: ervRec.value,
+      factorMedian: Math.round(factorMedian * 10) / 10,
+      asOf: ervRec.periodQuarter,
+    });
+  }
+  return seeds;
 }

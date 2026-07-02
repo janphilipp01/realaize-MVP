@@ -3,8 +3,9 @@ import { persist } from 'zustand/middleware';
 import type { Asset, AcquisitionDeal, AuditLogEntry, ActivityEntry, DevelopmentProject, SaleObject, Contact, ProjectImage, GeverkPosition, BuyerLead, DailyIntelligenceReport, Document, DealRadarListing, DealRadarSearchCriteria, PropertyData, Offer, Invoice, GewerkePosition, Unit, BenchmarkRecord, MarketEventRecord, ReportSource, RefreshJob, CandidateDeal, AcquisitionProfile, UsageType } from '../models/types';
 import { mockAssets, mockDeals, mockAuditLog, mockDevelopments, mockSales, mockContacts, mockNewsReports, mockDealRadarListings } from '../data/mockData';
 import { mockBenchmarks, mockPortfolioBenchmark, mockMarketEvents, mockReportSources, mockRefreshJobs, CURRENT_PERIOD } from '../data/marketIntelData';
-import { mockCandidateDeals, defaultAcquisitionProfiles, screeningBenchmarks, listingToCandidate } from '../data/dealSourcingData';
+import { mockCandidateDeals, defaultAcquisitionProfiles, listingToCandidate } from '../data/dealSourcingData';
 import { runLocalMatcher } from '../utils/screening';
+import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
 import { DEFAULT_ACQUISITION_COSTS } from '../models/types';
 
 interface AppSettings {
@@ -656,7 +657,7 @@ export const useStore = create<AppState>()(
       // ── Deal Sourcing & Screening (Module 07) ──
       runScreening: () =>
         set(s => ({
-          candidateDeals: runLocalMatcher(s.candidateDeals, s.acquisitionProfiles, screeningBenchmarks),
+          candidateDeals: runLocalMatcher(s.candidateDeals, s.acquisitionProfiles, benchmarksToScreeningSeeds(s.benchmarks)),
           lastScreeningAt: new Date().toISOString(),
         })),
 
@@ -667,7 +668,7 @@ export const useStore = create<AppState>()(
             .map(listingToCandidate)
             .filter(c => !existingRefs.has(c.sourceRef))
             .map(c => ({ ...c, matches: [] }));
-          const merged = runLocalMatcher([...fresh, ...s.candidateDeals], s.acquisitionProfiles, screeningBenchmarks);
+          const merged = runLocalMatcher([...fresh, ...s.candidateDeals], s.acquisitionProfiles, benchmarksToScreeningSeeds(s.benchmarks));
           return { candidateDeals: merged, lastScreeningAt: new Date().toISOString() };
         }),
 
@@ -736,7 +737,7 @@ export const useStore = create<AppState>()(
           const profiles = s.acquisitionProfiles.map(p => p.id === id ? { ...p, ...patch } : p);
           return {
             acquisitionProfiles: profiles,
-            candidateDeals: runLocalMatcher(s.candidateDeals, profiles, screeningBenchmarks),
+            candidateDeals: runLocalMatcher(s.candidateDeals, profiles, benchmarksToScreeningSeeds(s.benchmarks)),
             lastScreeningAt: new Date().toISOString(),
           };
         }),

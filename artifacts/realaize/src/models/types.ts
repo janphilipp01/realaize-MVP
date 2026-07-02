@@ -307,7 +307,7 @@ export interface MarketUpdateEntry {
 // Source-attributed, multi-broker-validated market data layer.
 // See concept: realaize · Market Intelligence Pipeline.
 
-export type AssetClass = 'residential' | 'office' | 'retail' | 'logistics';
+export type AssetClass = 'residential' | 'office' | 'retail' | 'logistics' | 'mixed_use';
 
 export type BenchmarkKpi =
   | 'prime_rent'
