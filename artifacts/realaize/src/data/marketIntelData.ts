@@ -178,6 +178,19 @@ function makeComp(
   ];
 }
 
+// Single multiplier record (for submarkets that already carry an ERV).
+function makeMult(
+  city: string,
+  submarket: string | undefined,
+  assetClass: AssetClass,
+  multiplier: number,
+): BenchmarkRecord {
+  return makeBenchmark({
+    city, submarket, assetClass, kpi: 'multiplier',
+    brokers: [{ provider: 'Colliers', value: multiplier, pageNo: 1, originalText: `${submarket ?? city} Vervielfältiger ${multiplier.toFixed(1)}×` }],
+  });
+}
+
 export const mockBenchmarks: BenchmarkRecord[] = [
   // ── Düsseldorf · residential · full Big-Six ──
   makeBenchmark({
@@ -354,14 +367,22 @@ export const mockBenchmarks: BenchmarkRecord[] = [
     ],
   }),
 
-  // ── Sourcing submarket comps (ERV + multiplier) — feed the Deal Radar screen ──
-  // Single source of market assumptions for the sourcing stage; values carried
-  // over from the former Module-07 screening seed so screening stays consistent.
-  ...makeComp('Düsseldorf', 'Flingern', 'residential', 12.80, 22.5),
-  ...makeComp('Düsseldorf', 'Bilk', 'residential', 12.92, 24.0),
-  ...makeComp('Meerbusch', 'Büderich', 'residential', 15.22, 19.5),
-  ...makeComp('Ratingen', undefined, 'mixed_use', 13.02, 23.0),
-  ...makeComp('Düsseldorf', undefined, 'mixed_use', 13.50, 22.0),
+  // ── Sourcing benchmarks · real market data (Düsseldorf + Speckgürtel, 2025/26) ──
+  // rent = avg asking Kaltmiete €/m²/mo; multiplier = Kaufpreis €/m² ÷ (rent × 12).
+  // Sources: Homeday/ImmoScout Preisatlas, wohnungsboerse, duesselraum Kaufpreisfaktor.
+  ...makeComp('Düsseldorf', 'Flingern', 'residential', 15.70, 28.0), // buy ~5.294 €/m²
+  ...makeComp('Düsseldorf', 'Bilk', 'residential', 15.30, 24.9),     // buy ~4.574 €/m²
+  // Pempelfort & Oberkassel already carry a broker ERV — add only the multiplier
+  // (consistent with their buy price) so they become screenable without duplicate ERV.
+  makeMult('Düsseldorf', 'Pempelfort', 'residential', 24.5),         // buy ~5.356 €/m²
+  makeMult('Düsseldorf', 'Oberkassel', 'residential', 26.6),         // buy ~6.520 €/m²
+  ...makeComp('Düsseldorf', undefined, 'mixed_use', 14.00, 24.0),
+  ...makeComp('Meerbusch', 'Büderich', 'residential', 15.00, 26.7),  // buy ~4.800 €/m²
+  ...makeComp('Ratingen', undefined, 'residential', 12.48, 23.1),    // buy ~3.456 €/m²
+  ...makeComp('Ratingen', undefined, 'mixed_use', 12.50, 23.0),
+  ...makeComp('Neuss', undefined, 'residential', 12.05, 24.0),       // buy ~3.464 €/m²
+  ...makeComp('Hilden', undefined, 'residential', 11.20, 24.6),      // buy ~3.300 €/m²
+  ...makeComp('Erkrath', undefined, 'residential', 12.00, 21.9),     // buy ~3.150 €/m²
 ];
 
 // ── Cross-validation · portfolio_realised vs broker (Phase 3 preview) ──
