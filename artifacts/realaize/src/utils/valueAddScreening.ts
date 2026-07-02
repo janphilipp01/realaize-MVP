@@ -43,8 +43,24 @@ export const DEFAULT_SCREEN_PROFILE: ScreenProfile = {
   profitMarginPct: 0.20,
   contingencyPct: 0.10,
   financingPct: 0.05,
-  exitYieldBufferPct: 0.50, // exit ~50 bps softer than the (hot) market entry yield
+  exitYieldBufferPct: 1.00, // standard/edge exit buffer; prime uses less (see below)
 };
+
+// Prime Düsseldorf residential submarkets → tighter exit buffer (0.75%).
+// Everything else (other districts, the Speckgürtel/edge suburbs, city fallback)
+// takes the conservative standard buffer (1.00%).
+export const EXIT_BUFFER_PRIME = 0.75;
+export const EXIT_BUFFER_STANDARD = 1.00;
+export const PRIME_SUBMARKETS = new Set<string>([
+  'Oberkassel', 'Carlstadt', 'Altstadt', 'Pempelfort', 'Golzheim',
+  'Düsseltal', 'Zooviertel', 'Stadtmitte', 'Unterbilk', 'Flingern',
+]);
+
+/** Exit-yield buffer for a location: 0.75% in prime Düsseldorf, else 1.00%. */
+export function resolveExitYieldBuffer(city: string, submarket?: string): number {
+  const isPrime = city === 'Düsseldorf' && !!submarket && PRIME_SUBMARKETS.has(submarket);
+  return isPrime ? EXIT_BUFFER_PRIME : EXIT_BUFFER_STANDARD;
+}
 
 export interface ValueAddInput {
   area: number;          // m²

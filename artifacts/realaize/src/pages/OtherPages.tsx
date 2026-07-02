@@ -20,7 +20,7 @@ import { searchDealRadar } from '../utils/dealRadarAgent';
 import { bestSignal, discountTone } from '../utils/screening';
 import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
 import type { CandidateDeal, ProfileMatch } from '../models/types';
-import { screenValueAdd, BUILD_COST_RATES, SCOPE_LABEL, DEFAULT_SCREEN_PROFILE, type RenovationScope } from '../utils/valueAddScreening';
+import { screenValueAdd, BUILD_COST_RATES, SCOPE_LABEL, DEFAULT_SCREEN_PROFILE, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, type RenovationScope } from '../utils/valueAddScreening';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   aiChat,
@@ -1694,7 +1694,8 @@ export function DealRadarPage() {
                 if (!b || selected.areaSqm <= 0 || selected.askingPrice <= 0) return null;
                 // Market NIY derived from the transaction multiplier: NIY = (1 − non-recoverable) / factor.
                 const marketNIY = ((1 - DEFAULT_SCREEN_PROFILE.nonRecoverablePct) / b.factorMedian) * 100;
-                const r = screenValueAdd({ area: selected.areaSqm, purchasePrice: selected.askingPrice, marketRent: b.rentPerSqmMonth, marketNIY, scope: vaScope });
+                const exitBuffer = resolveExitYieldBuffer(selected.city, selected.submarket);
+                const r = screenValueAdd({ area: selected.areaSqm, purchasePrice: selected.askingPrice, marketRent: b.rentPerSqmMonth, marketNIY, scope: vaScope, profile: { exitYieldBufferPct: exitBuffer } });
                 const green = '#16a34a', red = '#dc2626';
                 const rows: Array<[string, number, boolean]> = [
                   [de ? 'Potentieller Exit-Wert' : 'Potential exit value', r.exitValue, false],
@@ -1722,7 +1723,7 @@ export function DealRadarPage() {
                       ))}
                     </div>
                     <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', marginBottom: 8 }}>
-                      {de ? 'Basis' : 'Basis'}: {b.rentPerSqmMonth.toFixed(2).replace('.', ',')} €/m²/Mt · Faktor {b.factorMedian.toFixed(1).replace('.', ',')}× · Exit-NIY {r.exitNIY.toFixed(2).replace('.', ',')}% · {selected.areaSqm.toLocaleString('de-DE')} m² · {selected.submarket ?? selected.city}
+                      {de ? 'Basis' : 'Basis'}: {b.rentPerSqmMonth.toFixed(2).replace('.', ',')} €/m²/Mt · Faktor {b.factorMedian.toFixed(1).replace('.', ',')}× · Exit-NIY {r.exitNIY.toFixed(2).replace('.', ',')}% ({exitBuffer === EXIT_BUFFER_PRIME ? 'Prime +0,75%' : 'Rand +1,0%'}) · {selected.areaSqm.toLocaleString('de-DE')} m² · {selected.submarket ?? selected.city}
                     </div>
                     <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                       {rows.map(([label, val, dim], i) => (
