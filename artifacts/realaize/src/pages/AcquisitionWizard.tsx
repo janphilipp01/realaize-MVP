@@ -11,7 +11,7 @@ import {
 import { GlassPanel, KPICard } from '../components/shared';
 import { formatEUR, formatPct } from '../utils/kpiEngine';
 import { useStore } from '../store/useStore';
-import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, BUILD_COST_RATES, SCOPE_LABEL, type RenovationScope } from '../utils/valueAddScreening';
+import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, PRIME_SUBMARKETS, submarketsForCity, BUILD_COST_RATES, SCOPE_LABEL, type RenovationScope } from '../utils/valueAddScreening';
 import {
   pdComputeTotalAcquisitionCosts, pdComputeAnnualRent, pdComputeTotalArea,
   pdComputeWeightedERV, pdComputeWALT, pdComputeTotalDevBudget,
@@ -223,6 +223,9 @@ function FloorTagPicker({
 // ═══════════════════════════════════════════════════════════════════════════
 function TabStammdaten({ pd, onChange }: { pd: PropertyData; onChange: (p: Partial<PropertyData>) => void }) {
   const isDev = pd.dealType === 'Development';
+  const benchmarks = useStore(s => s.benchmarks);
+  const submarketOptions = submarketsForCity(benchmarks, pd.city);
+  const isPrime = pd.city === 'Düsseldorf' && !!pd.submarket && PRIME_SUBMARKETS.has(pd.submarket);
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <SH>Objektdaten</SH>
@@ -267,7 +270,18 @@ function TabStammdaten({ pd, onChange }: { pd: PropertyData; onChange: (p: Parti
         <Field label="Adresse" value={pd.address} onChange={e => onChange({ address: e.target.value })} style={{ gridColumn: '1 / 3' }} />
         <Field label="PLZ" value={pd.zip} onChange={e => onChange({ zip: e.target.value })} />
         <Field label="Stadt" value={pd.city} onChange={e => onChange({ city: e.target.value })} />
-        <Field label="Stadtteil / Submarkt" value={pd.submarket || ''} onChange={e => onChange({ submarket: e.target.value })} placeholder="z.B. Flingern, Oberkassel" style={{ gridColumn: '1 / 3' }} />
+        <div style={{ gridColumn: '1 / 3', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <Field
+            label={`Stadtteil / Submarkt${pd.submarket ? (isPrime ? ' · Prime' : ' · Rand') : ''}`}
+            value={pd.submarket || ''}
+            onChange={e => onChange({ submarket: e.target.value })}
+            placeholder="z.B. Flingern, Oberkassel"
+            list="wizard-submarkets"
+          />
+          <datalist id="wizard-submarkets">
+            {submarketOptions.map(o => <option key={o} value={o} />)}
+          </datalist>
+        </div>
         <div style={{ gridColumn: '1 / 3', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.55)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             Etagen

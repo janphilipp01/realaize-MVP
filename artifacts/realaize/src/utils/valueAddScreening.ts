@@ -62,6 +62,18 @@ export function resolveExitYieldBuffer(city: string, submarket?: string): number
   return isPrime ? EXIT_BUFFER_PRIME : EXIT_BUFFER_STANDARD;
 }
 
+/** Known submarkets for a city: those present in the benchmark master, plus the
+ *  prime Düsseldorf districts. Feeds the wizard's submarket combobox. */
+export function submarketsForCity(
+  benchmarks: { city: string; submarket?: string }[],
+  city: string,
+): string[] {
+  const set = new Set<string>();
+  for (const b of benchmarks) if (b.city === city && b.submarket) set.add(b.submarket);
+  if (city === 'Düsseldorf') for (const s of PRIME_SUBMARKETS) set.add(s);
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'de'));
+}
+
 export interface ValueAddInput {
   area: number;          // m²
   purchasePrice: number; // €
