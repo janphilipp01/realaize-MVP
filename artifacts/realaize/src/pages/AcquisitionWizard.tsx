@@ -11,7 +11,7 @@ import {
 import { GlassPanel, KPICard } from '../components/shared';
 import { formatEUR, formatPct } from '../utils/kpiEngine';
 import { useStore } from '../store/useStore';
-import { screenValueAdd, lookupMarketAssumptions, BUILD_COST_RATES, SCOPE_LABEL, type RenovationScope } from '../utils/valueAddScreening';
+import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, BUILD_COST_RATES, SCOPE_LABEL, type RenovationScope } from '../utils/valueAddScreening';
 import {
   pdComputeTotalAcquisitionCosts, pdComputeAnnualRent, pdComputeTotalArea,
   pdComputeWeightedERV, pdComputeWALT, pdComputeTotalDevBudget,
@@ -267,6 +267,7 @@ function TabStammdaten({ pd, onChange }: { pd: PropertyData; onChange: (p: Parti
         <Field label="Adresse" value={pd.address} onChange={e => onChange({ address: e.target.value })} style={{ gridColumn: '1 / 3' }} />
         <Field label="PLZ" value={pd.zip} onChange={e => onChange({ zip: e.target.value })} />
         <Field label="Stadt" value={pd.city} onChange={e => onChange({ city: e.target.value })} />
+        <Field label="Stadtteil / Submarkt" value={pd.submarket || ''} onChange={e => onChange({ submarket: e.target.value })} placeholder="z.B. Flingern, Oberkassel" style={{ gridColumn: '1 / 3' }} />
         <div style={{ gridColumn: '1 / 3', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.55)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             Etagen
@@ -849,7 +850,8 @@ function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Partial<P
       {/* ── Value-Add Screening (Profil-Annahmen) ── */}
       {(() => {
         const area = pdComputeTotalArea(pd.unitsTarget.length > 0 ? pd.unitsTarget : pd.unitsAsIs);
-        const m = lookupMarketAssumptions(benchmarks, pd.city, pd.usageType);
+        const m = lookupMarketAssumptions(benchmarks, pd.city, pd.usageType, pd.submarket);
+        const exitBuffer = resolveExitYieldBuffer(pd.city, pd.submarket);
         const marketNIY = m.marketNIY ?? targetNIY;
         const niyIsFallback = m.marketNIY === undefined;
         return (
@@ -862,7 +864,7 @@ function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Partial<P
                   : 'Kaufpreis (Tab Acquisition) und Rent Roll (Fläche) erforderlich.'}
               </div>
             ) : (() => {
-              const r = screenValueAdd({ area, purchasePrice: pd.purchasePrice, marketRent: m.marketRent, marketNIY, scope });
+              const r = screenValueAdd({ area, purchasePrice: pd.purchasePrice, marketRent: m.marketRent, marketNIY, scope, profile: { exitYieldBufferPct: exitBuffer } });
               const green = '#16a34a', red = '#dc2626';
               const rows: Array<[string, number, boolean]> = [
                 ['Potentieller Exit-Wert', r.exitValue, false],
@@ -886,7 +888,7 @@ function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Partial<P
                     ))}
                   </div>
                   <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', marginBottom: 10 }}>
-                    Marktannahmen: {m.marketRent.toFixed(2)} €/m²/Mt.{m.rentSource ? ` (${m.rentSource})` : ''} · Markt-NIY {marketNIY.toFixed(2)}%{niyIsFallback ? ' (Profil-Default)' : (m.yieldSource ? ` (${m.yieldSource})` : '')} → Exit-NIY {r.exitNIY.toFixed(2)}% · {area.toLocaleString('de-DE')} m²
+                    Marktannahmen: {m.marketRent.toFixed(2)} €/m²/Mt.{m.rentSource ? ` (${m.rentSource})` : ''} · Markt-NIY {marketNIY.toFixed(2)}%{niyIsFallback ? ' (Profil-Default)' : (m.yieldSource ? ` (${m.yieldSource})` : '')} → Exit-NIY {r.exitNIY.toFixed(2)}% ({exitBuffer === EXIT_BUFFER_PRIME ? 'Prime +0,75%' : 'Rand +1,0%'}) · {area.toLocaleString('de-DE')} m²
                   </div>
                   <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                     {rows.map(([label, val, dim], i) => (

@@ -11,7 +11,7 @@ import {
   StatusBadge, Modal, Tabs, SectionHeader, CompletenessRing, FreshnessBadge
 } from '../components/shared';
 import { computeDealKPIs, getKPIFormulaDetails, formatEUR, formatPct, formatX } from '../utils/kpiEngine';
-import { screenValueAdd, lookupMarketAssumptions } from '../utils/valueAddScreening';
+import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer } from '../utils/valueAddScreening';
 import { computeDealCashFlow } from '../utils/propertyCashFlowModel';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { exportInvestmentMemoPDF, exportDealExcel } from '../utils/exportUtils';
@@ -144,9 +144,9 @@ export default function DealDashboard() {
               {(() => {
                 const area = deal.underwritingAssumptions.area || deal.totalArea || 0;
                 const price = deal.underwritingAssumptions.purchasePrice || deal.askingPrice || 0;
-                const m = lookupMarketAssumptions(benchmarks, deal.city, deal.usageType);
+                const m = lookupMarketAssumptions(benchmarks, deal.city, deal.usageType, deal.submarket);
                 if (!m.marketRent || area <= 0 || price <= 0) return null;
-                const r = screenValueAdd({ area, purchasePrice: price, marketRent: m.marketRent, marketNIY: m.marketNIY ?? targetNIY, scope: 'sanierung' });
+                const r = screenValueAdd({ area, purchasePrice: price, marketRent: m.marketRent, marketNIY: m.marketNIY ?? targetNIY, scope: 'sanierung', profile: { exitYieldBufferPct: resolveExitYieldBuffer(deal.city, deal.submarket) } });
                 return (
                   <span title={lang === 'de' ? 'Value-Add Screening (Profil, Scope: Sanierung) — Detail im Underwriting → Market' : 'Value-add screening (profile, scope: refurbishment)'}
                     className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
@@ -849,6 +849,7 @@ export default function DealDashboard() {
         <AcquisitionWizard
           initialData={deal.propertyData || createDefaultPropertyData({
             name: deal.name, address: deal.address, city: deal.city, zip: deal.zip,
+            submarket: deal.submarket,
             usageType: deal.usageType, dealType: deal.dealType || 'Investment',
             purchasePrice: deal.underwritingAssumptions.purchasePrice,
             vendor: deal.vendorName || '', broker: deal.broker || '',
@@ -857,6 +858,7 @@ export default function DealDashboard() {
             updateDealPropertyData(deal.id, pd);
             updateDeal(deal.id, {
               name: pd.name || deal.name,
+              submarket: pd.submarket ?? deal.submarket,
               askingPrice: pd.purchasePrice,
               underwritingAssumptions: {
                 ...deal.underwritingAssumptions,

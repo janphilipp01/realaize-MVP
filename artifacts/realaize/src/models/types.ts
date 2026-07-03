@@ -147,6 +147,7 @@ export interface AcquisitionDeal {
   usageType: UsageType;
   dealType: DealType; // Investment-Asset or Development-Asset
   stage: DealStage;
+  submarket?: string; // district / borough — drives prime vs edge market assumptions
   askingPrice: number;
   underwritingAssumptions: UnderwritingAssumptions;
   financingAssumptions: FinancingAssumptions;
@@ -989,6 +990,7 @@ export interface PropertyData {
   address: string;
   city: string;
   zip: string;
+  submarket?: string; // district / borough — drives prime vs edge market assumptions
   usageType: UsageType;
   dealType: DealType;
   developmentType?: string;

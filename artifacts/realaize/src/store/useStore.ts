@@ -696,6 +696,7 @@ export const useStore = create<AppState>()(
             address: c.address,
             city: c.city,
             zip: '',
+            submarket: c.submarket,
             usageType,
             dealType: 'Investment',
             stage: 'Screening',

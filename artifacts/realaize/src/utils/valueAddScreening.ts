@@ -174,12 +174,14 @@ export interface MarketAssumptionLookup {
 
 /**
  * Pull market rent (ERV) and net initial yield for a city + usage type from the
- * validated benchmark master. Prefers city-level, non-rejected records.
+ * validated benchmark master. When a submarket is given, its records win over
+ * city-level ones; otherwise city-level is preferred.
  */
 export function lookupMarketAssumptions(
   benchmarks: BenchmarkRecord[],
   city: string,
   usageType: UsageType,
+  submarket?: string,
 ): MarketAssumptionLookup {
   const assetClass = USAGE_TO_ASSET_CLASS[usageType];
   const usable = benchmarks.filter(
@@ -190,9 +192,11 @@ export function lookupMarketAssumptions(
       b.validationStatus !== 'rejected',
   );
 
-  // City-wide (no submarket) preferred over submarket-specific for a screen.
+  // Rank: exact submarket match first (when asked), then city-wide, then any.
+  const rank = (b: BenchmarkRecord) =>
+    submarket && b.submarket === submarket ? 0 : !b.submarket ? 1 : 2;
   const pick = (kpi: BenchmarkRecord['kpi']) =>
-    usable.filter(b => b.kpi === kpi).sort((a, b) => (a.submarket ? 1 : 0) - (b.submarket ? 1 : 0))[0];
+    usable.filter(b => b.kpi === kpi).sort((a, b) => rank(a) - rank(b))[0];
 
   const rent = pick('erv');
   const niy = pick('net_initial_yield');
