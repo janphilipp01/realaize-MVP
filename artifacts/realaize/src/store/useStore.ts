@@ -6,6 +6,7 @@ import { mockBenchmarks, mockPortfolioBenchmark, mockMarketEvents, mockReportSou
 import { mockCandidateDeals, defaultAcquisitionProfiles, listingToCandidate } from '../data/dealSourcingData';
 import { runLocalMatcher } from '../utils/screening';
 import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
+import { assetClassToUsage } from '../utils/marketVocab';
 import { DEFAULT_ACQUISITION_COSTS } from '../models/types';
 
 interface AppSettings {
@@ -54,6 +55,7 @@ interface AppState {
   reportSources: ReportSource[];
   refreshJobs: RefreshJob[];
   triggerQuarterlyRefresh: (user: string) => void;
+  ingestResearchedBenchmarks: (records: BenchmarkRecord[]) => void; // AI research → Welt B master
   approveBenchmark: (id: string, user: string) => void;
   rejectBenchmark: (id: string, user: string, note?: string) => void;
   correctBenchmark: (id: string, newValue: number, user: string, note?: string) => void;
@@ -235,6 +237,23 @@ export const useStore = create<AppState>()(
             reportSources: s.reportSources.map(r =>
               r.status === 'broken' ? r : { ...r, lastFetchedAt: now },
             ),
+          };
+        }),
+
+      // AI research (Welt B). Upserts by market×asset×KPI×quarter, then re-screens
+      // so a market-data change is immediately reflected in the Deal Radar.
+      ingestResearchedBenchmarks: (records) =>
+        set(s => {
+          if (records.length === 0) return {};
+          const keyOf = (b: BenchmarkRecord) =>
+            `${b.city}|${b.submarket ?? ''}|${b.assetClass}|${b.kpi}|${b.periodQuarter}`;
+          const incoming = new Set(records.map(keyOf));
+          const kept = s.benchmarks.filter(b => !incoming.has(keyOf(b)));
+          const merged = [...kept, ...records];
+          return {
+            benchmarks: merged,
+            candidateDeals: runLocalMatcher(s.candidateDeals, s.acquisitionProfiles, benchmarksToScreeningSeeds(merged)),
+            lastScreeningAt: new Date().toISOString(),
           };
         }),
 
@@ -687,8 +706,7 @@ export const useStore = create<AppState>()(
           const now = new Date().toISOString();
           // Seed Market Assumptions from the benchmark used for screening.
           const m = c.matches[0];
-          const usageMap: Record<typeof c.assetClass, UsageType> = { residential: 'Wohnen', mixed_use: 'Mixed Use', office: 'Büro', retail: 'Einzelhandel', logistics: 'Logistik' };
-          const usageType: UsageType = usageMap[c.assetClass];
+          const usageType: UsageType = assetClassToUsage(c.assetClass);
           const benchRentPerSqm = m && m.annualErv ? m.annualErv / c.areaSqm / 12 : 0;
           const newDeal: AcquisitionDeal = {
             id: `deal-${Date.now()}`,

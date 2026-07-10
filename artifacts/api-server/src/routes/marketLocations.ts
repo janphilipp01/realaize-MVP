@@ -4,8 +4,24 @@ import { withUserScope, marketLocations } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
 import { requireRole } from "../middlewares/requireRole";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+
+// ⚠️ DEPRECATED (SSoT-Migration · Phase 3).
+// This route backs the legacy Welt-A market model (MarketLocation / MarketBenchmark).
+// The single source of truth for market assumptions is now the Market Intelligence
+// master (Welt B, BenchmarkRecord). The frontend no longer reads this route. It is
+// kept only until the Welt-B backend persistence (`market_benchmarks`) lands
+// (Phase 4), then removed. Do NOT build new consumers on it.
+router.use("/market-locations", (req, res, next) => {
+  res.setHeader("Deprecation", "true");
+  logger.warn(
+    { path: req.originalUrl, method: req.method },
+    "deprecated market_locations endpoint hit (Welt A) — superseded by Market Intelligence master (Welt B)",
+  );
+  next();
+});
 
 router.use("/market-locations", requireAuth, requireOrg);
 

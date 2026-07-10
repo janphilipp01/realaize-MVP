@@ -327,7 +327,8 @@ export type BrokerProvider =
   | 'Savills'
   | 'Colliers'
   | 'C&W'
-  | 'Lestate';
+  | 'Lestate'
+  | 'AI'; // AI research agent — an indicative (ai_qualitative) source, not a broker
 
 export type BenchmarkSourceType =
   | 'extracted_report'

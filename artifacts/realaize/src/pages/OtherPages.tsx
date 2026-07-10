@@ -14,39 +14,30 @@ import { PageHeader, GlassPanel, KPICard, StatusBadge, SectionHeader, FreshnessB
 import { formatEUR, formatPct, computeAssetNOI, computeAssetMonthlyCashFlow, computeAssetLTV } from '../utils/kpiEngine';
 import { exportNewsReportPDF, exportNewsExcel, exportMarketIntelligenceExcel } from '../utils/exportUtils';
 import { useLanguage } from '../i18n/LanguageContext';
-import { researchCityMarketData, GERMAN_TOP_CITIES } from '../utils/marketResearchAgent';
+import { researchCityBenchmarks, GERMAN_TOP_CITIES } from '../utils/marketResearchAgent';
 import { generateDailyIntelligenceReport } from '../utils/newsAgent';
 import { searchDealRadar } from '../utils/dealRadarAgent';
 import { bestSignal, discountTone } from '../utils/screening';
 import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
 import type { CandidateDeal, ProfileMatch } from '../models/types';
 import { screenValueAdd, BUILD_COST_RATES, SCOPE_LABEL, DEFAULT_SCREEN_PROFILE, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, type RenovationScope } from '../utils/valueAddScreening';
-import { useQueryClient } from '@tanstack/react-query';
-import {
-  aiChat,
-  useListMarketLocations,
-  useCreateMarketLocation,
-  useUpdateMarketLocation,
-  useRefreshMarketBenchmarks,
-  getListMarketLocationsQueryKey,
-} from '@workspace/api-client-react';
+import { aiChat } from '@workspace/api-client-react';
+import { benchmarkRecordsToMarketLocations } from '../utils/marketLocationAdapter';
 import type { DebtInstrument } from '../models/types';
 
 // ══════════════════════════════════════════════════════════
 // MARKT PAGE
 // ══════════════════════════════════════════════════════════
 export function MarktPage() {
-  const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListMarketLocationsQueryKey() });
-  const { data: marketLocations = [] } = useListMarketLocations();
-  const createMarketLocation = useCreateMarketLocation({ mutation: { onSuccess: invalidate } });
-  const updateMarketLocationMut = useUpdateMarketLocation({ mutation: { onSuccess: invalidate } });
-  const refreshBenchmarks = useRefreshMarketBenchmarks({ mutation: { onSuccess: invalidate } });
+  // /markt now reads the Market Intelligence master (Welt B) via a read-only view
+  // adapter — same single source as the Deal Radar & underwriting wizards.
+  const benchmarks = useStore(s => s.benchmarks);
+  const marketLocations = useMemo(() => benchmarkRecordsToMarketLocations(benchmarks), [benchmarks]);
+  const ingestResearchedBenchmarks = useStore(s => s.ingestResearchedBenchmarks);
   const { t, lang } = useLanguage();
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [filterCity, setFilterCity] = useState('Alle');
   const [filterType, setFilterType] = useState('Alle');
-  const [refreshing, setRefreshing] = useState<string | null>(null);
   const [researchingCity, setResearchingCity] = useState<string | null>(null);
   const [researchStatus, setResearchStatus] = useState<string>('');
   const [researchError, setResearchError] = useState<string | null>(null);
@@ -55,50 +46,25 @@ export function MarktPage() {
   const location = marketLocations.find(l => l.id === selectedLocation);
   const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
 
-  // Cities available to add (not yet in store)
+  // Cities available to add (not yet in the master)
   const existingCityIds = new Set(marketLocations.map(l => l.id));
   const availableCities = GERMAN_TOP_CITIES.filter(c => !existingCityIds.has(c.id));
 
-  const handleRefresh = (locId: string) => {
-    setRefreshing(locId);
-    updateMarketLocationMut.mutate(
-      { id: locId, data: { lastUpdated: new Date().toISOString().split('T')[0] } },
-      { onSettled: () => setRefreshing(null) },
-    );
-  };
-
-  // AI Research Agent: fetch real market data for a city
+  // AI Research Agent → Market Intelligence master (Welt B). Feeds screening directly.
   const handleResearch = async (cityId: string, cityName: string) => {
     setResearchingCity(cityId);
     setResearchStatus(lang === 'de' ? `Recherchiere Marktdaten für ${cityName}...` : `Researching market data for ${cityName}...`);
     setResearchError(null);
 
     try {
-      // Ensure city exists on the server
-      if (!existingCityIds.has(cityId)) {
-        const cityInfo = GERMAN_TOP_CITIES.find(c => c.id === cityId);
-        if (cityInfo) {
-          await createMarketLocation.mutateAsync({
-            data: {
-              id: cityInfo.id, city: cityInfo.city, submarket: cityInfo.submarket,
-              region: cityInfo.region,
-              lastUpdated: new Date().toISOString().split('T')[0],
-            },
-          });
-        }
-      }
+      const result = await researchCityBenchmarks(cityId, cityName);
 
-      const result = await researchCityMarketData(cityId, cityName);
-
-      if (result.success && result.benchmarks.length > 0) {
-        await refreshBenchmarks.mutateAsync({
-          id: cityId,
-          data: { benchmarks: result.benchmarks, updateEntry: result.updateEntry },
-        });
+      if (result.success && result.records.length > 0) {
+        ingestResearchedBenchmarks(result.records);
+        const assetClasses = new Set(result.records.map(r => r.assetClass)).size;
         setResearchStatus(lang === 'de'
-          ? `✅ ${result.benchmarks.length} Benchmarks für ${cityName} aktualisiert`
-          : `✅ ${result.benchmarks.length} benchmarks updated for ${cityName}`);
-        setSelectedLocation(cityId);
+          ? `✅ ${cityName}: ${result.records.length} Benchmarks (${assetClasses} Nutzungsarten) in Market Intelligence aktualisiert — wirkt jetzt im Deal Radar`
+          : `✅ ${cityName}: ${result.records.length} benchmarks (${assetClasses} usage types) updated in Market Intelligence — now live in the Deal Radar`);
       } else {
         setResearchError(result.error || (lang === 'de' ? 'Keine Daten erhalten' : 'No data received'));
         setResearchStatus('');
@@ -1153,7 +1119,8 @@ export function DocumentsPage() {
 export function AICopilotPage() {
   const { t, lang } = useLanguage();
   const { assets, deals, developments, sales, settings } = useStore();
-  const { data: marketLocations = [] } = useListMarketLocations();
+  const benchmarks = useStore(s => s.benchmarks);
+  const marketLocations = useMemo(() => benchmarkRecordsToMarketLocations(benchmarks), [benchmarks]);
   const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
   const [messages, setMessages] = useState<{ role: string; text: string; timestamp?: string }[]>([
     { role: 'assistant', text: t('ai.welcome'), timestamp: new Date().toISOString() },
