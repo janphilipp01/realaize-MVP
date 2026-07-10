@@ -149,15 +149,22 @@ Welt-B-Datensatz; die Anzeige-Lücke aus Phase 1 ist geschlossen (Research ist j
 
 ---
 
-### Phase 3 — Welt A stilllegen *(Frontend-Teil erledigt; Backend offen)*
+### ✅ Phase 3 — Welt A stilllegen *(erledigt)*
 
 - ✅ **Frontend:** Welt-A-Schreib-/Lesehooks (`useRefreshMarketBenchmarks`,
   `useCreate/UpdateMarketLocation`, `useListMarketLocations`) sind aus dem Frontend entfernt;
   `grep` findet keinen mehr (außer der Nennung im Adapter-Doc-Kommentar). Der „Refresh"-Button
   (MKT-F-09-Altlast) ist weg.
-- ⏳ **Backend (offen):** `market_locations`-Route + `/api/screening`-Welt-A-Lookup als
-  **deprecated** markieren; Parität-Anforderung „muss Welt B lesen, bevor genutzt" dokumentieren.
-  (Bewusst separat, da Backend an Auth/Persistenz hängt — Phase 4.)
+- ✅ **Backend:** `market_locations`-Route als **deprecated** markiert (Banner + `Deprecation`-
+  Header + Warn-Log bei Aufruf). Im `/api/screening/run` ist die **Parität-Anforderung**
+  dokumentiert (Banner + Warn-Log): der Batch-Matcher löst Benchmarks noch aus `market_locations`
+  (Welt A) auf und **muss** vor Produktivnutzung auf den Welt-B-Master (`market_benchmarks`,
+  Phase 4) umgestellt werden — die Screening-Engine (`@workspace/screening`) ist bereits geteilt,
+  nur der Benchmark-Lookup wandert.
+
+**Dateien:** `api-server/src/routes/marketLocations.ts`, `api-server/src/routes/screening.ts`.
+**Verifikation:** `tsc --build` grün. Kein Verhaltenswechsel (das Frontend ruft diese Endpunkte
+nicht auf); die Endpunkte bleiben funktionsfähig, signalisieren aber Deprecation/Parität.
 
 ---
 

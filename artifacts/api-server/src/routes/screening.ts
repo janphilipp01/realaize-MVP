@@ -12,12 +12,22 @@ import {
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
 import { requireRole } from "../middlewares/requireRole";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
 router.use("/screening", requireAuth, requireOrg);
 
-// Candidate asset class → market_locations benchmark usageType label.
+// ⚠️ PARITÄT-ANFORDERUNG (SSoT-Migration · Phase 3).
+// The batch matcher below resolves benchmarks from `market_locations` (Welt A),
+// while the frontend screens against the Market Intelligence master (Welt B). These
+// are two different data sources → results can diverge. Before this endpoint is used
+// in production it MUST be repointed to the Welt-B master (`market_benchmarks`, once
+// that table exists in Phase 4) so backend and frontend screen against the same
+// single source of truth. The screening ENGINE (@workspace/screening) is already
+// shared and correct; only the benchmark LOOKUP needs to move.
+
+// Candidate asset class → market_locations benchmark usageType label (Welt A).
 const ASSET_TO_USAGE: Record<ScreeningAssetClass, string> = {
   residential: "Wohnen",
   mixed_use: "Mixed Use",
@@ -126,12 +136,17 @@ router.post("/screening/run", requireRole("admin", "editor"), async (req, res) =
           inArray(candidateDeals.status, ["new", "matched", "unmatched", "shortlisted"]),
         ));
 
+      // ⚠️ Welt-A benchmark source (see parity note at top). Must move to Welt B in Phase 4.
       const locations = (await tx.select().from(marketLocations)
         .where(eq(marketLocations.orgId, req.org!.id)))
         .map((l) => ({
           city: l.city, submarket: l.submarket, lastUpdated: l.lastUpdated,
           benchmarks: (l.benchmarks as MlBenchmark[]) ?? [],
         }));
+      logger.warn(
+        { orgId: req.org!.id, locationCount: locations.length },
+        "screening/run resolves benchmarks from market_locations (Welt A) — repoint to Market Intelligence master (Welt B) before production use",
+      );
       const benchFor = makeBenchLookup(locations);
 
       let matched = 0, unmatched = 0, skippedNoBenchmark = 0, matchRows = 0;
