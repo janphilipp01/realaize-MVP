@@ -21,31 +21,23 @@ import { bestSignal, discountTone } from '../utils/screening';
 import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
 import type { CandidateDeal, ProfileMatch } from '../models/types';
 import { screenValueAdd, BUILD_COST_RATES, SCOPE_LABEL, DEFAULT_SCREEN_PROFILE, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, type RenovationScope } from '../utils/valueAddScreening';
-import { useQueryClient } from '@tanstack/react-query';
-import {
-  aiChat,
-  useListMarketLocations,
-  useUpdateMarketLocation,
-  getListMarketLocationsQueryKey,
-} from '@workspace/api-client-react';
+import { aiChat } from '@workspace/api-client-react';
+import { benchmarkRecordsToMarketLocations } from '../utils/marketLocationAdapter';
 import type { DebtInstrument } from '../models/types';
 
 // ══════════════════════════════════════════════════════════
 // MARKT PAGE
 // ══════════════════════════════════════════════════════════
 export function MarktPage() {
-  const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListMarketLocationsQueryKey() });
-  const { data: marketLocations = [] } = useListMarketLocations();
-  const updateMarketLocationMut = useUpdateMarketLocation({ mutation: { onSuccess: invalidate } });
-  // AI research now writes the Market Intelligence master (Welt B) — the dataset the
-  // Deal Radar & underwriting wizards read — instead of the legacy market_locations.
+  // /markt now reads the Market Intelligence master (Welt B) via a read-only view
+  // adapter — same single source as the Deal Radar & underwriting wizards.
+  const benchmarks = useStore(s => s.benchmarks);
+  const marketLocations = useMemo(() => benchmarkRecordsToMarketLocations(benchmarks), [benchmarks]);
   const ingestResearchedBenchmarks = useStore(s => s.ingestResearchedBenchmarks);
   const { t, lang } = useLanguage();
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [filterCity, setFilterCity] = useState('Alle');
   const [filterType, setFilterType] = useState('Alle');
-  const [refreshing, setRefreshing] = useState<string | null>(null);
   const [researchingCity, setResearchingCity] = useState<string | null>(null);
   const [researchStatus, setResearchStatus] = useState<string>('');
   const [researchError, setResearchError] = useState<string | null>(null);
@@ -54,17 +46,9 @@ export function MarktPage() {
   const location = marketLocations.find(l => l.id === selectedLocation);
   const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
 
-  // Cities available to add (not yet in store)
+  // Cities available to add (not yet in the master)
   const existingCityIds = new Set(marketLocations.map(l => l.id));
   const availableCities = GERMAN_TOP_CITIES.filter(c => !existingCityIds.has(c.id));
-
-  const handleRefresh = (locId: string) => {
-    setRefreshing(locId);
-    updateMarketLocationMut.mutate(
-      { id: locId, data: { lastUpdated: new Date().toISOString().split('T')[0] } },
-      { onSettled: () => setRefreshing(null) },
-    );
-  };
 
   // AI Research Agent → Market Intelligence master (Welt B). Feeds screening directly.
   const handleResearch = async (cityId: string, cityName: string) => {
@@ -1135,7 +1119,8 @@ export function DocumentsPage() {
 export function AICopilotPage() {
   const { t, lang } = useLanguage();
   const { assets, deals, developments, sales, settings } = useStore();
-  const { data: marketLocations = [] } = useListMarketLocations();
+  const benchmarks = useStore(s => s.benchmarks);
+  const marketLocations = useMemo(() => benchmarkRecordsToMarketLocations(benchmarks), [benchmarks]);
   const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
   const [messages, setMessages] = useState<{ role: string; text: string; timestamp?: string }[]>([
     { role: 'assistant', text: t('ai.welcome'), timestamp: new Date().toISOString() },

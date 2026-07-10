@@ -129,27 +129,35 @@ ein Deal-Radar-Screening-Ergebnis.
 
 ---
 
-### Phase 2 — Welt-A-Leser auf Welt B umstellen
+### ✅ Phase 2 — Welt-A-Leser auf Welt B umstellen *(erledigt)*
 
-- Neuer Adapter `benchmarkRecordsToMarketLocations(benchmarks): MarketLocation[]` (Umkehrung
-  der KPI-Zerlegung; Konfidenz via `confidenceUnitToPct`).
-- `/markt`, `Portfolio.tsx`, AI Copilot rendern über den Adapter statt `useListMarketLocations`.
+- Neuer Adapter `utils/marketLocationAdapter.ts` →
+  `benchmarkRecordsToMarketLocations(benchmarks): MarketLocation[]` (city-level Aggregation:
+  city-wide Records bevorzugt, sonst Median über Submärkte; Preis = `ERV×12×Faktor`; Konfidenz
+  via `confidenceUnitToPct`; als „FROZEN READ CONTRACT" markiert, read-only).
+- `/markt` (`MarktPage`), `Portfolio.tsx` und AI Copilot rendern jetzt über den Adapter aus
+  `store.benchmarks` — `useListMarketLocations` ist aus dem Frontend verschwunden.
+- Toter Welt-A-Code in `MarktPage` mitentfernt (per-Location „Refresh" samt
+  `useUpdateMarketLocation`/`useQueryClient`).
 
-**Dateien:** `OtherPages.tsx`, `Portfolio.tsx`, neuer Adapter in `utils/`.
-**Akzeptanz:** alle sieben Konsumenten zeigen Werte aus demselben Welt-B-Datensatz; eine
-Research-/Review-Änderung ist überall sichtbar.
+**Dateien:** neu `utils/marketLocationAdapter.ts`; `pages/OtherPages.tsx`, `pages/Portfolio.tsx`.
+**Verifikation:** `tsc --build` grün · `vite build` grün · Adapter-Unit-Check bestätigt korrekte
+Rekonstruktion (Preis `14×12×25=4200`, ID/Region aus der Städte-Liste, Konfidenz-Rückskalierung).
+**Akzeptanz:** ✅ `/markt`, Portfolio, AI Copilot, Deal Radar und die Wizards lesen denselben
+Welt-B-Datensatz; die Anzeige-Lücke aus Phase 1 ist geschlossen (Research ist jetzt auch auf
+`/markt` sichtbar).
 
 ---
 
-### Phase 3 — Welt A stilllegen
+### Phase 3 — Welt A stilllegen *(Frontend-Teil erledigt; Backend offen)*
 
-- Welt-A-Schreibhooks entfernen (`useRefreshMarketBenchmarks`, `useCreate/UpdateMarketLocation`
-  aus dem Research-Flow); „Refresh"-Button entfernen oder auf echte Aktion umstellen (MKT-F-09).
-- Backend `market_locations`-Route + `/api/screening`-Welt-A-Lookup als **deprecated**
-  markieren; Parität-Anforderung „muss Welt B lesen" dokumentieren.
-
-**Akzeptanz:** `grep` findet keinen `useListMarketLocations`/`MarketLocation`-Import im
-Frontend mehr (außer im Adapter aus Phase 2).
+- ✅ **Frontend:** Welt-A-Schreib-/Lesehooks (`useRefreshMarketBenchmarks`,
+  `useCreate/UpdateMarketLocation`, `useListMarketLocations`) sind aus dem Frontend entfernt;
+  `grep` findet keinen mehr (außer der Nennung im Adapter-Doc-Kommentar). Der „Refresh"-Button
+  (MKT-F-09-Altlast) ist weg.
+- ⏳ **Backend (offen):** `market_locations`-Route + `/api/screening`-Welt-A-Lookup als
+  **deprecated** markieren; Parität-Anforderung „muss Welt B lesen, bevor genutzt" dokumentieren.
+  (Bewusst separat, da Backend an Auth/Persistenz hängt — Phase 4.)
 
 ---
 

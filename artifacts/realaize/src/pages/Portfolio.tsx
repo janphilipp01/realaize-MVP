@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ComposedChart, AreaChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, ReferenceLine
 } from 'recharts';
@@ -7,7 +7,7 @@ import {
   Zap, RefreshCw, Activity, Newspaper, BarChart3, ExternalLink
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { useListMarketLocations } from '@workspace/api-client-react';
+import { benchmarkRecordsToMarketLocations } from '../utils/marketLocationAdapter';
 import { PageHeader, KPICard, GlassPanel, StageBadge, StatusBadge, FreshnessBadge } from '../components/shared';
 import { formatEUR, formatPct, computeAssetNOI, computePortfolioNIY, computeAssetMonthlyCashFlow } from '../utils/kpiEngine';
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,7 +15,8 @@ import { useLanguage } from '../i18n/LanguageContext';
 
 export default function PortfolioPage() {
   const { assets, deals, sales, auditLog, newsReports, settings } = useStore();
-  const { data: marketLocations = [] } = useListMarketLocations();
+  const benchmarks = useStore(s => s.benchmarks);
+  const marketLocations = useMemo(() => benchmarkRecordsToMarketLocations(benchmarks), [benchmarks]);
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
