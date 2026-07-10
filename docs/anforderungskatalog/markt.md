@@ -276,9 +276,10 @@ Macht Market Intelligence zur Single Source für das Screening. Pro
 
 ## 10. Offene fachliche Entscheidungen (für Jan)
 
-- **MKT-OPEN-01 [M]** — **Welche Markt-Datenwelt ist Master?** Empfehlung: **Welt B
-  (Market Intelligence)**. Soll Welt A (`/markt`) darauf abgebildet, migriert oder
-  abgeschaltet werden?
+- **MKT-OPEN-01 [M]** — ✅ **ENTSCHIEDEN (2026-07-10, Jan):** **Welt B (Market Intelligence)
+  ist die Single Source of Truth.** Welt A wird **abgelöst** (Datenmodell), die `/markt`-Ansicht
+  während der Umstellung per **Adapter auf Welt B abgebildet**. Umsetzung siehe
+  [§11 Zielarchitektur & Migrationsplan](#11-zielarchitektur--migrationsplan-welt-b-als-single-source-of-truth).
 - **MKT-OPEN-02** — Soll AI-Research IC-zitierfähige Werte erzeugen dürfen, oder bleiben
   AI-Werte grundsätzlich „indicative" und dienen nur der Vorbelegung?
 - **MKT-OPEN-03** — Verbindliche Quartalskadenz für Refresh (automatisch) — und wer gibt
@@ -288,3 +289,94 @@ Macht Market Intelligence zur Single Source für das Screening. Pro
   (`valueAddScreening.ts`). Ist der Fokus Düsseldorf + Speckgürtel (so das Deal Radar) oder bundesweit?
 - **MKT-OPEN-05** — Mapping `Mixed Use → residential` (in `USAGE_TO_ASSET_CLASS`): fachlich
   gewollt, oder braucht Mixed Use eigene Benchmarks?
+
+---
+
+## 11. Zielarchitektur & Migrationsplan (Welt B als Single Source of Truth)
+
+> **Entscheidung 2026-07-10 (Jan):** Welt B (Market Intelligence, `BenchmarkRecord`) wird
+> die Single Source of Truth. Welt A (`MarketLocation`/`MarketBenchmark`) wird als
+> **Datenmodell abgelöst**; die `/markt`-Ansicht bleibt zunächst als read-only Sicht über
+> einen **Adapter auf Welt B abgebildet** (kein zweites Datenmodell mehr).
+
+### 11.1 Ausgangslage (wichtig für die Reihenfolge)
+
+- **Welt B hat das bessere Modell, aber keine Persistenz.** Es existiert **keine**
+  Backend-Tabelle für `BenchmarkRecord`; Welt B lebt heute nur als Mock im Zustand-Store.
+- **Welt A hat die einzige echte Persistenz** (`market_locations`, Postgres, org-scoped) —
+  ausgerechnet das schwächere Modell. Auch der AI Research Agent und das Backend-Screening
+  schreiben/lesen heute Welt A.
+- **Gut:** Die Frontend-**Leser** hängen bereits an Welt B — Deal Radar über
+  `benchmarksToScreeningSeeds`, der Acquisition-Wizard über `lookupMarketAssumptions`.
+  Reconciliation, Validierung und Seed-Ableitung sind bereits **reine Funktionen**
+  (`marketIntelligence.ts`) und damit im Backend wiederverwendbar — nichts muss neu erfunden werden.
+
+„Welt B als SSoT" heißt also nicht bloß „umschalten", sondern zuerst **Welt B persistent
+machen** und dann die Schreiber/Backend-Leser auf Welt B umlenken.
+
+### 11.2 Zielbild
+
+```
+   Reports · AI Research · CSV · manuell
+                 │  (schreiben Roh-Quellen)
+                 ▼
+        market_benchmark_sources ──► Reconciliation ──► market_benchmarks  ◄── SSoT
+                 (Backend, org-scoped)   (reine Fn)        (BenchmarkRecord)
+                                                              │
+        ┌─────────────────────┬───────────────────────┬──────┴───────────┐
+        ▼                     ▼                       ▼                   ▼
+   Deal Radar            Acquisition-Wizard      Backend /screening   /markt (read-only
+   benchmarksToScreening lookupMarketAssumptions (gleiche Seeds)      Adapter-Sicht)
+   Seeds  ✅ schon B      ✅ schon B              🔴 heute Welt A       🔴 heute Welt A
+```
+
+Ziel: **Ein** Datenmodell (`market_benchmarks` + `_sources`), **eine** Konsumenten-
+Schnittstelle (`ScreeningBenchmarkSeed` / `MarketAssumptionLookup`, bleiben stabil).
+
+### 11.3 Migration in Phasen
+
+**Phase 0 — Verträge fixieren (klein, entkoppelt)**
+- Konfidenz-Skala vereinheitlichen auf **0–1** (Welt A 0–100 → `/100`). (MKT-NF-03)
+- AssetClass/UsageType-Mapping an **einer** Stelle bündeln (Basis: `USAGE_TO_ASSET_CLASS`).
+- Konsumenten-Schnittstelle einfrieren: `ScreeningBenchmarkSeed` + `MarketAssumptionLookup`
+  bleiben die einzige Sicht der Downstream-Module → alle folgenden Umbauten sind dahinter gekapselt.
+
+**Phase 1 — Welt B persistent machen (Backend)**
+- Neue Drizzle-Tabellen `market_benchmarks` (= `BenchmarkRecord`) und
+  `market_benchmark_sources` (= `BenchmarkSourceRecord`), org-scoped, analog zu
+  `candidate_deals` / `profile_matches`.
+- API `GET/POST/PATCH /api/market-benchmarks` + Review-Endpunkte (approve/reject/correct),
+  OpenAPI → Orval (bestehendes Muster).
+- Reconciliation/Validierung aus `marketIntelligence.ts` in ein geteiltes Paket
+  (`@workspace/market-intel`) heben — gleiches Vorbild wie `@workspace/screening`.
+- Frontend: `benchmarks` von Store-Mock auf React-Query-Anbindung umstellen (Mock nur noch Dev-Seed).
+
+**Phase 2 — Schreiber auf Welt B umlenken (behebt die Bruchstelle)**
+- AI Research Agent (`researchCityMarketData`) schreibt künftig **Quell-Records**
+  (`source_type = ai_qualitative`) in `market_benchmark_sources` statt `MarketBenchmark`;
+  Ergebnis **Zod-validiert** (MKT-F-07) und durch Reconciliation/Validierung geführt.
+  → AI-Research wirkt damit unmittelbar aufs Deal-Radar-Screening (MKT-F-08).
+- Quarterly Refresh real anbinden **oder** klar als „geplant" kennzeichnen (kein Fake-`setTimeout`).
+
+**Phase 3 — Backend-Screening auf Welt B**
+- `/api/screening` Benchmark-Lookup von `market_locations` auf `market_benchmarks` umstellen
+  (Seed-Ableitung aus dem geteilten Paket). → Front- und Backend rechnen gegen dieselbe Basis
+  (DR-NF-01, DR-OPEN-01).
+
+**Phase 4 — Welt A ablösen / abbilden**
+- Backfill-Skript `market_locations → market_benchmarks` (KPI-Split: `rentMedian→erv`,
+  `multiplierMedian→multiplier`, `vacancyRatePercent→vacancy`, Preis abgeleitet;
+  Konfidenz `/100`).
+- `/markt`-Seite über Adapter `benchmarkRecordsToMarketLocations(benchmarks)` als **read-only
+  Sicht** auf Welt B rendern (abbilden) — UI bleibt, Datenmodell weg. Alternativ in
+  `/market-intelligence` integrieren und `/markt` entfernen (spätere Entscheidung).
+- Danach entfernen: Tabelle `market_locations`, Route `marketLocations.ts`, Typen
+  `MarketLocation`/`MarketBenchmark`, Hooks `useListMarketLocations` etc.
+
+### 11.4 Reihenfolge-Logik & Risiken
+
+- Reihenfolge ist bewusst **Persistenz → Schreiber → Backend-Leser → Ablösung**: Erst wenn
+  Welt B persistent ist und alle Schreiber/Leser dort hängen, darf Welt A fallen.
+- Die stabile Konsumenten-Schnittstelle (Phase 0) macht jede Phase einzeln deploy-/testbar.
+- Kein „Big Bang": Deal Radar & Wizard lesen schon Welt B, funktionieren also währenddessen weiter.
+- Hauptaufwand ist **Backend-Persistenz + Writer-Umlenkung**, nicht die Fachlogik (die ist rein & fertig).

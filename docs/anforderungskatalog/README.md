@@ -81,10 +81,14 @@ synchron sind:
   **Welt B** läuft. Es gibt also sogar zwei Screening-Pfade mit unterschiedlicher
   Datenbasis.
 
-Das ist der wichtigste Kandidat für eine fachliche Grundsatzentscheidung (siehe
-`MKT-OPEN-01`). Bevor „Markt" produktiv gebaut wird, muss geklärt sein, welches
-Datenmodell die **Single Source of Truth** für Marktannahmen ist. Empfehlung im Katalog:
-**Welt B (Market Intelligence)** als Master, **Welt A** entweder darauf abbilden oder ablösen.
+**Entscheidung (2026-07-10, Jan) — `MKT-OPEN-01` geklärt:** **Welt B (Market Intelligence)
+ist die Single Source of Truth.** Welt A wird als Datenmodell **abgelöst**; die
+`/markt`-Ansicht wird während der Umstellung per **Adapter auf Welt B abgebildet**. Der
+konkrete, phasenweise Umbau steht in
+[`markt.md` §11 — Zielarchitektur & Migrationsplan](./markt.md#11-zielarchitektur--migrationsplan-welt-b-als-single-source-of-truth).
+Kernpunkt der Reihenfolge: Welt B hat das bessere Modell, aber **keine** Backend-Persistenz —
+sie muss also zuerst persistent gemacht werden, bevor Schreiber und Backend-Screening auf sie
+umgelenkt werden und Welt A fällt.
 
 ---
 

@@ -278,9 +278,11 @@ Re-screent Kandidaten, **überschreibt aber nie Nutzer-Aktionen**
 
 ## 10. Offene fachliche Entscheidungen (für Jan)
 
-- **DR-OPEN-01 [M]** — **Screening-Datenbasis:** Front- und Backend müssen dieselbe
-  Markt-Single-Source nutzen (hängt an `MKT-OPEN-01`). Läuft Screening künftig im **Backend**
-  (Batch, planbar) oder bleibt es **Frontend-lokal**?
+- **DR-OPEN-01 [M]** — **Screening-Datenbasis:** ✅ **teilweise geklärt (2026-07-10):** durch
+  `MKT-OPEN-01` ist die gemeinsame Markt-Single-Source **Welt B**. Das Frontend-Screening liest
+  bereits Welt B; offen bleibt nur, das **Backend-`/screening`** von Welt A auf Welt B
+  umzustellen (Phase 3 des Migrationsplans in `markt.md` §11). **Weiterhin offen:** Läuft das
+  Screening künftig primär im **Backend** (Batch, planbar) oder bleibt es **Frontend-lokal**?
 - **DR-OPEN-02** — **Persistenz:** Sollen Kandidaten/Profile/Matches ans Backend
   (org-scoped, `candidate_deals`/`profile_matches`) — oder bewusst lokal bleiben, bis Auth
   aktiv ist?
