@@ -96,21 +96,36 @@ Welt-A-Typen außerhalb des (kommenden) Adapters.
 
 ---
 
-### Phase 1 — Producer auf Welt B umlenken ⭐ *(schließt die Bruchstelle)*
+### ✅ Phase 1 — Producer auf Welt B umlenken ⭐ *(erledigt — schließt die Bruchstelle)*
 
-Der AI Research Agent auf `/markt` schreibt künftig **Welt B** statt Welt A.
+Der AI Research Agent auf `/markt` schreibt jetzt **Welt B** statt Welt A.
 
-- `researchCityMarketData`-Ergebnis **Zod-validieren** (MKT-F-07) statt nur „Array?".
-- Ergebnis in `BenchmarkSourceRecord`(s) übersetzen → `reconcile` → `validateBenchmark` →
-  `BenchmarkRecord`-Upsert in `store.benchmarks` (neue Store-Action, z. B.
-  `ingestResearchedBenchmarks`).
-- Konfidenz über `confidencePctToUnit` auf 0–1 bringen; `sourceType: 'ai_qualitative'`.
-- Den Welt-A-Schreibpfad (`useRefreshMarketBenchmarks`) aus dem Research-Flow entfernen.
+- `marketResearchAgent.ts` neu: `researchCityBenchmarks(...)` **Zod-validiert** die AI-Antwort
+  (MKT-F-07; ungültiges JSON/Schema bricht sauber ab statt Müll zu schreiben) und übersetzt sie
+  in `BenchmarkRecord`s (KPIs `erv`, `multiplier`, `vacancy`) via `reconcile` +
+  `validateBenchmark`. `sourceType: 'ai_qualitative'`, Konfidenz über `confidencePctToUnit`
+  auf 0–1. AI-Quelle als neuer `BrokerProvider`-Wert `'AI'` (ehrlich statt Fake-Makler).
+- Neue Store-Action `ingestResearchedBenchmarks` — Upsert nach `city×asset×kpi×quarter` **plus
+  sofortiges Re-Screening** (`runLocalMatcher`), damit die Wirkung im Deal Radar sofort sichtbar ist.
+- `MarktPage` ruft den neuen Fluss; der Welt-A-Schreibpfad (`useRefreshMarketBenchmarks`,
+  `useCreateMarketLocation`) ist aus dem Research-Flow entfernt.
 
-**Dateien:** `utils/marketResearchAgent.ts`, `pages/OtherPages.tsx` (`MarktPage`),
-`store/useStore.ts`.
-**Akzeptanz:** Research für eine Stadt erzeugt/aktualisiert `BenchmarkRecord`s auf
-`/market-intelligence` **und** verändert nachweislich ein Deal-Radar-Screening-Ergebnis.
+**Dateien:** `utils/marketResearchAgent.ts`, `store/useStore.ts`, `pages/OtherPages.tsx`
+(`MarktPage`), `models/types.ts` (`BrokerProvider += 'AI'`), `data/marketIntelData.ts` (`TRUST.AI`).
+
+**Verifikation:** Root-`tsc --build` grün · `vite build` grün · deterministischer
+Pipeline-Test (echte reine Funktionen) bestätigt: ohne MI-Daten ist ein Kandidat nicht
+screenbar; nach der Recherche entsteht der Seed korrekt (`ERV×12×Faktor`) und der Kandidat
+wird gescreent (Signal wechselt von *none* → *green*); AI-Werte sind `ai_indicative` und
+gehen in die Review-Queue (nicht auto-passed).
+
+> **Interim-Hinweis:** Die `/markt`-**Seite selbst** liest noch Welt A
+> (`useListMarketLocations`) und zeigt neue Research-Ergebnisse daher noch **nicht** an — die
+> Wirkung ist in `/market-intelligence` und im Deal Radar sichtbar. Phase 2 stellt den
+> `/markt`-Leser auf Welt B um und schließt diese Anzeige-Lücke.
+
+**Akzeptanz:** ✅ Research erzeugt/aktualisiert `BenchmarkRecord`s **und** verändert nachweislich
+ein Deal-Radar-Screening-Ergebnis.
 
 ---
 

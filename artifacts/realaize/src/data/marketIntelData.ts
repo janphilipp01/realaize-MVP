@@ -30,6 +30,7 @@ const TRUST: Record<BrokerProvider, number> = {
   Colliers: 0.9,
   'C&W': 0.86,
   Lestate: 0.95,
+  AI: 0.5, // indicative source — lowest trust in the reconciliation weighting
 };
 
 let seq = 0;
