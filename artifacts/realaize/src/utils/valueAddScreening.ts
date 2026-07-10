@@ -9,6 +9,7 @@
 // Market rent comes from Market Intelligence in EUR/m²/MONTH → annualized ×12.
 
 import type { AssetClass, BenchmarkRecord, UsageType } from '../models/types';
+import { usageToAssetClass } from './marketVocab';
 
 export type RenovationScope = 'modernisierung' | 'sanierung' | 'ausbau' | 'redevelopment';
 
@@ -168,14 +169,6 @@ function computeMaxBid(exitValue: number, buildCost: number, p: ScreenProfile): 
 
 // ── Market-assumption lookup from the Market Intelligence benchmarks ──────────
 
-const USAGE_TO_ASSET_CLASS: Record<UsageType, AssetClass> = {
-  Wohnen: 'residential',
-  Büro: 'office',
-  Einzelhandel: 'retail',
-  Logistik: 'logistics',
-  'Mixed Use': 'residential',
-};
-
 export interface MarketAssumptionLookup {
   marketRent?: number;   // €/m²/month
   rentSource?: string;
@@ -185,7 +178,14 @@ export interface MarketAssumptionLookup {
 }
 
 /**
- * Pull market rent (ERV) and net initial yield for a city + usage type from the
+ * FROZEN READ CONTRACT (SSoT-Migration · Phase 0).
+ * One of the two sanctioned ways to read market assumptions from the Market
+ * Intelligence master (the other is benchmarksToScreeningSeeds). The underwriting
+ * wizards (AcquisitionWizard, DealDashboard) MUST resolve rent/yield through here
+ * — never from MarketLocation/MarketBenchmark (Welt A). The signature is stable so
+ * the backing store can later move to the backend without touching consumers.
+ *
+ * Pulls market rent (ERV) and net initial yield for a city + usage type from the
  * validated benchmark master. When a submarket is given, its records win over
  * city-level ones; otherwise city-level is preferred.
  */
@@ -195,7 +195,7 @@ export function lookupMarketAssumptions(
   usageType: UsageType,
   submarket?: string,
 ): MarketAssumptionLookup {
-  const assetClass = USAGE_TO_ASSET_CLASS[usageType];
+  const assetClass = usageToAssetClass(usageType);
   const usable = benchmarks.filter(
     b =>
       b.city === city &&

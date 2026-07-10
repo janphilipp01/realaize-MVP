@@ -1,5 +1,6 @@
 import { aiChat } from '@workspace/api-client-react';
 import type { MarketBenchmark, MarketUpdateEntry, UsageType } from '../models/types';
+import { USAGE_LABEL_EN } from './marketVocab';
 
 export const GERMAN_TOP_CITIES = [
   { id: 'loc-berlin', city: 'Berlin', region: 'Berlin-Brandenburg', submarket: 'City-wide' },
@@ -23,14 +24,6 @@ export const GERMAN_TOP_CITIES = [
   { id: 'loc-bonn', city: 'Bonn', region: 'Rheinland', submarket: 'City-wide' },
   { id: 'loc-muenster', city: 'Münster', region: 'Westfalen', submarket: 'City-wide' },
 ];
-
-const USAGE_LABELS: Record<string, string> = {
-  'Wohnen': 'Residential',
-  'Büro': 'Office',
-  'Einzelhandel': 'Retail',
-  'Logistik': 'Logistics',
-  'Mixed Use': 'Mixed Use',
-};
 
 export interface ResearchResult {
   success: boolean;
@@ -96,7 +89,7 @@ Fill in real values for ${cityName}. Rents EUR/sqm/month, prices EUR/sqm. Multip
       locationId: cityId,
       timestamp: now,
       updatedBy: 'AI Research Agent',
-      changes: `Market data refreshed: ${benchmarks.map(b => USAGE_LABELS[b.usageType] || b.usageType).join(', ')}`,
+      changes: `Market data refreshed: ${benchmarks.map(b => USAGE_LABEL_EN[b.usageType] || b.usageType).join(', ')}`,
       sourceLabel: 'Claude Web Search',
     };
 

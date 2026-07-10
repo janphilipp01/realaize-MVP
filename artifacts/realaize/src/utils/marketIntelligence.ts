@@ -15,14 +15,10 @@ import type {
 } from '../models/types';
 
 // ── Labels ──────────────────────────────────────────────────────────────────
+// AssetClass/UsageType labels + mappings live in ./marketVocab (single source).
+// Re-exported here so existing importers keep working.
 
-export const ASSET_CLASS_LABEL: Record<AssetClass, string> = {
-  residential: 'Residential',
-  office: 'Office',
-  retail: 'Retail',
-  logistics: 'Logistics',
-  mixed_use: 'Mixed Use',
-};
+export { ASSET_CLASS_LABEL } from './marketVocab';
 
 export const KPI_LABEL: Record<BenchmarkKpi, string> = {
   prime_rent: 'Prime rent',
@@ -238,6 +234,14 @@ function round2(n: number): number {
 }
 
 // ── Adapter → Deal Sourcing screening benchmarks ──────────────────────────────
+// ┌─ FROZEN READ CONTRACT (SSoT-Migration · Phase 0) ─────────────────────────┐
+// │ This is ONE of the two sanctioned ways to read market assumptions from the │
+// │ Market Intelligence master (the other is lookupMarketAssumptions in        │
+// │ valueAddScreening.ts). All screening-side consumers MUST go through here —  │
+// │ never read MarketLocation/MarketBenchmark (Welt A) or raw records directly. │
+// │ Its signature (BenchmarkRecord[] → ScreeningBenchmarkSeed[]) is stable so   │
+// │ the backing store can later move to the backend without touching consumers. │
+// └────────────────────────────────────────────────────────────────────────────┘
 // Makes Market Intelligence the single source of market assumptions across every
 // stage. Derives the screening benchmark seeds the Deal Radar / matcher consume
 // from the validated benchmark master:

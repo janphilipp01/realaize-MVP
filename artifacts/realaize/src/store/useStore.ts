@@ -6,6 +6,7 @@ import { mockBenchmarks, mockPortfolioBenchmark, mockMarketEvents, mockReportSou
 import { mockCandidateDeals, defaultAcquisitionProfiles, listingToCandidate } from '../data/dealSourcingData';
 import { runLocalMatcher } from '../utils/screening';
 import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
+import { assetClassToUsage } from '../utils/marketVocab';
 import { DEFAULT_ACQUISITION_COSTS } from '../models/types';
 
 interface AppSettings {
@@ -687,8 +688,7 @@ export const useStore = create<AppState>()(
           const now = new Date().toISOString();
           // Seed Market Assumptions from the benchmark used for screening.
           const m = c.matches[0];
-          const usageMap: Record<typeof c.assetClass, UsageType> = { residential: 'Wohnen', mixed_use: 'Mixed Use', office: 'Büro', retail: 'Einzelhandel', logistics: 'Logistik' };
-          const usageType: UsageType = usageMap[c.assetClass];
+          const usageType: UsageType = assetClassToUsage(c.assetClass);
           const benchRentPerSqm = m && m.annualErv ? m.annualErv / c.areaSqm / 12 : 0;
           const newDeal: AcquisitionDeal = {
             id: `deal-${Date.now()}`,
