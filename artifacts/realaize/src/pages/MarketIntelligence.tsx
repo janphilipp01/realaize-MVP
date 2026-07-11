@@ -12,10 +12,22 @@ import {
   Newspaper,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
   X,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 import { useStore } from '../store/useStore';
 import { useLanguage } from '../i18n/LanguageContext';
+import { CURRENT_PERIOD } from '../data/marketIntelData';
 import {
   ASSET_CLASS_LABEL,
   formatBenchmarkValue,
@@ -80,6 +92,7 @@ const TABS = [
   { key: 'news', label: 'News Layer', icon: Newspaper },
   { key: 'crossval', label: 'Cross-Validation', icon: Activity },
   { key: 'memo', label: 'IC Memo Block', icon: FileText },
+  { key: 'history', label: 'Historie', icon: TrendingUp },
   { key: 'sources', label: 'Sources', icon: BadgeCheck },
 ] as const;
 
@@ -162,6 +175,7 @@ export function MarketIntelligencePanel({ city }: { city: string }) {
       {tab === 'news' && <NewsTab events={marketEvents} lang={lang} />}
       {tab === 'crossval' && <CrossValTab benchmarks={benchmarks} lang={lang} />}
       {tab === 'memo' && <MemoTab benchmarks={benchmarks} events={marketEvents} lang={lang} lockedCity={city} />}
+      {tab === 'history' && <HistoryTab benchmarks={benchmarks} lang={lang} />}
       {tab === 'sources' && <SourcesTab reportSources={reportSources} refreshJobs={refreshJobs} lang={lang} />}
     </div>
   );
@@ -627,6 +641,187 @@ function buildMemoBlock(
   lines.push('');
   lines.push(`Source: realaize Market Intelligence Pipeline · multi-broker reconciled · ${period}. All figures source-attributed; drill-down available per value.`);
   return lines.join('\n');
+}
+
+// ── History tab ───────────────────────────────────────────────────────────────
+// The master carries one reconciled value per KPI plus its prior quarter. We
+// reconstruct a chronological quarterly series by extrapolating that recent
+// QoQ delta backwards with damping (deterministic per city, so it never
+// flickers). Two single-axis charts — rents (€/m²) and factor (×) — never a
+// dual axis.
+
+const HISTORY_QUARTERS = 8;
+const HIST_COLOR = { prime: '#0a6cff', erv: '#1f9d4d', factor: '#c9a96e' };
+
+function histSeed(str: string) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  let s = h >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function quarterLabelsEnding(end: string, n: number): string[] {
+  const [ys, qs] = end.split('-Q');
+  let y = Number(ys), q = Number(qs);
+  const out: string[] = [];
+  for (let i = 0; i < n; i++) { out.unshift(`${y}-Q${q}`); q -= 1; if (q === 0) { q = 4; y -= 1; } }
+  return out;
+}
+
+// n values ending at `current`; second-to-last ≈ prior; damped trend backwards.
+function buildBackSeries(current: number, prior: number | undefined, n: number, rnd: () => number): number[] {
+  const p = prior && prior > 0 ? prior : current * 0.99;
+  const g = current / p - 1; // most recent QoQ growth
+  const vals = new Array<number>(n);
+  vals[n - 1] = current;
+  for (let i = n - 2; i >= 0; i--) {
+    const step = g * Math.pow(0.82, (n - 2) - i); // decay the delta into the past
+    const noise = i === n - 2 ? 0 : (rnd() - 0.5) * Math.abs(current) * 0.006;
+    vals[i] = vals[i + 1] / (1 + step) + noise;
+  }
+  return vals.map(v => Math.round(v * 100) / 100);
+}
+
+function HistTooltip({ active, payload, label, unit }: any) {
+  if (!active || !payload || payload.length === 0) return null;
+  return (
+    <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 8, padding: '8px 10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: 12 }}>
+      <div style={{ fontWeight: 700, marginBottom: 4 }}>{label}</div>
+      {payload.map((p: any) => (
+        <div key={p.dataKey} className="flex items-center gap-2" style={{ color: 'rgba(60,60,67,0.8)' }}>
+          <span style={{ width: 8, height: 8, borderRadius: 999, background: p.color, display: 'inline-block' }} />
+          {p.name}: <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{unit === 'x' ? `${Number(p.value).toFixed(1)}×` : `${Number(p.value).toFixed(2)} €/m²`}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HistoryTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
+  const classes = useMemo(
+    () => ASSET_ORDER.filter(ac => benchmarks.some(b => b.assetClass === ac && !b.submarket && (b.kpi === 'prime_rent' || b.kpi === 'erv' || b.kpi === 'multiplier'))),
+    [benchmarks],
+  );
+  const [assetClass, setAssetClass] = useState<AssetClass>(classes.includes('residential') ? 'residential' : (classes[0] ?? 'residential'));
+  const ac = classes.includes(assetClass) ? assetClass : (classes[0] ?? assetClass);
+  const city = benchmarks[0]?.city ?? '';
+  const quarters = useMemo(() => quarterLabelsEnding(CURRENT_PERIOD, HISTORY_QUARTERS), []);
+
+  const pick = (kpi: BenchmarkKpi) => benchmarks.find(b => b.assetClass === ac && b.kpi === kpi && !b.submarket);
+  const primeRec = pick('prime_rent');
+  const ervRec = pick('erv');
+  const multRec = pick('multiplier');
+
+  const data = useMemo(() => {
+    const rnd = histSeed(city + ac);
+    const prime = primeRec ? buildBackSeries(primeRec.value, primeRec.priorValue, HISTORY_QUARTERS, rnd) : null;
+    const erv = ervRec ? buildBackSeries(ervRec.value, ervRec.priorValue, HISTORY_QUARTERS, rnd) : null;
+    const mult = multRec ? buildBackSeries(multRec.value, multRec.priorValue, HISTORY_QUARTERS, rnd) : null;
+    return quarters.map((q, i) => ({
+      q,
+      prime: prime ? prime[i] : undefined,
+      erv: erv ? erv[i] : undefined,
+      factor: mult ? mult[i] : undefined,
+    }));
+  }, [primeRec, ervRec, multRec, city, ac, quarters]);
+
+  const hasRent = !!primeRec || !!ervRec;
+  const hasFactor = !!multRec;
+  const de = lang === 'de';
+  const primeName = de ? 'Spitzenmiete' : 'Prime rent';
+  const ervName = de ? 'Ø-Miete / ERV' : 'Avg rent / ERV';
+  const factorName = de ? 'Faktor' : 'Factor';
+
+  // headline delta over the window
+  const delta = (arr: (number | undefined)[]) => {
+    const first = arr[0], last = arr[arr.length - 1];
+    if (first === undefined || last === undefined || first === 0) return undefined;
+    return ((last - first) / first) * 100;
+  };
+  const primeDelta = delta(data.map(d => d.prime));
+  const ervDelta = delta(data.map(d => d.erv));
+  const factorDelta = delta(data.map(d => d.factor));
+  const deltaChip = (v: number | undefined) => v === undefined ? null : (
+    <span style={{ fontSize: 11, fontWeight: 700, color: v >= 0 ? '#1f9d4d' : '#d92c20' }}>{v >= 0 ? '▲ +' : '▼ '}{v.toFixed(1)}%</span>
+  );
+
+  const axisTick = { fontSize: 11, fill: 'rgba(60,60,67,0.55)' };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <p style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', margin: 0, maxWidth: 640 }}>
+          {de
+            ? `Chronologische Entwicklung der reconciled Benchmarks (${HISTORY_QUARTERS} Quartale bis ${CURRENT_PERIOD}). Quelle: rekonstruiert aus Master-Wert + Vorquartal je KPI.`
+            : `Chronological development of the reconciled benchmarks (${HISTORY_QUARTERS} quarters to ${CURRENT_PERIOD}). Source: reconstructed from master value + prior quarter per KPI.`}
+        </p>
+        <select className="input-glass" value={ac} onChange={e => setAssetClass(e.target.value as AssetClass)} style={{ width: 180 }}>
+          {classes.map(c => <option key={c} value={c}>{ASSET_CLASS_LABEL[c]}</option>)}
+        </select>
+      </div>
+
+      {!hasRent && !hasFactor ? (
+        <div className="glass-card" style={{ padding: 32, textAlign: 'center', color: 'rgba(60,60,67,0.5)', fontSize: 13 }}>
+          {de ? 'Keine Zeitreihe für diese Auswahl.' : 'No time series for this selection.'}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {hasRent && (
+            <div className="glass-card" style={{ padding: 18 }}>
+              <div className="flex items-baseline justify-between gap-3" style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{de ? 'Mieten' : 'Rents'} <span style={{ fontWeight: 400, color: 'rgba(60,60,67,0.5)' }}>· €/m²/Monat</span></div>
+                <div className="flex items-center gap-3">
+                  {primeRec && <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.6)' }}>{primeName} {deltaChip(primeDelta)}</span>}
+                  {ervRec && <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.6)' }}>{ervName} {deltaChip(ervDelta)}</span>}
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={230}>
+                <LineChart data={data} margin={{ top: 6, right: 12, bottom: 0, left: -12 }}>
+                  <CartesianGrid stroke="rgba(0,0,0,0.06)" vertical={false} />
+                  <XAxis dataKey="q" tick={axisTick} tickLine={false} axisLine={{ stroke: 'rgba(0,0,0,0.1)' }} />
+                  <YAxis tick={axisTick} tickLine={false} axisLine={false} width={48} domain={['auto', 'auto']} />
+                  <Tooltip content={<HistTooltip unit="eur" />} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} iconType="plainline" />
+                  {primeRec && <Line name={primeName} type="monotone" dataKey="prime" stroke={HIST_COLOR.prime} strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4 }} isAnimationActive={false} />}
+                  {ervRec && <Line name={ervName} type="monotone" dataKey="erv" stroke={HIST_COLOR.erv} strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4 }} isAnimationActive={false} />}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {hasFactor && (
+            <div className="glass-card" style={{ padding: 18 }}>
+              <div className="flex items-baseline justify-between gap-3" style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{factorName} <span style={{ fontWeight: 400, color: 'rgba(60,60,67,0.5)' }}>· {de ? 'Vervielfältiger' : 'multiplier'} ×</span></div>
+                <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.6)' }}>{de ? 'Veränderung' : 'change'} {deltaChip(factorDelta)}</span>
+              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={data} margin={{ top: 6, right: 12, bottom: 0, left: -12 }}>
+                  <CartesianGrid stroke="rgba(0,0,0,0.06)" vertical={false} />
+                  <XAxis dataKey="q" tick={axisTick} tickLine={false} axisLine={{ stroke: 'rgba(0,0,0,0.1)' }} />
+                  <YAxis tick={axisTick} tickLine={false} axisLine={false} width={48} domain={['auto', 'auto']} allowDecimals={false} tickFormatter={(v: number) => `${v}×`} />
+                  <Tooltip content={<HistTooltip unit="x" />} />
+                  <Line name={factorName} type="monotone" dataKey="factor" stroke={HIST_COLOR.factor} strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4 }} isAnimationActive={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.4)' }}>
+            {de
+              ? 'Hinweis: Historie modelliert (Master-Wert + Vorquartal, gedämpfte Fortschreibung). Ab dem nächsten Quartals-Refresh werden echte Zeitreihen persistiert.'
+              : 'Note: history is modeled (master value + prior quarter, damped extrapolation). Real time series will be persisted from the next quarterly refresh onward.'}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Sources tab ───────────────────────────────────────────────────────────────
