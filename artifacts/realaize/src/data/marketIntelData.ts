@@ -191,6 +191,29 @@ function makeMult(
   });
 }
 
+// Compact residential profile for a secondary market: three broker quotes per
+// KPI around a central value, so reconciliation (median + spread) still applies.
+function ruhrProfile(
+  city: string,
+  v: { prime: number; erv: number; niy: number; mult: number; vac: number },
+): BenchmarkRecord[] {
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const trio = (val: number, spread: number, label: string): BrokerInput[] => [
+    { provider: 'JLL', value: r2(val - spread), pageNo: 6, originalText: `${city} ${label}: ${r2(val - spread)}` },
+    { provider: 'Colliers', value: r2(val), pageNo: 14, originalText: `${city} ${label}: ${r2(val)}` },
+    { provider: 'CBRE', value: r2(val + spread), pageNo: 5, originalText: `${city} ${label}: ${r2(val + spread)}` },
+  ];
+  const mk = (kpi: BenchmarkKpi, val: number, spread: number, prior: number, label: string) =>
+    makeBenchmark({ city, assetClass: 'residential', kpi, priorValue: prior, brokers: trio(val, spread, label) });
+  return [
+    mk('prime_rent', v.prime, 0.3, r2(v.prime * 0.97), 'Spitzenmiete Wohnen'),
+    mk('erv', v.erv, 0.15, r2(v.erv * 0.96), 'Durchschnittsmiete Wohnen'),
+    mk('net_initial_yield', v.niy, 0.05, r2(v.niy * 1.02), 'Nettoanfangsrendite Wohnen'),
+    mk('multiplier', v.mult, 0.2, r2(v.mult * 0.98), 'Vervielfältiger Wohnen'),
+    mk('vacancy', v.vac, 0.1, r2(v.vac * 1.03), 'Leerstandsquote Wohnen'),
+  ];
+}
+
 export const mockBenchmarks: BenchmarkRecord[] = [
   // ── Düsseldorf · residential · full Big-Six ──
   makeBenchmark({
@@ -686,6 +709,39 @@ export const mockBenchmarks: BenchmarkRecord[] = [
       { provider: 'JLL', value: 5.0, pageNo: 9, originalText: 'Büroleerstand 5,0%' },
       { provider: 'CBRE', value: 5.3, pageNo: 10, originalText: 'Office vacancy 5.3%' },
       { provider: 'C&W', value: 4.7, pageNo: 11, originalText: 'Vacancy rate 4.7%' },
+    ],
+  }),
+
+  // ── Ruhrgebiet · residential profiles (realistic 2025/26 levels) ──
+  // buy ≈ ERV × 12 × factor: Dortmund ~2.5k, Duisburg ~1.9k, Oberhausen ~2.0k,
+  // Mülheim ~2.5k, Gelsenkirchen ~1.5k €/m².
+  ...ruhrProfile('Dortmund', { prime: 12.8, erv: 9.0, niy: 4.35, mult: 23.0, vac: 2.8 }),
+  ...ruhrProfile('Duisburg', { prime: 10.8, erv: 7.8, niy: 4.9, mult: 20.5, vac: 3.8 }),
+  ...ruhrProfile('Oberhausen', { prime: 10.6, erv: 7.9, niy: 4.8, mult: 20.8, vac: 3.5 }),
+  ...ruhrProfile('Mülheim an der Ruhr', { prime: 12.2, erv: 9.0, niy: 4.4, mult: 23.0, vac: 3.0 }),
+  ...ruhrProfile('Gelsenkirchen', { prime: 9.5, erv: 7.0, niy: 5.4, mult: 18.5, vac: 4.5 }),
+
+  // ── Dortmund · office (largest Ruhr office market) ──
+  makeBenchmark({
+    city: 'Dortmund',
+    assetClass: 'office',
+    kpi: 'prime_rent',
+    priorValue: 15.5,
+    brokers: [
+      { provider: 'JLL', value: 16.0, pageNo: 3, originalText: 'Bürospitzenmiete City: 16,00 €/m²' },
+      { provider: 'CBRE', value: 16.3, pageNo: 4, originalText: 'Prime office rent EUR 16.30/sqm' },
+      { provider: 'BNP', value: 15.8, pageNo: 5, originalText: 'Spitzenmiete Büro 15,80 €/m²' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Dortmund',
+    assetClass: 'office',
+    kpi: 'vacancy',
+    priorValue: 3.8,
+    brokers: [
+      { provider: 'JLL', value: 3.7, pageNo: 9, originalText: 'Büroleerstand 3,7%' },
+      { provider: 'CBRE', value: 4.0, pageNo: 10, originalText: 'Office vacancy 4.0%' },
+      { provider: 'C&W', value: 3.6, pageNo: 11, originalText: 'Vacancy rate 3.6%' },
     ],
   }),
 

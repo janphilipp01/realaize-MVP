@@ -65,12 +65,14 @@ export function MarktPage() {
   };
 
   // Primary hubs (first row) and their catchment submarkets (expandable below).
-  const CITY_GROUPS: { city: string; submarkets: string[] }[] = [
+  // A region hub (isRegion) has no own data — it aggregates its member cities.
+  const CITY_GROUPS: { city: string; submarkets: string[]; isRegion?: boolean }[] = [
     { city: 'Düsseldorf', submarkets: ['Neuss', 'Meerbusch', 'Ratingen', 'Erkrath', 'Hilden'] },
     { city: 'Köln', submarkets: ['Langenfeld', 'Leverkusen', 'Bonn'] },
     { city: 'Berlin', submarkets: [] },
     { city: 'Hamburg', submarkets: [] },
     { city: 'München', submarkets: [] },
+    { city: 'Ruhrgebiet', isRegion: true, submarkets: ['Duisburg', 'Essen', 'Dortmund', 'Bochum', 'Oberhausen', 'Mülheim an der Ruhr', 'Gelsenkirchen'] },
   ];
 
   type CityStat = { city: string; classes: string[]; total: number; extracted: number; pending: number; avgConf: number };
@@ -100,6 +102,22 @@ export function MarktPage() {
 
   const parentOf = (city: string) => CITY_GROUPS.find(g => g.city === city || g.submarkets.includes(city))?.city ?? null;
 
+  // Region hub summary = aggregate of its member cities.
+  const aggregateStat = (members: string[]): CityStat | undefined => {
+    const sts = members.map(m => statByCity.get(m)).filter((s): s is CityStat => !!s);
+    if (sts.length === 0) return undefined;
+    const classes: string[] = [];
+    let total = 0, extracted = 0, pending = 0, confWeighted = 0;
+    for (const s of sts) {
+      total += s.total; extracted += s.extracted; pending += s.pending;
+      confWeighted += s.avgConf * s.extracted;
+      for (const c of s.classes) if (!classes.includes(c)) classes.push(c);
+    }
+    return { city: 'Ruhrgebiet', classes, total, extracted, pending, avgConf: extracted ? confWeighted / extracted : 0 };
+  };
+  const firstMember = (members: string[]) =>
+    members.slice().sort((a, b) => (statByCity.get(b)?.extracted ?? 0) - (statByCity.get(a)?.extracted ?? 0))[0] ?? members[0];
+
   const [selectedCity, setSelectedCity] = useState<string>('Düsseldorf');
   // Which hub group is expanded to reveal its submarkets (accordion).
   const [expandedHub, setExpandedHub] = useState<string | null>('Düsseldorf');
@@ -112,15 +130,25 @@ export function MarktPage() {
 
   // A single white city tile (hub = first row, sub = catchment submarket).
   const renderTile = (city: string, variant: 'hub' | 'sub') => {
-    const st = statByCity.get(city);
-    const active = selectedCity === city;
-    const hub = CITY_GROUPS.find(g => g.city === city);
-    const hasSubs = variant === 'hub' && !!hub && hub.submarkets.length > 0;
+    const group = CITY_GROUPS.find(g => g.city === city);
+    const isRegion = variant === 'hub' && !!group?.isRegion;
+    const st = isRegion ? aggregateStat(group!.submarkets) : statByCity.get(city);
+    const active = isRegion ? group!.submarkets.includes(selectedCity) : selectedCity === city;
+    const hasSubs = variant === 'hub' && !!group && group.submarkets.length > 0;
     const isExpanded = expandedHub === city;
+    const onOpen = () => {
+      if (isRegion) {
+        setExpandedHub(city);
+        if (!group!.submarkets.includes(selectedCity)) setSelectedCity(firstMember(group!.submarkets));
+      } else {
+        setSelectedCity(city);
+        if (variant === 'hub') setExpandedHub(city);
+      }
+    };
     return (
       <button
         key={city}
-        onClick={() => { setSelectedCity(city); if (variant === 'hub') setExpandedHub(city); }}
+        onClick={onOpen}
         style={{
           textAlign: 'left', cursor: 'pointer', borderRadius: 16,
           padding: variant === 'hub' ? 18 : 14,
@@ -133,7 +161,7 @@ export function MarktPage() {
         <div className="flex items-start justify-between gap-2">
           <div>
             <div style={{ fontSize: variant === 'hub' ? 15 : 13, fontWeight: 700, color: '#1c1c1e' }}>{city}</div>
-            {variant === 'hub' && <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{regionByCity[city] ?? '—'}</div>}
+            {variant === 'hub' && <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{isRegion ? `${group!.submarkets.length} ${lang === 'de' ? 'Städte' : 'cities'}` : (regionByCity[city] ?? '—')}</div>}
           </div>
           <div className="flex items-center gap-1.5">
             {st && st.pending > 0 && (
@@ -211,22 +239,27 @@ export function MarktPage() {
         </div>
       </div>
 
-      {/* ── BIG 5 hubs (first row) ── */}
-      <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+      {/* ── Primary hubs (first row) ── */}
+      <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
         {CITY_GROUPS.map(g => renderTile(g.city, 'hub'))}
       </div>
 
-      {/* ── Expanded hub · catchment submarket tiles ── */}
-      {expandedHub && (CITY_GROUPS.find(g => g.city === expandedHub)?.submarkets.length ?? 0) > 0 && (
-        <div className="mb-6" style={{ paddingLeft: 2 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.45)', marginBottom: 8 }}>
-            {lang === 'de' ? `Sub-Märkte · ${expandedHub}` : `Submarkets · ${expandedHub}`}
+      {/* ── Expanded hub · catchment submarkets / member cities ── */}
+      {(() => {
+        const g = CITY_GROUPS.find(x => x.city === expandedHub);
+        if (!g || g.submarkets.length === 0) return null;
+        const label = g.isRegion ? (lang === 'de' ? 'Städte' : 'Cities') : (lang === 'de' ? 'Sub-Märkte' : 'Submarkets');
+        return (
+          <div className="mb-6" style={{ paddingLeft: 2 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.45)', marginBottom: 8 }}>
+              {label} · {expandedHub}
+            </div>
+            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+              {g.submarkets.map(s => renderTile(s, 'sub'))}
+            </div>
           </div>
-          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))' }}>
-            {CITY_GROUPS.find(g => g.city === expandedHub)!.submarkets.map(s => renderTile(s, 'sub'))}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Further markets (not part of a hub) ── */}
       {otherCities.length > 0 && (

@@ -62,12 +62,14 @@ export const PLAUSIBILITY_RANGES: Partial<
   Record<AssetClass, Partial<Record<BenchmarkKpi, Range>>>
 > = {
   residential: {
-    prime_rent: { min: 12, max: 40 },
-    erv: { min: 8, max: 30 },
-    net_initial_yield: { min: 2.5, max: 5.5 },
-    prime_yield: { min: 2.5, max: 5.0 },
+    // Widened at the low end to admit weaker Ruhr/B-markets alongside the
+    // Top-7 (e.g. Gelsenkirchen ERV ~7 €/m², factor ~18×, NIY ~5.4%).
+    prime_rent: { min: 9, max: 40 },
+    erv: { min: 6.5, max: 30 },
+    net_initial_yield: { min: 2.5, max: 6.0 },
+    prime_yield: { min: 2.5, max: 5.5 },
     vacancy: { min: 0, max: 8 },
-    multiplier: { min: 18, max: 32 },
+    multiplier: { min: 16, max: 32 },
   },
   office: {
     prime_rent: { min: 14, max: 55 },
