@@ -320,6 +320,85 @@ export const mockBenchmarks: BenchmarkRecord[] = [
       { provider: 'Colliers', value: 18.2, pageNo: 16, originalText: 'Berlin mittlere Miete 18,20 €/m²' },
     ],
   }),
+
+  // ── Berlin · residential · full profile ──
+  makeBenchmark({
+    city: 'Berlin',
+    assetClass: 'residential',
+    kpi: 'prime_rent',
+    priorValue: 28.5,
+    brokers: [
+      { provider: 'JLL', value: 29.5, pageNo: 41, originalText: 'Spitzenmiete Wohnen Berlin: 29,50 €/m²/Monat' },
+      { provider: 'CBRE', value: 30.2, pageNo: 17, originalText: 'Prime residential rent EUR 30.20/sqm' },
+      { provider: 'BNP', value: 30.8, pageNo: 6, originalText: 'Spitzenmiete im Wohnsegment bei 30,80 €/m²' },
+      { provider: 'Savills', value: 29.0, pageNo: 10, originalText: 'Top residential rents around EUR 29.00/sqm/month' },
+      { provider: 'Colliers', value: 30.0, pageNo: 23, originalText: 'Wohnspitzenmiete: 30,00 €/m²/Monat' },
+      { provider: 'C&W', value: 31.5, pageNo: 8, originalText: 'Prime residential rent up to EUR 31.50/sqm' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Berlin',
+    assetClass: 'residential',
+    kpi: 'net_initial_yield',
+    priorValue: 3.5,
+    brokers: [
+      { provider: 'JLL', value: 3.4, pageNo: 6, originalText: 'Net initial yield residential: 3.40%' },
+      { provider: 'CBRE', value: 3.45, pageNo: 5, originalText: 'Nettoanfangsrendite Wohnen 3,45%' },
+      { provider: 'Colliers', value: 3.35, pageNo: 14, originalText: 'NIY residential at 3.35%' },
+      { provider: 'BNP', value: 3.5, pageNo: 4, originalText: 'Spitzenrendite Wohnen 3,50%' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Berlin',
+    assetClass: 'residential',
+    kpi: 'multiplier',
+    priorValue: 28.0,
+    brokers: [
+      { provider: 'JLL', value: 28.5, pageNo: 6, originalText: 'Vervielfältiger Wohnen ca. 28,5-fach' },
+      { provider: 'Colliers', value: 28.2, pageNo: 14, originalText: 'Faktor Wohninvestment: 28,2' },
+      { provider: 'CBRE', value: 28.8, pageNo: 5, originalText: 'Residential multiplier around 28.8x' },
+      { provider: 'BNP', value: 27.9, pageNo: 4, originalText: 'Kaufpreisfaktor Wohnen 27,9' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Berlin',
+    assetClass: 'residential',
+    kpi: 'vacancy',
+    priorValue: 1.0,
+    brokers: [
+      { provider: 'JLL', value: 1.0, pageNo: 43, originalText: 'Leerstandsquote Wohnen rund 1,0%' },
+      { provider: 'Colliers', value: 1.1, pageNo: 25, originalText: 'Wohnungsleerstand bei 1,1%' },
+      { provider: 'CBRE', value: 0.9, pageNo: 19, originalText: 'Residential vacancy approx. 0.9%' },
+    ],
+  }),
+
+  // ── Berlin · office ──
+  makeBenchmark({
+    city: 'Berlin',
+    assetClass: 'office',
+    kpi: 'prime_rent',
+    priorValue: 43.0,
+    brokers: [
+      { provider: 'JLL', value: 44.0, pageNo: 3, originalText: 'Bürospitzenmiete CBD: 44,00 €/m²' },
+      { provider: 'CBRE', value: 44.5, pageNo: 4, originalText: 'Prime office rent EUR 44.50/sqm' },
+      { provider: 'BNP', value: 45.0, pageNo: 5, originalText: 'Spitzenmiete Büro 45,00 €/m²' },
+      { provider: 'C&W', value: 43.5, pageNo: 6, originalText: 'Prime CBD office EUR 43.50/sqm' },
+      { provider: 'Savills', value: 44.0, pageNo: 7, originalText: 'Top office rent EUR 44.00/sqm' },
+      { provider: 'Colliers', value: 44.2, pageNo: 8, originalText: 'Bürospitzenmiete 44,20 €/m²' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Berlin',
+    assetClass: 'office',
+    kpi: 'vacancy',
+    priorValue: 5.0,
+    brokers: [
+      { provider: 'JLL', value: 5.4, pageNo: 9, originalText: 'Büroleerstand 5,4%' },
+      { provider: 'CBRE', value: 5.8, pageNo: 10, originalText: 'Office vacancy 5.8%' },
+      { provider: 'C&W', value: 5.2, pageNo: 11, originalText: 'Vacancy rate 5.2%' },
+    ],
+  }),
+
   makeBenchmark({
     city: 'München',
     assetClass: 'residential',
@@ -355,7 +434,46 @@ export const mockBenchmarks: BenchmarkRecord[] = [
       'Indicative — not IC-quotable. Derived from web listings + Düsseldorf gradient. Superseded once Lestate has transaction data in Meerbusch.',
   }),
 
-  // ── Pending review · out-of-range residential multiplier (manual check) ──
+  // ── Köln · residential · full profile ──
+  makeBenchmark({
+    city: 'Köln',
+    assetClass: 'residential',
+    kpi: 'prime_rent',
+    priorValue: 18.8,
+    brokers: [
+      { provider: 'JLL', value: 19.5, pageNo: 40, originalText: 'Spitzenmiete Wohnen Köln: 19,50 €/m²/Monat' },
+      { provider: 'CBRE', value: 19.8, pageNo: 16, originalText: 'Prime residential rent EUR 19.80/sqm' },
+      { provider: 'BNP', value: 20.2, pageNo: 6, originalText: 'Spitzenmiete im Wohnsegment bei 20,20 €/m²' },
+      { provider: 'Savills', value: 19.0, pageNo: 10, originalText: 'Top residential rents around EUR 19.00/sqm/month' },
+      { provider: 'Colliers', value: 19.6, pageNo: 22, originalText: 'Wohnspitzenmiete: 19,60 €/m²/Monat' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Köln',
+    assetClass: 'residential',
+    kpi: 'erv',
+    priorValue: 14.0,
+    brokers: [
+      { provider: 'JLL', value: 14.4, pageNo: 41, originalText: 'Durchschnittsmiete Wohnen: 14,40 €/m²/Monat' },
+      { provider: 'CBRE', value: 14.8, pageNo: 17, originalText: 'Average residential rent EUR 14.80/sqm' },
+      { provider: 'BNP', value: 14.2, pageNo: 7, originalText: 'Durchschnittsmiete bei 14,20 €/m²' },
+      { provider: 'Colliers', value: 14.6, pageNo: 23, originalText: 'Mittlere Wohnmiete: 14,60 €/m²/Monat' },
+      { provider: 'Savills', value: 14.5, pageNo: 11, originalText: 'Average residential rent EUR 14.50/sqm' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Köln',
+    assetClass: 'residential',
+    kpi: 'net_initial_yield',
+    priorValue: 3.7,
+    brokers: [
+      { provider: 'JLL', value: 3.65, pageNo: 6, originalText: 'Net initial yield residential: 3.65%' },
+      { provider: 'CBRE', value: 3.7, pageNo: 5, originalText: 'Nettoanfangsrendite Wohnen 3,70%' },
+      { provider: 'Colliers', value: 3.6, pageNo: 14, originalText: 'NIY residential at 3.60%' },
+      { provider: 'BNP', value: 3.75, pageNo: 4, originalText: 'Spitzenrendite Wohnen 3,75%' },
+    ],
+  }),
+  // Multiplier with a flagged single-deal outlier (BNP 34,8) — median-cleaned.
   makeBenchmark({
     city: 'Köln',
     assetClass: 'residential',
@@ -363,7 +481,211 @@ export const mockBenchmarks: BenchmarkRecord[] = [
     priorValue: 26.0,
     brokers: [
       { provider: 'JLL', value: 26.4, pageNo: 6, originalText: 'Köln Faktor 26,4' },
-      { provider: 'BNP', value: 34.8, pageNo: 4, originalText: 'Ausreißertransaktion Faktor 34,8', confidence: 0.7 },
+      { provider: 'CBRE', value: 26.6, pageNo: 5, originalText: 'Residential multiplier around 26.6x' },
+      { provider: 'Colliers', value: 26.8, pageNo: 14, originalText: 'Faktor Wohninvestment: 26,8' },
+      { provider: 'BNP', value: 34.8, pageNo: 4, originalText: 'Ausreißertransaktion Faktor 34,8 (Neubau)', confidence: 0.7 },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Köln',
+    assetClass: 'residential',
+    kpi: 'vacancy',
+    priorValue: 1.7,
+    brokers: [
+      { provider: 'JLL', value: 1.6, pageNo: 43, originalText: 'Leerstandsquote Wohnen rund 1,6%' },
+      { provider: 'Colliers', value: 1.8, pageNo: 25, originalText: 'Wohnungsleerstand bei 1,8%' },
+      { provider: 'CBRE', value: 1.5, pageNo: 19, originalText: 'Residential vacancy approx. 1.5%' },
+    ],
+  }),
+
+  // ── Köln · office ──
+  makeBenchmark({
+    city: 'Köln',
+    assetClass: 'office',
+    kpi: 'prime_rent',
+    priorValue: 29.5,
+    brokers: [
+      { provider: 'JLL', value: 30.0, pageNo: 3, originalText: 'Bürospitzenmiete CBD: 30,00 €/m²' },
+      { provider: 'CBRE', value: 30.5, pageNo: 4, originalText: 'Prime office rent EUR 30.50/sqm' },
+      { provider: 'BNP', value: 31.0, pageNo: 5, originalText: 'Spitzenmiete Büro 31,00 €/m²' },
+      { provider: 'C&W', value: 30.2, pageNo: 6, originalText: 'Prime CBD office EUR 30.20/sqm' },
+      { provider: 'Colliers', value: 30.3, pageNo: 8, originalText: 'Bürospitzenmiete 30,30 €/m²' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Köln',
+    assetClass: 'office',
+    kpi: 'vacancy',
+    priorValue: 4.5,
+    brokers: [
+      { provider: 'JLL', value: 4.4, pageNo: 9, originalText: 'Büroleerstand 4,4%' },
+      { provider: 'CBRE', value: 4.8, pageNo: 10, originalText: 'Office vacancy 4.8%' },
+      { provider: 'C&W', value: 4.2, pageNo: 11, originalText: 'Vacancy rate 4.2%' },
+    ],
+  }),
+
+  // ── Essen · residential · full profile (Ruhrgebiet) ──
+  makeBenchmark({
+    city: 'Essen',
+    assetClass: 'residential',
+    kpi: 'prime_rent',
+    priorValue: 12.8,
+    brokers: [
+      { provider: 'JLL', value: 13.2, pageNo: 39, originalText: 'Spitzenmiete Wohnen Essen: 13,20 €/m²/Monat' },
+      { provider: 'CBRE', value: 13.5, pageNo: 15, originalText: 'Prime residential rent EUR 13.50/sqm' },
+      { provider: 'Colliers', value: 13.8, pageNo: 21, originalText: 'Wohnspitzenmiete Rüttenscheid: 13,80 €/m²' },
+      { provider: 'BNP', value: 13.0, pageNo: 6, originalText: 'Spitzenmiete im Wohnsegment bei 13,00 €/m²' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Essen',
+    assetClass: 'residential',
+    kpi: 'erv',
+    priorValue: 9.4,
+    brokers: [
+      { provider: 'JLL', value: 9.8, pageNo: 40, originalText: 'Durchschnittsmiete Wohnen: 9,80 €/m²/Monat' },
+      { provider: 'CBRE', value: 10.0, pageNo: 16, originalText: 'Average residential rent EUR 10.00/sqm' },
+      { provider: 'Colliers', value: 9.6, pageNo: 22, originalText: 'Mittlere Wohnmiete: 9,60 €/m²/Monat' },
+      { provider: 'BNP', value: 9.9, pageNo: 7, originalText: 'Durchschnittsmiete bei 9,90 €/m²' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Essen',
+    assetClass: 'residential',
+    kpi: 'net_initial_yield',
+    priorValue: 4.5,
+    brokers: [
+      { provider: 'JLL', value: 4.4, pageNo: 6, originalText: 'Net initial yield residential: 4.40%' },
+      { provider: 'CBRE', value: 4.5, pageNo: 5, originalText: 'Nettoanfangsrendite Wohnen 4,50%' },
+      { provider: 'Colliers', value: 4.35, pageNo: 14, originalText: 'NIY residential at 4.35%' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Essen',
+    assetClass: 'residential',
+    kpi: 'multiplier',
+    priorValue: 22.0,
+    brokers: [
+      { provider: 'JLL', value: 22.5, pageNo: 6, originalText: 'Vervielfältiger Wohnen ca. 22,5-fach' },
+      { provider: 'Colliers', value: 22.2, pageNo: 14, originalText: 'Faktor Wohninvestment: 22,2' },
+      { provider: 'CBRE', value: 22.8, pageNo: 5, originalText: 'Residential multiplier around 22.8x' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Essen',
+    assetClass: 'residential',
+    kpi: 'vacancy',
+    priorValue: 3.1,
+    brokers: [
+      { provider: 'JLL', value: 3.0, pageNo: 43, originalText: 'Leerstandsquote Wohnen rund 3,0%' },
+      { provider: 'Colliers', value: 3.2, pageNo: 25, originalText: 'Wohnungsleerstand bei 3,2%' },
+      { provider: 'CBRE', value: 2.8, pageNo: 19, originalText: 'Residential vacancy approx. 2.8%' },
+    ],
+  }),
+
+  // ── Essen · office ──
+  makeBenchmark({
+    city: 'Essen',
+    assetClass: 'office',
+    kpi: 'prime_rent',
+    priorValue: 16.0,
+    brokers: [
+      { provider: 'JLL', value: 16.5, pageNo: 3, originalText: 'Bürospitzenmiete CBD: 16,50 €/m²' },
+      { provider: 'CBRE', value: 16.8, pageNo: 4, originalText: 'Prime office rent EUR 16.80/sqm' },
+      { provider: 'BNP', value: 16.2, pageNo: 5, originalText: 'Spitzenmiete Büro 16,20 €/m²' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Essen',
+    assetClass: 'office',
+    kpi: 'vacancy',
+    priorValue: 4.6,
+    brokers: [
+      { provider: 'JLL', value: 4.5, pageNo: 9, originalText: 'Büroleerstand 4,5%' },
+      { provider: 'CBRE', value: 4.8, pageNo: 10, originalText: 'Office vacancy 4.8%' },
+      { provider: 'C&W', value: 4.2, pageNo: 11, originalText: 'Vacancy rate 4.2%' },
+    ],
+  }),
+
+  // ── Bochum · residential · full profile (Ruhrgebiet) ──
+  makeBenchmark({
+    city: 'Bochum',
+    assetClass: 'residential',
+    kpi: 'prime_rent',
+    priorValue: 12.0,
+    brokers: [
+      { provider: 'JLL', value: 12.5, pageNo: 39, originalText: 'Spitzenmiete Wohnen Bochum: 12,50 €/m²/Monat' },
+      { provider: 'CBRE', value: 12.8, pageNo: 15, originalText: 'Prime residential rent EUR 12.80/sqm' },
+      { provider: 'Colliers', value: 12.2, pageNo: 21, originalText: 'Wohnspitzenmiete Ehrenfeld: 12,20 €/m²' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Bochum',
+    assetClass: 'residential',
+    kpi: 'erv',
+    priorValue: 8.5,
+    brokers: [
+      { provider: 'JLL', value: 8.9, pageNo: 40, originalText: 'Durchschnittsmiete Wohnen: 8,90 €/m²/Monat' },
+      { provider: 'CBRE', value: 9.1, pageNo: 16, originalText: 'Average residential rent EUR 9.10/sqm' },
+      { provider: 'Colliers', value: 8.7, pageNo: 22, originalText: 'Mittlere Wohnmiete: 8,70 €/m²/Monat' },
+      { provider: 'BNP', value: 9.0, pageNo: 7, originalText: 'Durchschnittsmiete bei 9,00 €/m²' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Bochum',
+    assetClass: 'residential',
+    kpi: 'net_initial_yield',
+    priorValue: 4.6,
+    brokers: [
+      { provider: 'JLL', value: 4.55, pageNo: 6, originalText: 'Net initial yield residential: 4.55%' },
+      { provider: 'CBRE', value: 4.65, pageNo: 5, originalText: 'Nettoanfangsrendite Wohnen 4,65%' },
+      { provider: 'Colliers', value: 4.5, pageNo: 14, originalText: 'NIY residential at 4.50%' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Bochum',
+    assetClass: 'residential',
+    kpi: 'multiplier',
+    priorValue: 21.5,
+    brokers: [
+      { provider: 'JLL', value: 22.0, pageNo: 6, originalText: 'Vervielfältiger Wohnen ca. 22,0-fach' },
+      { provider: 'Colliers', value: 21.6, pageNo: 14, originalText: 'Faktor Wohninvestment: 21,6' },
+      { provider: 'CBRE', value: 22.3, pageNo: 5, originalText: 'Residential multiplier around 22.3x' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Bochum',
+    assetClass: 'residential',
+    kpi: 'vacancy',
+    priorValue: 3.3,
+    brokers: [
+      { provider: 'JLL', value: 3.2, pageNo: 43, originalText: 'Leerstandsquote Wohnen rund 3,2%' },
+      { provider: 'Colliers', value: 3.4, pageNo: 25, originalText: 'Wohnungsleerstand bei 3,4%' },
+      { provider: 'CBRE', value: 3.0, pageNo: 19, originalText: 'Residential vacancy approx. 3.0%' },
+    ],
+  }),
+
+  // ── Bochum · office ──
+  makeBenchmark({
+    city: 'Bochum',
+    assetClass: 'office',
+    kpi: 'prime_rent',
+    priorValue: 14.0,
+    brokers: [
+      { provider: 'JLL', value: 14.5, pageNo: 3, originalText: 'Bürospitzenmiete Innenstadt: 14,50 €/m²' },
+      { provider: 'CBRE', value: 14.8, pageNo: 4, originalText: 'Prime office rent EUR 14.80/sqm' },
+      { provider: 'BNP', value: 14.2, pageNo: 5, originalText: 'Spitzenmiete Büro 14,20 €/m²' },
+    ],
+  }),
+  makeBenchmark({
+    city: 'Bochum',
+    assetClass: 'office',
+    kpi: 'vacancy',
+    priorValue: 5.1,
+    brokers: [
+      { provider: 'JLL', value: 5.0, pageNo: 9, originalText: 'Büroleerstand 5,0%' },
+      { provider: 'CBRE', value: 5.3, pageNo: 10, originalText: 'Office vacancy 5.3%' },
+      { provider: 'C&W', value: 4.7, pageNo: 11, originalText: 'Vacancy rate 4.7%' },
     ],
   }),
 
@@ -468,29 +790,105 @@ export const mockMarketEvents: MarketEventRecord[] = [
     sourceUrl: 'https://www.it.nrw/',
     publishedAt: '2026-04-22T06:00:00.000Z',
   },
+  {
+    id: 'evt-007',
+    eventType: 'leasing',
+    city: 'Berlin',
+    assetClass: 'office',
+    impactTier: 'high',
+    headline: 'Tech-Konzern mietet 18.000 m² an der Mediaspree',
+    summary:
+      'Große Bürovermietung stützt die Berliner Spitzenmiete. Deskriptiver Kontext — keine automatische Anpassung.',
+    sourceUrl: 'https://www.immobilien-zeitung.de/',
+    publishedAt: '2026-06-10T08:00:00.000Z',
+  },
+  {
+    id: 'evt-008',
+    eventType: 'deal',
+    city: 'Köln',
+    assetClass: 'residential',
+    impactTier: 'medium',
+    headline: 'Wohnportfolio in Köln-Ehrenfeld für 62 Mio. € gehandelt',
+    summary:
+      'Faktor rund 26× — bestätigt das Multiplier-Niveau der Pipeline für Köln.',
+    sourceUrl: 'https://www.thomasdaily.de/',
+    publishedAt: '2026-05-26T09:30:00.000Z',
+  },
+  {
+    id: 'evt-009',
+    eventType: 'macro',
+    city: 'Essen',
+    assetClass: 'office',
+    impactTier: 'low',
+    headline: 'Essen: Konzernansiedlungen stützen die Büronachfrage im Südviertel',
+    summary:
+      'Stabile Nachfrage in der Essener Innenstadt/Rüttenscheid. Kontext für Büro-Underwriting im Ruhrgebiet.',
+    sourceUrl: 'https://www.immobilien-zeitung.de/',
+    publishedAt: '2026-05-14T07:00:00.000Z',
+  },
+  {
+    id: 'evt-010',
+    eventType: 'deal',
+    city: 'Bochum',
+    assetClass: 'residential',
+    impactTier: 'medium',
+    headline: 'Bochum: Wohnquartier am Mark 51°7 vermarktet',
+    summary:
+      'Neubau-Wohnungen mit überdurchschnittlicher Nachfrage — leichter Aufwärtsdruck auf die Durchschnittsmiete.',
+    sourceUrl: 'https://www.thomasdaily.de/',
+    publishedAt: '2026-05-08T09:00:00.000Z',
+  },
 ];
 
 // ── report_sources catalog ────────────────────────────────────────────────────
 
 const catalog: Array<[BrokerProvider, AssetClass[], string]> = [
+  // Düsseldorf — full Big-Six coverage.
   ['JLL', ['residential', 'office', 'retail', 'logistics'], 'Düsseldorf'],
   ['CBRE', ['residential', 'office', 'retail', 'logistics'], 'Düsseldorf'],
   ['BNP', ['residential', 'office', 'retail', 'logistics'], 'Düsseldorf'],
   ['Savills', ['residential', 'office', 'logistics'], 'Düsseldorf'],
   ['Colliers', ['residential', 'office', 'retail'], 'Düsseldorf'],
   ['C&W', ['office', 'retail', 'logistics'], 'Düsseldorf'],
+  // Berlin — full Big-Six coverage.
+  ['JLL', ['residential', 'office', 'retail', 'logistics'], 'Berlin'],
+  ['CBRE', ['residential', 'office', 'retail', 'logistics'], 'Berlin'],
+  ['BNP', ['residential', 'office', 'retail'], 'Berlin'],
+  ['Savills', ['residential', 'office'], 'Berlin'],
+  ['Colliers', ['residential', 'office'], 'Berlin'],
+  ['C&W', ['office', 'retail'], 'Berlin'],
+  // Köln — strong coverage.
+  ['JLL', ['residential', 'office', 'retail'], 'Köln'],
+  ['CBRE', ['residential', 'office', 'retail'], 'Köln'],
+  ['BNP', ['residential', 'office'], 'Köln'],
+  ['Colliers', ['residential', 'office'], 'Köln'],
+  ['C&W', ['office', 'retail'], 'Köln'],
+  // Essen — regional coverage (Ruhrgebiet).
+  ['JLL', ['residential', 'office'], 'Essen'],
+  ['CBRE', ['residential', 'office'], 'Essen'],
+  ['Colliers', ['residential'], 'Essen'],
+  ['BNP', ['office'], 'Essen'],
+  // Bochum — regional coverage (Ruhrgebiet).
+  ['JLL', ['residential', 'office'], 'Bochum'],
+  ['CBRE', ['residential'], 'Bochum'],
+  ['Colliers', ['residential'], 'Bochum'],
+  ['BNP', ['office'], 'Bochum'],
 ];
+
+const marketSlug = (m: string) =>
+  m.toLowerCase().replace(/ü/g, 'ue').replace(/ö/g, 'oe').replace(/ä/g, 'ae').replace(/ß/g, 'ss').replace(/[^a-z]/g, '');
 
 export const mockReportSources: ReportSource[] = catalog.flatMap(([provider, classes, market]) =>
   classes.map((assetClass, i) => ({
-    id: `rs-${provider.toLowerCase().replace(/[^a-z]/g, '')}-${assetClass}`,
+    id: `rs-${marketSlug(market)}-${provider.toLowerCase().replace(/[^a-z]/g, '')}-${assetClass}`,
     provider,
     assetClass,
     market,
-    hubUrl: `https://www.${provider.toLowerCase().replace(/[^a-z]/g, '')}.de/research/${assetClass}`,
+    hubUrl: `https://www.${provider.toLowerCase().replace(/[^a-z]/g, '')}.de/research/${marketSlug(market)}/${assetClass}`,
     selectorPattern: `a[href*="${assetClass}"][href$=".pdf"]`,
     cadence: 'quarterly' as const,
-    status: provider === 'C&W' && assetClass === 'retail' && i === 1 ? ('broken' as const) : ('ok' as const),
+    // One deliberately broken selector to exercise the "broken source" state.
+    status: provider === 'C&W' && assetClass === 'retail' && market === 'Düsseldorf' && i === 1 ? ('broken' as const) : ('ok' as const),
     lastFetchedAt: '2026-06-15T03:05:00.000Z',
   })),
 );
