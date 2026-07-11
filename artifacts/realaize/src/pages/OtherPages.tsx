@@ -169,16 +169,6 @@ export function MarktPage() {
                 {st.pending} {lang === 'de' ? 'offen' : 'pending'}
               </span>
             )}
-            {hasSubs && (
-              <span
-                role="button"
-                onClick={e => { e.stopPropagation(); setExpandedHub(isExpanded ? null : city); }}
-                style={{ display: 'inline-flex', padding: 2, borderRadius: 6, color: 'rgba(60,60,67,0.5)' }}
-                title={lang === 'de' ? 'Sub-Märkte' : 'Submarkets'}
-              >
-                <ChevronDown size={16} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
-              </span>
-            )}
           </div>
         </div>
         {st ? (
@@ -197,6 +187,26 @@ export function MarktPage() {
           </>
         ) : (
           <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.4)', marginTop: 10 }}>{lang === 'de' ? 'Keine Daten' : 'No data'}</div>
+        )}
+        {hasSubs && (
+          <span
+            role="button"
+            onClick={e => { e.stopPropagation(); setExpandedHub(isExpanded ? null : city); }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 12,
+              padding: '5px 10px', borderRadius: 8,
+              background: isExpanded ? 'rgba(0,122,255,0.12)' : 'rgba(0,0,0,0.04)',
+              color: isExpanded ? '#0a6cff' : 'rgba(60,60,67,0.7)',
+              fontSize: 11, fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            {isExpanded
+              ? (lang === 'de' ? 'Einklappen' : 'Collapse')
+              : (group!.isRegion
+                  ? (lang === 'de' ? `${group!.submarkets.length} Städte anzeigen` : `Show ${group!.submarkets.length} cities`)
+                  : (lang === 'de' ? `${group!.submarkets.length} Sub-Märkte anzeigen` : `Show ${group!.submarkets.length} submarkets`))}
+            <ChevronDown size={13} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+          </span>
         )}
       </button>
     );
