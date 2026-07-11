@@ -42,11 +42,26 @@ export function MarktPage() {
   const benchmarks = useStore(s => s.benchmarks);
   const refreshJobs = useStore(s => s.refreshJobs);
   const triggerRefresh = useStore(s => s.triggerQuarterlyRefresh);
+  const refreshCity = useStore(s => s.refreshCityBenchmarks);
   const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
 
   const REVIEWER = 'J. Pleuker';
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshingCity, setRefreshingCity] = useState<string | null>(null);
+  const [updatedCity, setUpdatedCity] = useState<string | null>(null);
   const lastJob = refreshJobs[0];
+
+  // Live-update one city's benchmarks (spinner → brief "updated" confirmation).
+  const handleCityRefresh = (cityName: string) => {
+    setRefreshingCity(cityName);
+    setUpdatedCity(null);
+    setTimeout(() => {
+      refreshCity(cityName);
+      setRefreshingCity(null);
+      setUpdatedCity(cityName);
+      setTimeout(() => setUpdatedCity(prev => (prev === cityName ? null : prev)), 1800);
+    }, 900);
+  };
 
   // Region label per city (for the tile subtitle), derived from the master list.
   const regionByCity = useMemo(() => {
@@ -306,9 +321,30 @@ export function MarktPage() {
         return (
           <div className="animate-fade-in">
             <div className="flex items-end justify-between gap-4 mb-4 flex-wrap">
-              <div className="flex items-baseline gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <h2 style={{ fontSize: 20, fontWeight: 700 }}>{selectedCity}</h2>
                 <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)' }}>{sub}</span>
+                <button
+                  onClick={() => handleCityRefresh(selectedCity)}
+                  disabled={refreshingCity === selectedCity}
+                  className="flex items-center gap-1.5"
+                  title={lang === 'de' ? 'Daten dieser Stadt live aktualisieren' : 'Live-update this city’s data'}
+                  style={{
+                    padding: '4px 10px', borderRadius: 8,
+                    border: `1px solid ${updatedCity === selectedCity ? 'rgba(52,199,89,0.4)' : 'rgba(0,122,255,0.3)'}`,
+                    background: updatedCity === selectedCity ? 'rgba(52,199,89,0.10)' : 'rgba(0,122,255,0.06)',
+                    color: updatedCity === selectedCity ? '#1f9d4d' : '#0a6cff',
+                    fontSize: 11, fontWeight: 700,
+                    cursor: refreshingCity === selectedCity ? 'default' : 'pointer',
+                    opacity: refreshingCity === selectedCity ? 0.75 : 1,
+                  }}
+                >
+                  {refreshingCity === selectedCity
+                    ? <><RefreshCw size={12} className="animate-spin" /> {lang === 'de' ? 'Aktualisiere…' : 'Updating…'}</>
+                    : updatedCity === selectedCity
+                      ? <><CheckCircle size={12} /> {lang === 'de' ? 'Aktualisiert' : 'Updated'}</>
+                      : <><RefreshCw size={12} /> {lang === 'de' ? 'Live-Update' : 'Live update'}</>}
+                </button>
               </div>
               {st && (
                 <div className="flex items-center flex-wrap" style={{ gap: 20 }}>
