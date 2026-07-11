@@ -207,54 +207,58 @@ function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: Bench
         </select>
       </div>
 
-      <div className="glass-card" style={{ overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.6fr 1.2fr 0.8fr 1.4fr 1.3fr 28px', padding: '12px 18px', borderBottom: '1px solid rgba(0,0,0,0.06)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.5)' }}>
-          <div>{lang === 'de' ? 'Markt' : 'Market'}</div>
-          <div>{lang === 'de' ? 'Asset-Klasse' : 'Asset class'}</div>
-          <div>KPI</div>
-          <div>{lang === 'de' ? 'Wert' : 'Value'}</div>
-          <div>Sources</div>
-          <div>{lang === 'de' ? 'Konfidenz' : 'Confidence'}</div>
-          <div>{lang === 'de' ? 'Status' : 'Status'}</div>
-          <div />
+      {rows.length === 0 ? (
+        <div className="glass-card" style={{ padding: 32, textAlign: 'center', color: 'rgba(60,60,67,0.5)', fontSize: 13 }}>
+          {lang === 'de' ? 'Keine Benchmarks für diese Auswahl.' : 'No benchmarks for this selection.'}
         </div>
-        {rows.map(b => {
-          const isOpen = expanded === b.id;
-          const tier = TIER_STYLE[b.confidenceTier];
-          const status = STATUS_STYLE[b.validationStatus];
-          return (
-            <div key={b.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+      ) : (
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', alignItems: 'start' }}>
+          {rows.map(b => {
+            const isOpen = expanded === b.id;
+            const tier = TIER_STYLE[b.confidenceTier];
+            const status = STATUS_STYLE[b.validationStatus];
+            return (
               <div
+                key={b.id}
+                className="glass-card"
                 onClick={() => setExpanded(isOpen ? null : b.id)}
-                style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.6fr 1.2fr 0.8fr 1.4fr 1.3fr 28px', padding: '12px 18px', alignItems: 'center', cursor: 'pointer', fontSize: 13 }}
+                style={{ padding: 16, cursor: 'pointer', overflow: 'hidden', gridColumn: isOpen ? '1 / -1' : undefined }}
               >
-                <div style={{ fontWeight: 600 }}>
-                  {b.city}
-                  {b.submarket && <span style={{ color: 'rgba(60,60,67,0.5)', fontWeight: 400 }}> · {b.submarket}</span>}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>
+                      {b.city}
+                      {b.submarket && <span style={{ color: 'rgba(60,60,67,0.5)', fontWeight: 400 }}> · {b.submarket}</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', marginTop: 2 }}>
+                      {ASSET_CLASS_LABEL[b.assetClass]} · {KPI_LABEL[b.kpi]}
+                    </div>
+                  </div>
+                  <Badge bg={status.bg} color={status.color}>{status.label}</Badge>
                 </div>
-                <div>{ASSET_CLASS_LABEL[b.assetClass]}</div>
-                <div style={{ color: 'rgba(60,60,67,0.75)' }}>{KPI_LABEL[b.kpi]}</div>
-                <div style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatBenchmarkValue(b.value, b.unit)}</div>
-                <div style={{ color: 'rgba(60,60,67,0.6)', fontVariantNumeric: 'tabular-nums' }}>
-                  {b.sourceCount}
-                  {b.valueSpread !== undefined && b.valueSpread > 0 && (
-                    <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.4)' }}> · Δ{b.valueSpread}</span>
-                  )}
+                <div style={{ fontSize: 24, fontWeight: 700, margin: '12px 0 8px', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>
+                  {formatBenchmarkValue(b.value, b.unit)}
                 </div>
-                <div><Badge bg={tier.bg} color={tier.color}>{tier.label}</Badge></div>
-                <div><Badge bg={status.bg} color={status.color}>{status.label}</Badge></div>
-                <div style={{ color: 'rgba(60,60,67,0.4)' }}>{isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</div>
+                <div className="flex items-center justify-between gap-2" style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)' }}>
+                  <Badge bg={tier.bg} color={tier.color}>{tier.label}</Badge>
+                  <span className="flex items-center gap-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {b.sourceCount} {lang === 'de' ? 'Quellen' : 'sources'}
+                    {b.valueSpread !== undefined && b.valueSpread > 0 && (
+                      <span style={{ color: 'rgba(60,60,67,0.4)' }}>· Δ{b.valueSpread}</span>
+                    )}
+                    <span style={{ color: 'rgba(60,60,67,0.4)', display: 'inline-flex' }}>{isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
+                  </span>
+                </div>
+                {isOpen && (
+                  <div style={{ margin: '12px -16px -16px' }}>
+                    <ProvenanceDrilldown b={b} lang={lang} />
+                  </div>
+                )}
               </div>
-              {isOpen && <ProvenanceDrilldown b={b} lang={lang} />}
-            </div>
-          );
-        })}
-        {rows.length === 0 && (
-          <div style={{ padding: 32, textAlign: 'center', color: 'rgba(60,60,67,0.5)', fontSize: 13 }}>
-            {lang === 'de' ? 'Keine Benchmarks für diese Auswahl.' : 'No benchmarks for this selection.'}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

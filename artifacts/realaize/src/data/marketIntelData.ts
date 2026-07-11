@@ -705,6 +705,11 @@ export const mockBenchmarks: BenchmarkRecord[] = [
   ...makeComp('Neuss', undefined, 'residential', 12.05, 24.0),       // buy ~3.464 €/m²
   ...makeComp('Hilden', undefined, 'residential', 11.20, 24.6),      // buy ~3.300 €/m²
   ...makeComp('Erkrath', undefined, 'residential', 12.00, 21.9),     // buy ~3.150 €/m²
+
+  // ── Köln catchment · residential comps (Speckgürtel) ──
+  ...makeComp('Leverkusen', undefined, 'residential', 10.90, 23.5),  // buy ~3.074 €/m²
+  ...makeComp('Langenfeld', undefined, 'residential', 11.80, 24.5),  // buy ~3.469 €/m²
+  ...makeComp('Bonn', undefined, 'residential', 13.20, 26.5),        // buy ~4.198 €/m²
 ];
 
 // ── Cross-validation · portfolio_realised vs broker (Phase 3 preview) ──

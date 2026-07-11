@@ -64,34 +64,114 @@ export function MarktPage() {
     logistics: '74,222,128', mixed_use: '167,139,250',
   };
 
-  // City tiles derived from the Market Intelligence benchmark master. One tile
-  // per city, with a compact summary; clicking opens the full MI panel below.
-  const cityCards = useMemo(() => {
-    const map = new Map<string, {
-      city: string; classes: string[]; total: number;
-      extracted: number; pending: number; confSum: number;
-    }>();
+  // Primary hubs (first row) and their catchment submarkets (expandable below).
+  const CITY_GROUPS: { city: string; submarkets: string[] }[] = [
+    { city: 'Düsseldorf', submarkets: ['Neuss', 'Meerbusch', 'Ratingen', 'Erkrath', 'Hilden'] },
+    { city: 'Köln', submarkets: ['Langenfeld', 'Leverkusen', 'Bonn'] },
+    { city: 'Berlin', submarkets: [] },
+    { city: 'Hamburg', submarkets: [] },
+    { city: 'München', submarkets: [] },
+  ];
+
+  type CityStat = { city: string; classes: string[]; total: number; extracted: number; pending: number; avgConf: number };
+
+  // Per-city summary derived from the benchmark master.
+  const statByCity = useMemo(() => {
+    const map = new Map<string, CityStat & { confSum: number }>();
     for (const b of benchmarks) {
       if (b.sourceType === 'portfolio_realised') continue;
       let e = map.get(b.city);
-      if (!e) { e = { city: b.city, classes: [], total: 0, extracted: 0, pending: 0, confSum: 0 }; map.set(b.city, e); }
+      if (!e) { e = { city: b.city, classes: [], total: 0, extracted: 0, pending: 0, confSum: 0, avgConf: 0 }; map.set(b.city, e); }
       e.total++;
       if (!e.classes.includes(b.assetClass)) e.classes.push(b.assetClass);
       if (b.sourceType === 'extracted_report') { e.extracted++; e.confSum += b.confidenceScore; }
       if (b.validationStatus === 'pending') e.pending++;
     }
-    return Array.from(map.values())
-      .map(e => ({ ...e, avgConf: e.extracted ? e.confSum / e.extracted : 0 }))
-      .sort((a, b) => b.total - a.total || a.city.localeCompare(b.city));
+    const out = new Map<string, CityStat>();
+    for (const [k, e] of map) out.set(k, { city: e.city, classes: e.classes, total: e.total, extracted: e.extracted, pending: e.pending, avgConf: e.extracted ? e.confSum / e.extracted : 0 });
+    return out;
   }, [benchmarks]);
 
-  const [selectedCity, setSelectedCity] = useState<string | null>(cityCards[0]?.city ?? null);
-  const selected = cityCards.find(c => c.city === selectedCity) ?? null;
+  // Cities with data that aren't part of a hub group (e.g. Essen, Bochum).
+  const groupedCities = new Set(CITY_GROUPS.flatMap(g => [g.city, ...g.submarkets]));
+  const otherCities = Array.from(statByCity.keys())
+    .filter(c => !groupedCities.has(c))
+    .sort((a, b) => (statByCity.get(b)!.total - statByCity.get(a)!.total) || a.localeCompare(b));
+
+  const parentOf = (city: string) => CITY_GROUPS.find(g => g.city === city || g.submarkets.includes(city))?.city ?? null;
+
+  const [selectedCity, setSelectedCity] = useState<string>('Düsseldorf');
+  // Which hub group is expanded to reveal its submarkets (accordion).
+  const [expandedHub, setExpandedHub] = useState<string | null>('Düsseldorf');
 
   const handleRefresh = () => {
     setRefreshing(true);
     // Mirrors the Quarterly Refresh Job — manual override path.
     setTimeout(() => { triggerRefresh(REVIEWER); setRefreshing(false); }, 1100);
+  };
+
+  // A single white city tile (hub = first row, sub = catchment submarket).
+  const renderTile = (city: string, variant: 'hub' | 'sub') => {
+    const st = statByCity.get(city);
+    const active = selectedCity === city;
+    const hub = CITY_GROUPS.find(g => g.city === city);
+    const hasSubs = variant === 'hub' && !!hub && hub.submarkets.length > 0;
+    const isExpanded = expandedHub === city;
+    return (
+      <button
+        key={city}
+        onClick={() => { setSelectedCity(city); if (variant === 'hub') setExpandedHub(city); }}
+        style={{
+          textAlign: 'left', cursor: 'pointer', borderRadius: 16,
+          padding: variant === 'hub' ? 18 : 14,
+          background: '#ffffff',
+          border: active ? '1.5px solid #0a6cff' : '1px solid rgba(0,0,0,0.08)',
+          boxShadow: active ? '0 0 0 3px rgba(0,122,255,0.10)' : '0 1px 2px rgba(0,0,0,0.04)',
+          transition: 'border-color 0.12s, box-shadow 0.12s',
+        }}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div style={{ fontSize: variant === 'hub' ? 15 : 13, fontWeight: 700, color: '#1c1c1e' }}>{city}</div>
+            {variant === 'hub' && <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{regionByCity[city] ?? '—'}</div>}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {st && st.pending > 0 && (
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(255,149,0,0.16)', color: '#c2750a' }}>
+                {st.pending} {lang === 'de' ? 'offen' : 'pending'}
+              </span>
+            )}
+            {hasSubs && (
+              <span
+                role="button"
+                onClick={e => { e.stopPropagation(); setExpandedHub(isExpanded ? null : city); }}
+                style={{ display: 'inline-flex', padding: 2, borderRadius: 6, color: 'rgba(60,60,67,0.5)' }}
+                title={lang === 'de' ? 'Sub-Märkte' : 'Submarkets'}
+              >
+                <ChevronDown size={16} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+              </span>
+            )}
+          </div>
+        </div>
+        {st ? (
+          <>
+            <div className="flex flex-wrap gap-1 mt-2">
+              {st.classes.map(cl => (
+                <span key={cl} className="badge-neutral" style={{ fontSize: 10, background: `rgba(${CLASS_COLOR[cl] ?? '120,120,128'},0.12)` }}>
+                  {CLASS_LABEL[cl] ?? cl}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 mt-3" style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)' }}>
+              <span><strong style={{ color: '#1c1c1e' }}>{st.extracted}</strong> {lang === 'de' ? 'Werte' : 'values'}</span>
+              {st.avgConf > 0 && <span>Ø {st.avgConf.toFixed(2)}</span>}
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.4)', marginTop: 10 }}>{lang === 'de' ? 'Keine Daten' : 'No data'}</div>
+        )}
+      </button>
+    );
   };
 
   return (
@@ -131,63 +211,48 @@ export function MarktPage() {
         </div>
       </div>
 
-      {/* ── City tiles ── */}
-      <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
-        {cityCards.map(c => {
-          const active = selectedCity === c.city;
-          return (
-            <button
-              key={c.city}
-              onClick={() => setSelectedCity(active ? null : c.city)}
-              className="glass-card"
-              style={{
-                textAlign: 'left', cursor: 'pointer', padding: 18, background: 'none',
-                border: active ? '1px solid rgba(0,122,255,0.5)' : '1px solid rgba(255,255,255,0.10)',
-                boxShadow: active ? '0 0 0 3px rgba(0,122,255,0.10)' : undefined,
-              }}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e' }}>{c.city}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{regionByCity[c.city] ?? '—'}</div>
-                </div>
-                {c.pending > 0 && (
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(255,149,0,0.16)', color: '#c2750a' }}>
-                    {c.pending} {lang === 'de' ? 'offen' : 'pending'}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {c.classes.map(cl => (
-                  <span key={cl} className="badge-neutral" style={{ fontSize: 10, background: `rgba(${CLASS_COLOR[cl] ?? '120,120,128'},0.12)` }}>
-                    {CLASS_LABEL[cl] ?? cl}
-                  </span>
-                ))}
-              </div>
-              <div className="flex items-center gap-3 mt-3" style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)' }}>
-                <span><strong style={{ color: '#1c1c1e' }}>{c.extracted}</strong> {lang === 'de' ? 'Werte' : 'values'}</span>
-                {c.avgConf > 0 && <span>Ø {c.avgConf.toFixed(2)}</span>}
-              </div>
-            </button>
-          );
-        })}
+      {/* ── BIG 5 hubs (first row) ── */}
+      <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        {CITY_GROUPS.map(g => renderTile(g.city, 'hub'))}
       </div>
 
-      {/* ── Selected city · Market Intelligence panel ── */}
-      {selected ? (
-        <div className="animate-fade-in">
-          <div className="flex items-baseline gap-3 mb-4">
-            <h2 style={{ fontSize: 20, fontWeight: 700 }}>{selected.city}</h2>
-            <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)' }}>{regionByCity[selected.city] ?? ''}</span>
+      {/* ── Expanded hub · catchment submarket tiles ── */}
+      {expandedHub && (CITY_GROUPS.find(g => g.city === expandedHub)?.submarkets.length ?? 0) > 0 && (
+        <div className="mb-6" style={{ paddingLeft: 2 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.45)', marginBottom: 8 }}>
+            {lang === 'de' ? `Sub-Märkte · ${expandedHub}` : `Submarkets · ${expandedHub}`}
           </div>
-          <MarketIntelligencePanel key={selected.city} city={selected.city} />
+          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))' }}>
+            {CITY_GROUPS.find(g => g.city === expandedHub)!.submarkets.map(s => renderTile(s, 'sub'))}
+          </div>
         </div>
-      ) : (
-        <GlassPanel style={{ padding: 48, textAlign: 'center' }}>
-          <BarChart3 size={32} color="var(--text-muted)" />
-          <div style={{ color: 'rgba(60,60,67,0.45)', marginTop: 12 }}>{t('market.selectLocation')}</div>
-        </GlassPanel>
       )}
+
+      {/* ── Further markets (not part of a hub) ── */}
+      {otherCities.length > 0 && (
+        <div className="mb-8">
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.45)', marginBottom: 8 }}>
+            {lang === 'de' ? 'Weitere Märkte' : 'Further markets'}
+          </div>
+          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+            {otherCities.map(c => renderTile(c, 'sub'))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Selected city · Market Intelligence panel ── */}
+      <div className="animate-fade-in">
+        <div className="flex items-baseline gap-3 mb-4">
+          <h2 style={{ fontSize: 20, fontWeight: 700 }}>{selectedCity}</h2>
+          <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)' }}>
+            {regionByCity[selectedCity]
+              ?? (parentOf(selectedCity) && parentOf(selectedCity) !== selectedCity
+                ? (lang === 'de' ? `Sub-Markt · ${parentOf(selectedCity)}` : `Submarket · ${parentOf(selectedCity)}`)
+                : '')}
+          </span>
+        </div>
+        <MarketIntelligencePanel key={selectedCity} city={selectedCity} />
+      </div>
     </div>
   );
 }
