@@ -274,18 +274,43 @@ export function MarktPage() {
       )}
 
       {/* ── Selected city · Market Intelligence panel ── */}
-      <div className="animate-fade-in">
-        <div className="flex items-baseline gap-3 mb-4">
-          <h2 style={{ fontSize: 20, fontWeight: 700 }}>{selectedCity}</h2>
-          <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)' }}>
-            {regionByCity[selectedCity]
-              ?? (parentOf(selectedCity) && parentOf(selectedCity) !== selectedCity
-                ? (lang === 'de' ? `Sub-Markt · ${parentOf(selectedCity)}` : `Submarket · ${parentOf(selectedCity)}`)
-                : '')}
-          </span>
-        </div>
-        <MarketIntelligencePanel key={selectedCity} city={selectedCity} />
-      </div>
+      {(() => {
+        const st = statByCity.get(selectedCity);
+        const sub = regionByCity[selectedCity]
+          ?? (parentOf(selectedCity) && parentOf(selectedCity) !== selectedCity
+            ? (lang === 'de' ? `Sub-Markt · ${parentOf(selectedCity)}` : `Submarket · ${parentOf(selectedCity)}`)
+            : '');
+        return (
+          <div className="animate-fade-in">
+            <div className="flex items-end justify-between gap-4 mb-4 flex-wrap">
+              <div className="flex items-baseline gap-3">
+                <h2 style={{ fontSize: 20, fontWeight: 700 }}>{selectedCity}</h2>
+                <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)' }}>{sub}</span>
+              </div>
+              {st && (
+                <div className="flex items-center flex-wrap" style={{ gap: 20 }}>
+                  <MiniStat label={lang === 'de' ? 'Reconciled' : 'Reconciled'} value={String(st.extracted)} sub={`${st.total} ${lang === 'de' ? 'gesamt' : 'total'}`} />
+                  <MiniStat label={lang === 'de' ? 'Abdeckung' : 'Coverage'} value={String(st.classes.length)} sub={lang === 'de' ? 'Klassen' : 'classes'} />
+                  <MiniStat label={lang === 'de' ? 'Review offen' : 'Pending'} value={String(st.pending)} sub={lang === 'de' ? 'Freigabe' : 'approval'} accent={st.pending > 0 ? '#c2750a' : undefined} />
+                  <MiniStat label={lang === 'de' ? 'Ø Konfidenz' : 'Avg conf.'} value={st.avgConf > 0 ? st.avgConf.toFixed(2) : '—'} sub={lang === 'de' ? 'extrahiert' : 'extracted'} accent="#1f9d4d" />
+                </div>
+              )}
+            </div>
+            <MarketIntelligencePanel key={selectedCity} city={selectedCity} />
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+// Compact stat shown inline next to the selected-city title on the Markt page.
+function MiniStat({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
+  return (
+    <div style={{ textAlign: 'right', minWidth: 56 }}>
+      <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.45)' }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.15, color: accent ?? '#1d1d1f', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      {sub && <div style={{ fontSize: 9, color: 'rgba(60,60,67,0.4)' }}>{sub}</div>}
     </div>
   );
 }

@@ -125,23 +125,10 @@ export function MarketIntelligencePanel({ city }: { city: string }) {
   const [tab, setTab] = useState<TabKey>('benchmarks');
 
   const pendingCount = benchmarks.filter(b => b.validationStatus === 'pending').length;
-  const extracted = benchmarks.filter(b => b.sourceType === 'extracted_report');
-  const avgConfidence =
-    extracted.length > 0
-      ? extracted.reduce((a, b) => a + b.confidenceScore, 0) / extracted.length
-      : 0;
-  const coverage = new Set(extracted.map(b => b.assetClass)).size;
 
   return (
     <div>
-      {/* ── KPI tiles ── */}
-      <div className="grid grid-cols-4 gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
-        <KpiTile label={lang === 'de' ? 'Reconciled Werte' : 'Reconciled values'} value={String(extracted.length)} sub={`${benchmarks.length} ${lang === 'de' ? 'gesamt' : 'total'}`} />
-        <KpiTile label={lang === 'de' ? 'Abdeckung' : 'Coverage'} value={String(coverage)} sub={lang === 'de' ? 'Asset-Klassen' : 'asset classes'} />
-        <KpiTile label={lang === 'de' ? 'Review offen' : 'Pending review'} value={String(pendingCount)} sub={lang === 'de' ? 'manuelle Freigabe' : 'manual approval'} accent={pendingCount > 0 ? '#c2750a' : undefined} />
-        <KpiTile label={lang === 'de' ? 'Ø Konfidenz' : 'Avg confidence'} value={avgConfidence ? avgConfidence.toFixed(2) : '—'} sub={lang === 'de' ? 'extrahierte Werte' : 'extracted values'} accent="#1f9d4d" />
-      </div>
-
+      {/* KPI summary now sits inline next to the city title (see MarktPage). */}
       {/* ── Tabs ── */}
       <div className="flex gap-1 mb-5 flex-wrap" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
         {TABS.map(tb => {
@@ -179,16 +166,6 @@ export function MarketIntelligencePanel({ city }: { city: string }) {
       {tab === 'memo' && <MemoTab benchmarks={benchmarks} events={marketEvents} lang={lang} lockedCity={city} />}
       {tab === 'history' && <HistoryTab benchmarks={benchmarks} lang={lang} />}
       {tab === 'sources' && <SourcesTab reportSources={reportSources} refreshJobs={refreshJobs} lang={lang} />}
-    </div>
-  );
-}
-
-function KpiTile({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: string }) {
-  return (
-    <div className="kpi-card">
-      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.5)' }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, marginTop: 8, letterSpacing: '-0.02em', color: accent || '#1d1d1f' }}>{value}</div>
-      <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.5)', marginTop: 4 }}>{sub}</div>
     </div>
   );
 }
