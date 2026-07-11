@@ -91,12 +91,7 @@ export default function Layout({ children }: LayoutProps) {
         { key: 'radar', label: t('radar.nav'), icon: Radar, path: '/radar' },
       ],
     },
-    {
-      key: 'markt', label: t('nav.market'), icon: BarChart3, path: '/markt',
-      sub: [
-        { key: 'market-intelligence', label: 'Market Intelligence', icon: Database, path: '/market-intelligence' },
-      ],
-    },
+    { key: 'markt', label: t('nav.market'), icon: BarChart3, path: '/markt' },
     { key: 'documents', label: t('nav.documents'), icon: FolderOpen, path: '/documents' },
     { key: 'ai', label: t('nav.ai'), icon: Bot, path: '/ai' },
     { key: 'news', label: t('news.nav'), icon: Newspaper, path: '/news' },

@@ -19,6 +19,8 @@ import { generateDailyIntelligenceReport } from '../utils/newsAgent';
 import { searchDealRadar } from '../utils/dealRadarAgent';
 import { bestSignal, discountTone } from '../utils/screening';
 import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
+import { MarketIntelligencePanel } from './MarketIntelligence';
+import { CURRENT_PERIOD } from '../data/marketIntelData';
 import type { CandidateDeal, ProfileMatch } from '../models/types';
 import { screenValueAdd, BUILD_COST_RATES, SCOPE_LABEL, DEFAULT_SCREEN_PROFILE, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, type RenovationScope } from '../utils/valueAddScreening';
 import { useQueryClient } from '@tanstack/react-query';
@@ -36,321 +38,156 @@ import type { DebtInstrument } from '../models/types';
 // MARKT PAGE
 // ══════════════════════════════════════════════════════════
 export function MarktPage() {
-  const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListMarketLocationsQueryKey() });
-  const { data: marketLocations = [] } = useListMarketLocations();
-  const createMarketLocation = useCreateMarketLocation({ mutation: { onSuccess: invalidate } });
-  const updateMarketLocationMut = useUpdateMarketLocation({ mutation: { onSuccess: invalidate } });
-  const refreshBenchmarks = useRefreshMarketBenchmarks({ mutation: { onSuccess: invalidate } });
   const { t, lang } = useLanguage();
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [filterCity, setFilterCity] = useState('Alle');
-  const [filterType, setFilterType] = useState('Alle');
-  const [refreshing, setRefreshing] = useState<string | null>(null);
-  const [researchingCity, setResearchingCity] = useState<string | null>(null);
-  const [researchStatus, setResearchStatus] = useState<string>('');
-  const [researchError, setResearchError] = useState<string | null>(null);
-  const [showAddCity, setShowAddCity] = useState(false);
-
-  const location = marketLocations.find(l => l.id === selectedLocation);
+  const benchmarks = useStore(s => s.benchmarks);
+  const refreshJobs = useStore(s => s.refreshJobs);
+  const triggerRefresh = useStore(s => s.triggerQuarterlyRefresh);
   const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
 
-  // Cities available to add (not yet in store)
-  const existingCityIds = new Set(marketLocations.map(l => l.id));
-  const availableCities = GERMAN_TOP_CITIES.filter(c => !existingCityIds.has(c.id));
+  const REVIEWER = 'J. Pleuker';
+  const [refreshing, setRefreshing] = useState(false);
+  const lastJob = refreshJobs[0];
 
-  const handleRefresh = (locId: string) => {
-    setRefreshing(locId);
-    updateMarketLocationMut.mutate(
-      { id: locId, data: { lastUpdated: new Date().toISOString().split('T')[0] } },
-      { onSettled: () => setRefreshing(null) },
-    );
+  // Region label per city (for the tile subtitle), derived from the master list.
+  const regionByCity = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const c of GERMAN_TOP_CITIES) m[c.city] = c.region;
+    return m;
+  }, []);
+
+  const CLASS_LABEL: Record<string, string> = {
+    residential: 'Residential', office: 'Office', retail: 'Retail',
+    logistics: 'Logistics', mixed_use: 'Mixed Use',
+  };
+  const CLASS_COLOR: Record<string, string> = {
+    residential: '96,165,250', office: '201,169,110', retail: '248,113,113',
+    logistics: '74,222,128', mixed_use: '167,139,250',
   };
 
-  // AI Research Agent: fetch real market data for a city
-  const handleResearch = async (cityId: string, cityName: string) => {
-    setResearchingCity(cityId);
-    setResearchStatus(lang === 'de' ? `Recherchiere Marktdaten für ${cityName}...` : `Researching market data for ${cityName}...`);
-    setResearchError(null);
-
-    try {
-      // Ensure city exists on the server
-      if (!existingCityIds.has(cityId)) {
-        const cityInfo = GERMAN_TOP_CITIES.find(c => c.id === cityId);
-        if (cityInfo) {
-          await createMarketLocation.mutateAsync({
-            data: {
-              id: cityInfo.id, city: cityInfo.city, submarket: cityInfo.submarket,
-              region: cityInfo.region,
-              lastUpdated: new Date().toISOString().split('T')[0],
-            },
-          });
-        }
-      }
-
-      const result = await researchCityMarketData(cityId, cityName);
-
-      if (result.success && result.benchmarks.length > 0) {
-        await refreshBenchmarks.mutateAsync({
-          id: cityId,
-          data: { benchmarks: result.benchmarks, updateEntry: result.updateEntry },
-        });
-        setResearchStatus(lang === 'de'
-          ? `✅ ${result.benchmarks.length} Benchmarks für ${cityName} aktualisiert`
-          : `✅ ${result.benchmarks.length} benchmarks updated for ${cityName}`);
-        setSelectedLocation(cityId);
-      } else {
-        setResearchError(result.error || (lang === 'de' ? 'Keine Daten erhalten' : 'No data received'));
-        setResearchStatus('');
-      }
-    } catch (err: any) {
-      setResearchError(err.message || 'Research failed');
-      setResearchStatus('');
-    } finally {
-      setResearchingCity(null);
-      setShowAddCity(false);
+  // City tiles derived from the Market Intelligence benchmark master. One tile
+  // per city, with a compact summary; clicking opens the full MI panel below.
+  const cityCards = useMemo(() => {
+    const map = new Map<string, {
+      city: string; classes: string[]; total: number;
+      extracted: number; pending: number; confSum: number;
+    }>();
+    for (const b of benchmarks) {
+      if (b.sourceType === 'portfolio_realised') continue;
+      let e = map.get(b.city);
+      if (!e) { e = { city: b.city, classes: [], total: 0, extracted: 0, pending: 0, confSum: 0 }; map.set(b.city, e); }
+      e.total++;
+      if (!e.classes.includes(b.assetClass)) e.classes.push(b.assetClass);
+      if (b.sourceType === 'extracted_report') { e.extracted++; e.confSum += b.confidenceScore; }
+      if (b.validationStatus === 'pending') e.pending++;
     }
+    return Array.from(map.values())
+      .map(e => ({ ...e, avgConf: e.extracted ? e.confSum / e.extracted : 0 }))
+      .sort((a, b) => b.total - a.total || a.city.localeCompare(b.city));
+  }, [benchmarks]);
+
+  const [selectedCity, setSelectedCity] = useState<string | null>(cityCards[0]?.city ?? null);
+  const selected = cityCards.find(c => c.city === selectedCity) ?? null;
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    // Mirrors the Quarterly Refresh Job — manual override path.
+    setTimeout(() => { triggerRefresh(REVIEWER); setRefreshing(false); }, 1100);
   };
-
-  const USAGE_COLORS: Record<string, string> = {
-    'Büro': '#c9a96e', 'Wohnen': '#60a5fa', 'Logistik': '#4ade80',
-    'Einzelhandel': '#f87171', 'Mixed Use': '#a78bfa',
-  };
-
-  const allTypes = ['Alle', 'Wohnen', 'Büro', 'Einzelhandel', 'Logistik', 'Mixed Use'];
-  const allCities = ['Alle', ...Array.from(new Set(marketLocations.map(l => l.city)))];
-
-  const filteredLocations = marketLocations.filter(l => {
-    const matchCity = filterCity === 'Alle' || l.city === filterCity;
-    const matchType = filterType === 'Alle' || l.benchmarks.some(b => b.usageType === filterType);
-    return matchCity && matchType;
-  });
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto">
-      <PageHeader
-        title={t('market.title')}
-        subtitle={t('market.subtitle')}
-        badge={`${marketLocations.length} ${t('market.locations')}`}
-        actions={
-          <div className="flex gap-2">
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em' }}>{t('market.title')}</h1>
+          <p style={{ fontSize: 13, color: 'rgba(60,60,67,0.6)', marginTop: 6, maxWidth: 720 }}>
+            {lang === 'de'
+              ? 'Quelle-attribuierter, multi-broker-validierter Marktdaten-Layer. Stadt wählen für Benchmarks, Review, News, Cross-Validation, IC-Memo und Quellen.'
+              : 'Source-attributed, multi-broker-validated market data layer. Select a city for benchmarks, review, news, cross-validation, IC memo and sources.'}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2">
+            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(0,122,255,0.10)', color: '#0a6cff' }}>{CURRENT_PERIOD}</span>
             <button
-              onClick={() => setShowAddCity(!showAddCity)}
-              className="btn-glass px-4 py-2 rounded-xl text-sm flex items-center gap-2"
-              style={{ cursor: 'pointer' }}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="btn-accent px-4 py-2 rounded-xl text-sm flex items-center gap-2"
+              style={{ opacity: refreshing ? 0.7 : 1, cursor: refreshing ? 'default' : 'pointer' }}
             >
-              <Plus size={14} /> {lang === 'de' ? 'Stadt hinzufügen' : 'Add City'}
-            </button>
-            <button onClick={() => exportMarketIntelligenceExcel(marketLocations)}
-              className="btn-glass px-4 py-2 rounded-xl text-sm flex items-center gap-2" style={{ cursor: 'pointer' }}>
-              <Download size={14} /> Excel Export
-            </button>
-            <button className="btn-glass px-4 py-2 rounded-xl text-sm flex items-center gap-2">
-              <Upload size={14} /> {t('market.csvImport')}
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing
+                ? lang === 'de' ? 'Aktualisiere…' : 'Refreshing…'
+                : lang === 'de' ? 'Quartals-Refresh starten' : 'Start Quarterly Refresh'}
             </button>
           </div>
-        }
-      />
-
-      {/* AI Research Status Banner */}
-      {(researchStatus || researchError) && (
-        <div className="mb-4 p-3 rounded-xl flex items-center gap-3" style={{
-          background: researchError ? 'rgba(248,113,113,0.08)' : 'rgba(0,122,255,0.06)',
-          border: `1px solid ${researchError ? 'rgba(248,113,113,0.2)' : 'rgba(0,122,255,0.15)'}`,
-        }}>
-          {researchingCity ? (
-            <RefreshCw size={14} className="animate-spin" color="#007aff" />
-          ) : researchError ? (
-            <AlertTriangle size={14} color="#f87171" />
-          ) : (
-            <CheckCircle size={14} color="#4ade80" />
-          )}
-          <span style={{ fontSize: 13, color: researchError ? '#f87171' : '#1c1c1e', flex: 1 }}>
-            {researchError || researchStatus}
-          </span>
-          {!researchingCity && (
-            <button onClick={() => { setResearchStatus(''); setResearchError(null); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-              <X size={12} color="rgba(60,60,67,0.45)" />
-            </button>
+          {lastJob && (
+            <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.5)' }}>
+              {lang === 'de' ? 'Letzter Lauf' : 'Last run'}:{' '}
+              {new Date(lastJob.triggeredAt).toLocaleDateString(dateLocale)} ·{' '}
+              {lastJob.trigger} · {lastJob.reportsFetched} reports
+            </div>
           )}
         </div>
-      )}
-
-      {/* Add City Panel */}
-      {showAddCity && availableCities.length > 0 && (
-        <GlassPanel style={{ padding: 18, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#1c1c1e', marginBottom: 12 }}>
-            {lang === 'de' ? 'Stadt hinzufügen — AI Market Research' : 'Add City — AI Market Research'}
-          </div>
-          <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.55)', marginBottom: 12 }}>
-            {lang === 'de'
-              ? 'Wähle eine Stadt. Der AI Research Agent recherchiert aktuelle Mieten, Kaufpreise und Multiplikatoren für alle Nutzungsarten.'
-              : 'Select a city. The AI Research Agent will fetch current rents, purchase prices and multipliers for all usage types.'}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {availableCities.map(city => (
-              <button
-                key={city.id}
-                onClick={() => handleResearch(city.id, city.city)}
-                disabled={!!researchingCity}
-                className="px-3 py-1.5 rounded-lg text-sm transition-all"
-                style={{
-                  background: researchingCity === city.id ? 'rgba(0,122,255,0.12)' : 'rgba(0,0,0,0.04)',
-                  border: '1px solid rgba(0,0,0,0.08)',
-                  color: '#1c1c1e', cursor: researchingCity ? 'wait' : 'pointer',
-                  fontSize: 12, fontWeight: 500,
-                  opacity: researchingCity && researchingCity !== city.id ? 0.5 : 1,
-                }}
-              >
-                {researchingCity === city.id && <RefreshCw size={10} className="animate-spin inline mr-1.5" />}
-                {city.city}
-              </button>
-            ))}
-          </div>
-        </GlassPanel>
-      )}
-
-      {/* Filters */}
-      <div className="flex gap-3 mb-6 flex-wrap">
-        <select className="input-glass" value={filterCity} onChange={e => setFilterCity(e.target.value)} style={{ width: 160 }}>
-          {allCities.map(c => <option key={c}>{c}</option>)}
-        </select>
-        <select className="input-glass" value={filterType} onChange={e => setFilterType(e.target.value)} style={{ width: 180 }}>
-          {allTypes.map(t => <option key={t}>{t}</option>)}
-        </select>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Location list */}
-        <div className="col-span-1 space-y-3">
-          {filteredLocations.map(loc => (
-            <div
-              key={loc.id}
-              onClick={() => setSelectedLocation(loc.id === selectedLocation ? null : loc.id)}
-              className="glass-card cursor-pointer"
+      {/* ── City tiles ── */}
+      <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+        {cityCards.map(c => {
+          const active = selectedCity === c.city;
+          return (
+            <button
+              key={c.city}
+              onClick={() => setSelectedCity(active ? null : c.city)}
+              className="glass-card"
               style={{
-                padding: 18,
-                border: selectedLocation === loc.id ? '1px solid rgba(201,169,110,0.35)' : '1px solid rgba(255,255,255,0.10)',
+                textAlign: 'left', cursor: 'pointer', padding: 18, background: 'none',
+                border: active ? '1px solid rgba(0,122,255,0.5)' : '1px solid rgba(255,255,255,0.10)',
+                boxShadow: active ? '0 0 0 3px rgba(0,122,255,0.10)' : undefined,
               }}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e' }}>{loc.city}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{loc.submarket}</div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {loc.benchmarks.map(b => (
-                      <span key={b.id} className="badge-neutral" style={{ fontSize: 10, background: `rgba(${b.usageType === 'Büro' ? '201,169,110' : b.usageType === 'Wohnen' ? '96,165,250' : b.usageType === 'Logistik' ? '74,222,128' : '248,113,113'},0.12)` }}>
-                        {b.usageType}
-                      </span>
-                    ))}
-                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e' }}>{c.city}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{regionByCity[c.city] ?? '—'}</div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <FreshnessBadge date={loc.lastUpdated} />
-                  <button
-                    onClick={e => { e.stopPropagation(); handleResearch(loc.id, loc.city); }}
-                    disabled={!!researchingCity}
-                    className="btn-glass p-1.5 rounded-lg flex items-center gap-1"
-                    style={{ fontSize: 10, cursor: researchingCity ? 'wait' : 'pointer' }}
-                    title={lang === 'de' ? 'AI Research Agent starten' : 'Run AI Research Agent'}
-                  >
-                    {researchingCity === loc.id ? (
-                      <RefreshCw size={11} className="animate-spin" />
-                    ) : (
-                      <>
-                        <Bot size={11} />
-                        <span style={{ fontSize: 9 }}>AI</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+                {c.pending > 0 && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(255,149,0,0.16)', color: '#c2750a' }}>
+                    {c.pending} {lang === 'de' ? 'offen' : 'pending'}
+                  </span>
+                )}
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Location detail */}
-        <div className="col-span-2">
-          {location ? (
-            <div className="space-y-4 animate-fade-in">
-              <GlassPanel style={{ padding: 24 }}>
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <h2 style={{ fontSize: 20, fontWeight: 700, fontFamily: '-apple-system, system-ui, sans-serif' }}>{location.city}</h2>
-                    <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)' }}>{location.submarket} · {location.region}</div>
-                  </div>
-                  <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{t('market.updated')}: {new Date(location.lastUpdated).toLocaleDateString(dateLocale)}</div>
-                </div>
-              </GlassPanel>
-
-              {(filterType === 'Alle' ? location.benchmarks : location.benchmarks.filter(b => b.usageType === filterType)).map(bm => (
-                <GlassPanel key={bm.id} style={{ padding: 24 }}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div style={{ fontSize: 14, fontWeight: 700, color: USAGE_COLORS[bm.usageType] || 'var(--accent)' }}>{bm.usageType}</div>
-                    <div className="flex items-center gap-2">
-                      <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>{t('market.confidence')}:</div>
-                      <div style={{ width: 80, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${bm.confidenceScore}%`, background: bm.confidenceScore > 75 ? '#4ade80' : '#fbbf24', borderRadius: 2 }} />
-                      </div>
-                      <span style={{ fontSize: 11, color: bm.confidenceScore > 75 ? '#4ade80' : '#fbbf24', fontWeight: 600 }}>{bm.confidenceScore}%</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    {[
-                      { label: t('market.rent'), unit: '€/m²/Mon', min: bm.rentMin, max: bm.rentMax, med: bm.rentMedian },
-                      { label: t('market.purchasePrice'), unit: '€/m²', min: bm.purchasePriceMin, max: bm.purchasePriceMax, med: bm.purchasePriceMedian },
-                      { label: t('market.factor'), unit: 'x', min: bm.multiplierMin, max: bm.multiplierMax, med: bm.multiplierMedian },
-                    ].map(metric => (
-                      <div key={metric.label} className="p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
-                        <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>{metric.label}</div>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: '#1c1c1e' }}>
-                          {metric.med.toFixed(metric.unit === 'x' ? 1 : 0)} {metric.unit}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>
-                          Range: {metric.min}–{metric.max} {metric.unit}
-                        </div>
-                        <ResponsiveContainer width="100%" height={30}>
-                          <LineChart data={[{ v: metric.min }, { v: metric.med }, { v: metric.max }]}>
-                            <Line type="monotone" dataKey="v" stroke={USAGE_COLORS[bm.usageType] || '#c9a96e'} strokeWidth={1.5} dot={false} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-4" style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 12 }}>
-                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>{t('market.source')}: <strong style={{ color: 'rgba(60,60,67,0.70)' }}>{bm.sourceLabel}</strong></div>
-                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>{t('market.asOf')}: {new Date(bm.lastUpdated).toLocaleDateString(dateLocale)}</div>
-                    {bm.vacancyRatePercent && <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>{t('market.vacancy')}: {bm.vacancyRatePercent}%</div>}
-                    {bm.notes && <div style={{ fontSize: 11, color: '#fbbf24', fontStyle: 'italic', flex: 1 }}>{bm.notes}</div>}
-                  </div>
-                </GlassPanel>
-              ))}
-
-              {/* Update log */}
-              <GlassPanel style={{ padding: 24 }}>
-                <SectionHeader title={t('market.updateLog')} />
-                <div className="space-y-2">
-                  {location.updateLog.map(entry => (
-                    <div key={entry.id} className="flex items-center gap-3 py-2 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.02)' }}>
-                      <Clock size={12} color="var(--text-muted)" />
-                      <div style={{ flex: 1, fontSize: 12, color: 'rgba(60,60,67,0.70)' }}>{entry.changes}</div>
-                      <span className="badge-neutral" style={{ fontSize: 10 }}>{entry.sourceLabel}</span>
-                      <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>{new Date(entry.timestamp).toLocaleDateString(dateLocale)}</span>
-                      <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>{entry.updatedBy}</span>
-                    </div>
-                  ))}
-                </div>
-              </GlassPanel>
-            </div>
-          ) : (
-            <GlassPanel style={{ padding: 48, textAlign: 'center' }}>
-              <BarChart3 size={32} color="var(--text-muted)" />
-              <div style={{ color: 'rgba(60,60,67,0.45)', marginTop: 12 }}>{t('market.selectLocation')}</div>
-            </GlassPanel>
-          )}
-        </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {c.classes.map(cl => (
+                  <span key={cl} className="badge-neutral" style={{ fontSize: 10, background: `rgba(${CLASS_COLOR[cl] ?? '120,120,128'},0.12)` }}>
+                    {CLASS_LABEL[cl] ?? cl}
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center gap-3 mt-3" style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)' }}>
+                <span><strong style={{ color: '#1c1c1e' }}>{c.extracted}</strong> {lang === 'de' ? 'Werte' : 'values'}</span>
+                {c.avgConf > 0 && <span>Ø {c.avgConf.toFixed(2)}</span>}
+              </div>
+            </button>
+          );
+        })}
       </div>
+
+      {/* ── Selected city · Market Intelligence panel ── */}
+      {selected ? (
+        <div className="animate-fade-in">
+          <div className="flex items-baseline gap-3 mb-4">
+            <h2 style={{ fontSize: 20, fontWeight: 700 }}>{selected.city}</h2>
+            <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)' }}>{regionByCity[selected.city] ?? ''}</span>
+          </div>
+          <MarketIntelligencePanel key={selected.city} city={selected.city} />
+        </div>
+      ) : (
+        <GlassPanel style={{ padding: 48, textAlign: 'center' }}>
+          <BarChart3 size={32} color="var(--text-muted)" />
+          <div style={{ color: 'rgba(60,60,67,0.45)', marginTop: 12 }}>{t('market.selectLocation')}</div>
+        </GlassPanel>
+      )}
     </div>
   );
 }

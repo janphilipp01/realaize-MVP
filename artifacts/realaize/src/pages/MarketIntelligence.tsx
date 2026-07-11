@@ -10,14 +10,12 @@ import {
   Database,
   FileText,
   Newspaper,
-  RefreshCw,
   ShieldCheck,
   Sparkles,
   X,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useLanguage } from '../i18n/LanguageContext';
-import { CURRENT_PERIOD } from '../data/marketIntelData';
 import {
   ASSET_CLASS_LABEL,
   formatBenchmarkValue,
@@ -86,81 +84,44 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]['key'];
 
-export function MarketIntelligencePage() {
+// Per-city Market Intelligence body: the KPI tiles + all six tabs, scoped to a
+// single city. Rendered inside the merged Markt page when a city tile is opened.
+export function MarketIntelligencePanel({ city }: { city: string }) {
   const { lang } = useLanguage();
-  const benchmarks = useStore(s => s.benchmarks);
-  const marketEvents = useStore(s => s.marketEvents);
-  const reportSources = useStore(s => s.reportSources);
+  const allBenchmarks = useStore(s => s.benchmarks);
+  const allEvents = useStore(s => s.marketEvents);
+  const allSources = useStore(s => s.reportSources);
   const refreshJobs = useStore(s => s.refreshJobs);
-  const triggerRefresh = useStore(s => s.triggerQuarterlyRefresh);
+
+  const benchmarks = useMemo(
+    () => allBenchmarks.filter(b => b.city === city),
+    [allBenchmarks, city],
+  );
+  const marketEvents = useMemo(
+    () => allEvents.filter(e => !e.city || e.city === city),
+    [allEvents, city],
+  );
+  const reportSources = useMemo(
+    () => allSources.filter(r => r.market === city),
+    [allSources, city],
+  );
 
   const [tab, setTab] = useState<TabKey>('benchmarks');
-  const [refreshing, setRefreshing] = useState(false);
 
-  const lastJob = refreshJobs[0];
   const pendingCount = benchmarks.filter(b => b.validationStatus === 'pending').length;
   const extracted = benchmarks.filter(b => b.sourceType === 'extracted_report');
   const avgConfidence =
     extracted.length > 0
       ? extracted.reduce((a, b) => a + b.confidenceScore, 0) / extracted.length
       : 0;
-  const coverage = new Set(extracted.map(b => `${b.city}·${b.assetClass}`)).size;
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    // Mirrors the Quarterly Refresh Job — manual override path.
-    setTimeout(() => {
-      triggerRefresh(REVIEWER);
-      setRefreshing(false);
-    }, 1100);
-  };
+  const coverage = new Set(extracted.map(b => b.assetClass)).size;
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto">
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between mb-2 flex-wrap gap-4">
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#0a6cff', textTransform: 'uppercase' }}>
-            Module 06 · Market Intelligence
-          </div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 4 }}>
-            Market Intelligence Pipeline
-          </h1>
-          <p style={{ fontSize: 13, color: 'rgba(60,60,67,0.6)', marginTop: 6, maxWidth: 720 }}>
-            {lang === 'de'
-              ? 'Quelle-attribuierter, multi-broker-validierter Marktdaten-Layer. Eine reconciled Master-Quelle für Underwriting, IC-Memos und Investor-Briefe.'
-              : 'Source-attributed, multi-broker-validated market data layer. One reconciled master source for underwriting, IC memos and investor briefs.'}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2">
-            <Badge bg="rgba(0,122,255,0.10)" color="#0a6cff">{CURRENT_PERIOD}</Badge>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="btn-accent px-4 py-2 rounded-xl text-sm flex items-center gap-2"
-              style={{ opacity: refreshing ? 0.7 : 1, cursor: refreshing ? 'default' : 'pointer' }}
-            >
-              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing
-                ? lang === 'de' ? 'Aktualisiere…' : 'Refreshing…'
-                : lang === 'de' ? 'Quartals-Refresh starten' : 'Start Quarterly Refresh'}
-            </button>
-          </div>
-          {lastJob && (
-            <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.5)' }}>
-              {lang === 'de' ? 'Letzter Lauf' : 'Last run'}:{' '}
-              {new Date(lastJob.triggeredAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB')} ·{' '}
-              {lastJob.trigger} · {lastJob.reportsFetched} reports
-            </div>
-          )}
-        </div>
-      </div>
-
+    <div>
       {/* ── KPI tiles ── */}
-      <div className="grid grid-cols-4 gap-4 my-6" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+      <div className="grid grid-cols-4 gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <KpiTile label={lang === 'de' ? 'Reconciled Werte' : 'Reconciled values'} value={String(extracted.length)} sub={`${benchmarks.length} ${lang === 'de' ? 'gesamt' : 'total'}`} />
-        <KpiTile label={lang === 'de' ? 'Abdeckung' : 'Coverage'} value={String(coverage)} sub={lang === 'de' ? 'Markt × Asset-Klasse' : 'market × asset class'} />
+        <KpiTile label={lang === 'de' ? 'Abdeckung' : 'Coverage'} value={String(coverage)} sub={lang === 'de' ? 'Asset-Klassen' : 'asset classes'} />
         <KpiTile label={lang === 'de' ? 'Review offen' : 'Pending review'} value={String(pendingCount)} sub={lang === 'de' ? 'manuelle Freigabe' : 'manual approval'} accent={pendingCount > 0 ? '#c2750a' : undefined} />
         <KpiTile label={lang === 'de' ? 'Ø Konfidenz' : 'Avg confidence'} value={avgConfidence ? avgConfidence.toFixed(2) : '—'} sub={lang === 'de' ? 'extrahierte Werte' : 'extracted values'} accent="#1f9d4d" />
       </div>
@@ -195,11 +156,11 @@ export function MarketIntelligencePage() {
         })}
       </div>
 
-      {tab === 'benchmarks' && <BenchmarksTab benchmarks={benchmarks} lang={lang} />}
+      {tab === 'benchmarks' && <BenchmarksTab benchmarks={benchmarks} lang={lang} hideCityFilter />}
       {tab === 'review' && <ReviewTab benchmarks={benchmarks} lang={lang} />}
       {tab === 'news' && <NewsTab events={marketEvents} lang={lang} />}
       {tab === 'crossval' && <CrossValTab benchmarks={benchmarks} lang={lang} />}
-      {tab === 'memo' && <MemoTab benchmarks={benchmarks} events={marketEvents} lang={lang} />}
+      {tab === 'memo' && <MemoTab benchmarks={benchmarks} events={marketEvents} lang={lang} lockedCity={city} />}
       {tab === 'sources' && <SourcesTab reportSources={reportSources} refreshJobs={refreshJobs} lang={lang} />}
     </div>
   );
@@ -217,7 +178,7 @@ function KpiTile({ label, value, sub, accent }: { label: string; value: string; 
 
 // ── Benchmarks tab ────────────────────────────────────────────────────────────
 
-function BenchmarksTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
+function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: BenchmarkRecord[]; lang: string; hideCityFilter?: boolean }) {
   const [filterCity, setFilterCity] = useState('all');
   const [filterClass, setFilterClass] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -226,16 +187,18 @@ function BenchmarksTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; la
 
   const rows = benchmarks
     .filter(b => b.sourceType !== 'portfolio_realised')
-    .filter(b => filterCity === 'all' || b.city === filterCity)
+    .filter(b => hideCityFilter || filterCity === 'all' || b.city === filterCity)
     .filter(b => filterClass === 'all' || b.assetClass === filterClass);
 
   return (
     <div>
       <div className="flex gap-3 mb-4 flex-wrap">
-        <select className="input-glass" value={filterCity} onChange={e => setFilterCity(e.target.value)} style={{ width: 200 }}>
-          <option value="all">{lang === 'de' ? 'Alle Märkte' : 'All markets'}</option>
-          {cities.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        {!hideCityFilter && (
+          <select className="input-glass" value={filterCity} onChange={e => setFilterCity(e.target.value)} style={{ width: 200 }}>
+            <option value="all">{lang === 'de' ? 'Alle Märkte' : 'All markets'}</option>
+            {cities.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
         <select className="input-glass" value={filterClass} onChange={e => setFilterClass(e.target.value)} style={{ width: 180 }}>
           <option value="all">{lang === 'de' ? 'Alle Asset-Klassen' : 'All asset classes'}</option>
           {(['residential', 'office', 'retail', 'logistics'] as AssetClass[]).map(c => (
@@ -505,9 +468,9 @@ function CrossValTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang
 
 // ── IC memo block tab ─────────────────────────────────────────────────────────
 
-function MemoTab({ benchmarks, events, lang }: { benchmarks: BenchmarkRecord[]; events: ReturnType<typeof useStore.getState>['marketEvents']; lang: string }) {
+function MemoTab({ benchmarks, events, lang, lockedCity }: { benchmarks: BenchmarkRecord[]; events: ReturnType<typeof useStore.getState>['marketEvents']; lang: string; lockedCity?: string }) {
   const cities = useMemo(() => Array.from(new Set(benchmarks.map(b => b.city))).sort(), [benchmarks]);
-  const [city, setCity] = useState('Düsseldorf');
+  const [city, setCity] = useState(lockedCity ?? cities[0] ?? 'Düsseldorf');
   const [assetClass, setAssetClass] = useState<AssetClass>('residential');
   const [copied, setCopied] = useState(false);
 
@@ -521,9 +484,11 @@ function MemoTab({ benchmarks, events, lang }: { benchmarks: BenchmarkRecord[]; 
           : 'Auto-generated market block per deal: submarket benchmarks, news context, with sources and dates. Saves 1–2 hours of research.'}
       </p>
       <div className="flex gap-3 mb-4 flex-wrap">
-        <select className="input-glass" value={city} onChange={e => setCity(e.target.value)} style={{ width: 200 }}>
-          {cities.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        {!lockedCity && (
+          <select className="input-glass" value={city} onChange={e => setCity(e.target.value)} style={{ width: 200 }}>
+            {cities.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
         <select className="input-glass" value={assetClass} onChange={e => setAssetClass(e.target.value as AssetClass)} style={{ width: 180 }}>
           {(['residential', 'office', 'retail', 'logistics'] as AssetClass[]).map(c => (
             <option key={c} value={c}>{ASSET_CLASS_LABEL[c]}</option>
@@ -644,5 +609,3 @@ function SourcesTab({ reportSources, refreshJobs, lang }: { reportSources: Retur
     </div>
   );
 }
-
-export default MarketIntelligencePage;
