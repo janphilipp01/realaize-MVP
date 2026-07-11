@@ -5,7 +5,7 @@ import { useStore } from '../store/useStore';
 import { PageHeader, GlassPanel } from '../components/shared';
 import { formatEUR } from '../utils/kpiEngine';
 import { useLanguage } from '../i18n/LanguageContext';
-import { searchDealRadar } from '../utils/dealRadarAgent';
+import { searchDealRadar } from '../services/dealRadarAgent';
 import { bestSignal, discountTone } from '../utils/screening';
 import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
 import type { CandidateDeal, ProfileMatch } from '../models/types';

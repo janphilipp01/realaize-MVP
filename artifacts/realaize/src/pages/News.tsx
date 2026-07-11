@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 import { PageHeader, GlassPanel, SectionHeader } from '../components/shared';
 import { exportNewsReportPDF, exportNewsExcel } from '../utils/exportUtils';
 import { useLanguage } from '../i18n/LanguageContext';
-import { generateDailyIntelligenceReport } from '../utils/newsAgent';
+import { generateDailyIntelligenceReport } from '../services/newsAgent';
 
 // ══════════════════════════════════════════════════════════
 // NEWS & INTELLIGENCE PAGE

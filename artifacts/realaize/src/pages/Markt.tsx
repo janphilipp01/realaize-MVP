@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { RefreshCw, CheckCircle, ChevronDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useLanguage } from '../i18n/LanguageContext';
-import { GERMAN_TOP_CITIES } from '../utils/marketResearchAgent';
+import { GERMAN_TOP_CITIES } from '../services/marketResearchAgent';
 import { MarketIntelligencePanel } from '../components/market-intelligence/MarketIntelligencePanel';
 import { CURRENT_PERIOD } from '../data/marketIntelData';
 

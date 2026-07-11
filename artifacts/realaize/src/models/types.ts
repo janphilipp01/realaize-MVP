@@ -1,3 +1,8 @@
+// Screening enums are owned by @workspace/screening (the shared engine). We
+// import them for local use and re-export below, so app code keeps one import
+// surface (models/types) and there is a single source of truth.
+import type { ScreeningMode, ScreeningAssetClass, MatchSignal, BenchmarkConfidence } from '@workspace/screening';
+
 // ─── Core Domain Types ───────────────────────────────────────────────────────
 
 export type UsageType = 'Wohnen' | 'Büro' | 'Einzelhandel' | 'Logistik' | 'Mixed Use';
@@ -761,10 +766,7 @@ export interface DealRadarListing {
 // Two market-anchored tests (€/m² · Faktor) screen every candidate against the
 // active acquisition profiles. See concept: realaize · Deal Sourcing & Screening.
 
-export type ScreeningMode = 'discount_to_market' | 'absolute_yield_threshold';
-
-export type ScreeningAssetClass =
-  | 'residential' | 'mixed_use' | 'office' | 'retail' | 'logistics';
+export type { ScreeningMode, ScreeningAssetClass, MatchSignal, BenchmarkConfidence };
 
 export type SourceChannel =
   | 'platform_immoscout' | 'platform_immowelt' | 'broker_crawl' | 'inbox' | 'manual_upload';
@@ -772,9 +774,6 @@ export type SourceChannel =
 export type CandidateStatus =
   | 'pending_extraction' | 'new' | 'matched' | 'unmatched'
   | 'shortlisted' | 'rejected' | 'promoted' | 'inactive';
-
-export type MatchSignal = 'green' | 'amber' | 'none';
-export type BenchmarkConfidence = 'submarket' | 'city_fallback';
 
 // Editable mandate definition (acquisition_profiles).
 export interface AcquisitionProfile {
