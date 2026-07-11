@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import AuthGuard from './components/AuthGuard';
 import LoginPage from './pages/Login';
@@ -38,6 +38,8 @@ export default function App() {
                     <Route path="/acquisition/:id" element={<DealDashboard />} />
                     <Route path="/radar" element={<DealRadarPage />} />
                     <Route path="/markt" element={<MarktPage />} />
+                    {/* Legacy route — Market Intelligence is merged into /markt. */}
+                    <Route path="/market-intelligence" element={<Navigate to="/markt" replace />} />
                     <Route path="/documents" element={<DocumentsPage />} />
                     <Route path="/ai" element={<AICopilotPage />} />
                     <Route path="/news" element={<NewsPage />} />
