@@ -150,43 +150,38 @@ export function MarktPage() {
         key={city}
         onClick={onOpen}
         style={{
-          textAlign: 'left', cursor: 'pointer', borderRadius: 16,
-          padding: variant === 'hub' ? 18 : 14,
+          textAlign: 'left', cursor: 'pointer', borderRadius: 14,
+          padding: variant === 'hub' ? '12px 14px' : '10px 12px',
+          height: variant === 'hub' ? 86 : 66,
+          width: '100%',
           background: '#ffffff',
           border: active ? '1.5px solid #0a6cff' : '1px solid rgba(0,0,0,0.08)',
           boxShadow: active ? '0 0 0 3px rgba(0,122,255,0.10)' : '0 1px 2px rgba(0,0,0,0.04)',
           transition: 'border-color 0.12s, box-shadow 0.12s',
+          overflow: 'hidden',
         }}
       >
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <div style={{ fontSize: variant === 'hub' ? 15 : 13, fontWeight: 700, color: '#1c1c1e' }}>{city}</div>
-            {variant === 'hub' && <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{isRegion ? `${group!.submarkets.length} ${lang === 'de' ? 'Städte' : 'cities'}` : (regionByCity[city] ?? '—')}</div>}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: variant === 'hub' ? 15 : 13, fontWeight: 700, color: '#1c1c1e', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{city}</div>
+            {variant === 'hub' && <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>{isRegion ? `${group!.submarkets.length} ${lang === 'de' ? 'Städte' : 'cities'}` : (regionByCity[city] ?? '—')}</div>}
           </div>
-          <div className="flex items-center gap-1.5">
-            {st && st.pending > 0 && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(255,149,0,0.16)', color: '#c2750a' }}>
-                {st.pending} {lang === 'de' ? 'offen' : 'pending'}
-              </span>
-            )}
-          </div>
+          {st && st.pending > 0 && (
+            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: 'rgba(255,149,0,0.16)', color: '#c2750a', whiteSpace: 'nowrap' }}>
+              {st.pending} {lang === 'de' ? 'offen' : 'pending'}
+            </span>
+          )}
         </div>
         {st ? (
-          <>
-            <div className="flex flex-wrap gap-1 mt-2">
-              {st.classes.map(cl => (
-                <span key={cl} className="badge-neutral" style={{ fontSize: 10, background: `rgba(${CLASS_COLOR[cl] ?? '120,120,128'},0.12)` }}>
-                  {CLASS_LABEL[cl] ?? cl}
-                </span>
-              ))}
-            </div>
-            <div className="flex items-center gap-3 mt-3" style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)' }}>
-              <span><strong style={{ color: '#1c1c1e' }}>{st.extracted}</strong> {lang === 'de' ? 'Werte' : 'values'}</span>
-              {st.avgConf > 0 && <span>Ø {st.avgConf.toFixed(2)}</span>}
-            </div>
-          </>
+          <div className="flex flex-nowrap gap-1 mt-2" style={{ overflow: 'hidden' }}>
+            {st.classes.map(cl => (
+              <span key={cl} className="badge-neutral" style={{ fontSize: 9, padding: '1px 6px', whiteSpace: 'nowrap', background: `rgba(${CLASS_COLOR[cl] ?? '120,120,128'},0.12)` }}>
+                {CLASS_LABEL[cl] ?? cl}
+              </span>
+            ))}
+          </div>
         ) : (
-          <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.4)', marginTop: 10 }}>{lang === 'de' ? 'Keine Daten' : 'No data'}</div>
+          <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.4)', marginTop: 8 }}>{lang === 'de' ? 'Keine Daten' : 'No data'}</div>
         )}
       </button>
     );
