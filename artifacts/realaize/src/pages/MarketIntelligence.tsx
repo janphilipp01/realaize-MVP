@@ -23,6 +23,7 @@ import {
 } from '../utils/marketIntelligence';
 import type {
   AssetClass,
+  BenchmarkKpi,
   BenchmarkRecord,
   ConfidenceTier,
   ImpactTier,
@@ -178,17 +179,39 @@ function KpiTile({ label, value, sub, accent }: { label: string; value: string; 
 
 // ── Benchmarks tab ────────────────────────────────────────────────────────────
 
+// Benchmark display order: usage class (section) → KPI (column).
+const ASSET_ORDER: AssetClass[] = ['residential', 'office', 'retail', 'logistics', 'mixed_use'];
+const KPI_ORDER: BenchmarkKpi[] = ['prime_rent', 'erv', 'net_initial_yield', 'prime_yield', 'multiplier', 'vacancy'];
+const CLASS_RGB: Record<string, string> = {
+  residential: '96,165,250', office: '201,169,110', retail: '248,113,113',
+  logistics: '74,222,128', mixed_use: '167,139,250',
+};
+
+function SubLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.45)', margin: '0 0 10px' }}>
+      {children}
+    </div>
+  );
+}
+
+// Segmented by usage (section) → city-wide KPI row (Block A) + submarket
+// comparison table (Block B), with KPIs in a fixed order across both.
 function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: BenchmarkRecord[]; lang: string; hideCityFilter?: boolean }) {
   const [filterCity, setFilterCity] = useState('all');
-  const [filterClass, setFilterClass] = useState('all');
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [filterClass, setFilterClass] = useState<'all' | AssetClass>('all');
+  const [openKpi, setOpenKpi] = useState<string | null>(null);   // benchmark id
+  const [openSub, setOpenSub] = useState<string | null>(null);   // `${assetClass}|${submarket}`
 
   const cities = useMemo(() => Array.from(new Set(benchmarks.map(b => b.city))).sort(), [benchmarks]);
 
-  const rows = benchmarks
+  const scoped = benchmarks
     .filter(b => b.sourceType !== 'portfolio_realised')
-    .filter(b => hideCityFilter || filterCity === 'all' || b.city === filterCity)
-    .filter(b => filterClass === 'all' || b.assetClass === filterClass);
+    .filter(b => hideCityFilter || filterCity === 'all' || b.city === filterCity);
+
+  const classesPresent = ASSET_ORDER.filter(ac => scoped.some(b => b.assetClass === ac));
+  const shownClasses = filterClass === 'all' ? classesPresent : classesPresent.filter(ac => ac === filterClass);
+  const num = (n: number) => n.toLocaleString(lang === 'de' ? 'de-DE' : 'en-GB');
 
   return (
     <div>
@@ -199,59 +222,114 @@ function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: Bench
             {cities.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
-        <select className="input-glass" value={filterClass} onChange={e => setFilterClass(e.target.value)} style={{ width: 180 }}>
-          <option value="all">{lang === 'de' ? 'Alle Asset-Klassen' : 'All asset classes'}</option>
-          {(['residential', 'office', 'retail', 'logistics'] as AssetClass[]).map(c => (
+        <select className="input-glass" value={filterClass} onChange={e => setFilterClass(e.target.value as 'all' | AssetClass)} style={{ width: 180 }}>
+          <option value="all">{lang === 'de' ? 'Alle Nutzungen' : 'All usage types'}</option>
+          {classesPresent.map(c => (
             <option key={c} value={c}>{ASSET_CLASS_LABEL[c]}</option>
           ))}
         </select>
       </div>
 
-      {rows.length === 0 ? (
+      {shownClasses.length === 0 ? (
         <div className="glass-card" style={{ padding: 32, textAlign: 'center', color: 'rgba(60,60,67,0.5)', fontSize: 13 }}>
           {lang === 'de' ? 'Keine Benchmarks für diese Auswahl.' : 'No benchmarks for this selection.'}
         </div>
       ) : (
-        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', alignItems: 'start' }}>
-          {rows.map(b => {
-            const isOpen = expanded === b.id;
-            const tier = TIER_STYLE[b.confidenceTier];
-            const status = STATUS_STYLE[b.validationStatus];
+        <div className="space-y-5">
+          {shownClasses.map(ac => {
+            const recs = scoped.filter(b => b.assetClass === ac);
+            const cityByKpi = new Map(recs.filter(b => !b.submarket).map(r => [r.kpi, r] as const));
+            const kpiTiles = KPI_ORDER.map(k => cityByKpi.get(k)).filter((r): r is BenchmarkRecord => !!r);
+            const openKpiRec = kpiTiles.find(k => k.id === openKpi) ?? null;
+            const cityErvVal = (cityByKpi.get('erv') ?? cityByKpi.get('prime_rent'))?.value;
+
+            const subRecs = recs.filter(b => b.submarket);
+            const subNames = Array.from(new Set(subRecs.map(r => r.submarket!)));
+            const subRows = subNames.map(name => {
+              const rs = subRecs.filter(r => r.submarket === name);
+              const erv = rs.find(r => r.kpi === 'erv') ?? rs.find(r => r.kpi === 'prime_rent');
+              const mult = rs.find(r => r.kpi === 'multiplier');
+              const price = erv && mult ? Math.round(erv.value * 12 * mult.value) : undefined;
+              const vs = erv && cityErvVal ? ((erv.value - cityErvVal) / cityErvVal) * 100 : undefined;
+              return { name, erv, mult, price, vs, records: rs };
+            }).sort((a, b) => (b.erv?.value ?? 0) - (a.erv?.value ?? 0));
+
             return (
-              <div
-                key={b.id}
-                className="glass-card"
-                onClick={() => setExpanded(isOpen ? null : b.id)}
-                style={{ padding: 16, cursor: 'pointer', overflow: 'hidden', gridColumn: isOpen ? '1 / -1' : undefined }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>
-                      {b.city}
-                      {b.submarket && <span style={{ color: 'rgba(60,60,67,0.5)', fontWeight: 400 }}> · {b.submarket}</span>}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', marginTop: 2 }}>
-                      {ASSET_CLASS_LABEL[b.assetClass]} · {KPI_LABEL[b.kpi]}
-                    </div>
+              <div key={ac} className="glass-card" style={{ padding: 18 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: `rgba(${CLASS_RGB[ac] ?? '120,120,128'},0.9)` }} />
+                  {ASSET_CLASS_LABEL[ac]}
+                </div>
+
+                {/* Block A — Markt-Kennzahlen (gesamtstädtisch) */}
+                <SubLabel>{lang === 'de' ? 'Markt-Kennzahlen (gesamtstädtisch)' : 'Market metrics (city-wide)'}</SubLabel>
+                {kpiTiles.length > 0 ? (
+                  <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+                    {kpiTiles.map(b => {
+                      const status = STATUS_STYLE[b.validationStatus];
+                      const active = openKpi === b.id;
+                      return (
+                        <div
+                          key={b.id}
+                          onClick={() => setOpenKpi(active ? null : b.id)}
+                          style={{ padding: 12, borderRadius: 12, cursor: 'pointer', background: active ? 'rgba(0,122,255,0.05)' : 'rgba(0,0,0,0.02)', border: active ? '1px solid rgba(0,122,255,0.3)' : '1px solid rgba(0,0,0,0.05)' }}
+                        >
+                          <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', fontWeight: 600 }}>{KPI_LABEL[b.kpi]}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, margin: '4px 0 6px', fontVariantNumeric: 'tabular-nums' }}>{formatBenchmarkValue(b.value, b.unit)}</div>
+                          <div className="flex items-center justify-between" style={{ fontSize: 10, color: 'rgba(60,60,67,0.5)' }}>
+                            <span>{b.sourceCount} {lang === 'de' ? 'Q.' : 'src'}{b.valueSpread ? ` · Δ${b.valueSpread}` : ''}</span>
+                            <span style={{ width: 7, height: 7, borderRadius: 999, background: status.color }} title={status.label} />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <Badge bg={status.bg} color={status.color}>{status.label}</Badge>
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 700, margin: '12px 0 8px', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>
-                  {formatBenchmarkValue(b.value, b.unit)}
-                </div>
-                <div className="flex items-center justify-between gap-2" style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)' }}>
-                  <Badge bg={tier.bg} color={tier.color}>{tier.label}</Badge>
-                  <span className="flex items-center gap-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {b.sourceCount} {lang === 'de' ? 'Quellen' : 'sources'}
-                    {b.valueSpread !== undefined && b.valueSpread > 0 && (
-                      <span style={{ color: 'rgba(60,60,67,0.4)' }}>· Δ{b.valueSpread}</span>
-                    )}
-                    <span style={{ color: 'rgba(60,60,67,0.4)', display: 'inline-flex' }}>{isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
-                  </span>
-                </div>
-                {isOpen && (
-                  <div style={{ margin: '12px -16px -16px' }}>
-                    <ProvenanceDrilldown b={b} lang={lang} />
+                ) : (
+                  <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{lang === 'de' ? 'Keine gesamtstädtischen Werte.' : 'No city-wide values.'}</div>
+                )}
+                {openKpiRec && (
+                  <div style={{ marginTop: 10, border: '1px solid rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden' }}>
+                    <ProvenanceDrilldown b={openKpiRec} lang={lang} />
+                  </div>
+                )}
+
+                {/* Block B — Lagen / Stadtteile */}
+                {subRows.length > 0 && (
+                  <div style={{ marginTop: 18 }}>
+                    <SubLabel>{lang === 'de' ? 'Lagen / Stadtteile' : 'Locations / submarkets'}</SubLabel>
+                    <div style={{ border: '1px solid rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 0.9fr 1fr 1fr 24px', padding: '8px 12px', background: 'rgba(0,0,0,0.02)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.5)' }}>
+                        <div>{lang === 'de' ? 'Lage' : 'Location'}</div>
+                        <div style={{ textAlign: 'right' }}>ERV €/m²</div>
+                        <div style={{ textAlign: 'right' }}>{lang === 'de' ? 'Faktor' : 'Factor'}</div>
+                        <div style={{ textAlign: 'right' }}>~€/m²</div>
+                        <div style={{ textAlign: 'right' }}>vs. {lang === 'de' ? 'Markt' : 'market'}</div>
+                        <div />
+                      </div>
+                      {subRows.map(r => {
+                        const key = `${ac}|${r.name}`;
+                        const active = openSub === key;
+                        const tone = r.vs === undefined ? 'rgba(60,60,67,0.5)' : r.vs >= 3 ? '#1f9d4d' : r.vs <= -3 ? '#d92c20' : 'rgba(60,60,67,0.6)';
+                        const arrow = r.vs === undefined ? '' : r.vs >= 3 ? '▲' : r.vs <= -3 ? '▼' : '●';
+                        return (
+                          <div key={key} style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                            <div onClick={() => setOpenSub(active ? null : key)} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 0.9fr 1fr 1fr 24px', padding: '9px 12px', alignItems: 'center', cursor: 'pointer', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+                              <div style={{ fontWeight: 600 }}>{r.name}</div>
+                              <div style={{ textAlign: 'right' }}>{r.erv ? r.erv.value.toFixed(2) : '—'}</div>
+                              <div style={{ textAlign: 'right' }}>{r.mult ? `${r.mult.value.toFixed(1)}×` : '—'}</div>
+                              <div style={{ textAlign: 'right' }}>{r.price ? num(r.price) : '—'}</div>
+                              <div style={{ textAlign: 'right', color: tone, fontWeight: 600 }}>{r.vs === undefined ? '—' : `${arrow} ${r.vs >= 0 ? '+' : ''}${r.vs.toFixed(0)} %`}</div>
+                              <div style={{ color: 'rgba(60,60,67,0.4)', textAlign: 'right' }}>{active ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</div>
+                            </div>
+                            {active && (
+                              <div style={{ background: 'rgba(0,0,0,0.015)' }}>
+                                {r.records.map(rec => <ProvenanceDrilldown key={rec.id} b={rec} lang={lang} />)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
