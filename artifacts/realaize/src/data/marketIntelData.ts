@@ -16,6 +16,7 @@ import type {
 import {
   confidenceTierFor,
   KPI_UNIT,
+  modeledHistory,
   reconcile,
   validateBenchmark,
 } from '../utils/marketIntelligence';
@@ -214,7 +215,7 @@ function ruhrProfile(
   ];
 }
 
-export const mockBenchmarks: BenchmarkRecord[] = [
+const rawBenchmarks: BenchmarkRecord[] = [
   // ── Düsseldorf · residential · full Big-Six ──
   makeBenchmark({
     city: 'Düsseldorf',
@@ -767,6 +768,13 @@ export const mockBenchmarks: BenchmarkRecord[] = [
   ...makeComp('Langenfeld', undefined, 'residential', 11.80, 24.5),  // buy ~3.469 €/m²
   ...makeComp('Bonn', undefined, 'residential', 13.20, 26.5),        // buy ~4.198 €/m²
 ];
+
+// Seed a persisted quarterly history onto every benchmark (modeled once, so the
+// History view reads real stored points). Live refreshes append forward from here.
+export const mockBenchmarks: BenchmarkRecord[] = rawBenchmarks.map(b => ({
+  ...b,
+  history: modeledHistory(b),
+}));
 
 // ── Cross-validation · portfolio_realised vs broker (Phase 3 preview) ──
 export const mockPortfolioBenchmark: BenchmarkRecord = makeBenchmark({

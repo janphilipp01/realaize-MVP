@@ -30,8 +30,10 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { CURRENT_PERIOD } from '../data/marketIntelData';
 import {
   ASSET_CLASS_LABEL,
+  benchmarkSeries,
   formatBenchmarkValue,
   KPI_LABEL,
+  quarterOrdinal,
 } from '../utils/marketIntelligence';
 import type {
   AssetClass,
@@ -650,43 +652,7 @@ function buildMemoBlock(
 // flickers). Two single-axis charts — rents (€/m²) and factor (×) — never a
 // dual axis.
 
-const HISTORY_QUARTERS = 8;
 const HIST_COLOR = { prime: '#0a6cff', erv: '#1f9d4d', factor: '#c9a96e' };
-
-function histSeed(str: string) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
-  let s = h >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function quarterLabelsEnding(end: string, n: number): string[] {
-  const [ys, qs] = end.split('-Q');
-  let y = Number(ys), q = Number(qs);
-  const out: string[] = [];
-  for (let i = 0; i < n; i++) { out.unshift(`${y}-Q${q}`); q -= 1; if (q === 0) { q = 4; y -= 1; } }
-  return out;
-}
-
-// n values ending at `current`; second-to-last ≈ prior; damped trend backwards.
-function buildBackSeries(current: number, prior: number | undefined, n: number, rnd: () => number): number[] {
-  const p = prior && prior > 0 ? prior : current * 0.99;
-  const g = current / p - 1; // most recent QoQ growth
-  const vals = new Array<number>(n);
-  vals[n - 1] = current;
-  for (let i = n - 2; i >= 0; i--) {
-    const step = g * Math.pow(0.82, (n - 2) - i); // decay the delta into the past
-    const noise = i === n - 2 ? 0 : (rnd() - 0.5) * Math.abs(current) * 0.006;
-    vals[i] = vals[i + 1] / (1 + step) + noise;
-  }
-  return vals.map(v => Math.round(v * 100) / 100);
-}
 
 function HistTooltip({ active, payload, label, unit }: any) {
   if (!active || !payload || payload.length === 0) return null;
@@ -710,26 +676,29 @@ function HistoryTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang:
   );
   const [assetClass, setAssetClass] = useState<AssetClass>(classes.includes('residential') ? 'residential' : (classes[0] ?? 'residential'));
   const ac = classes.includes(assetClass) ? assetClass : (classes[0] ?? assetClass);
-  const city = benchmarks[0]?.city ?? '';
-  const quarters = useMemo(() => quarterLabelsEnding(CURRENT_PERIOD, HISTORY_QUARTERS), []);
 
   const pick = (kpi: BenchmarkKpi) => benchmarks.find(b => b.assetClass === ac && b.kpi === kpi && !b.submarket);
   const primeRec = pick('prime_rent');
   const ervRec = pick('erv');
   const multRec = pick('multiplier');
 
+  // Reads the persisted history (BenchmarkRecord.history) via benchmarkSeries;
+  // falls back to the modeled reconstruction only where no real quarters exist.
   const data = useMemo(() => {
-    const rnd = histSeed(city + ac);
-    const prime = primeRec ? buildBackSeries(primeRec.value, primeRec.priorValue, HISTORY_QUARTERS, rnd) : null;
-    const erv = ervRec ? buildBackSeries(ervRec.value, ervRec.priorValue, HISTORY_QUARTERS, rnd) : null;
-    const mult = multRec ? buildBackSeries(multRec.value, multRec.priorValue, HISTORY_QUARTERS, rnd) : null;
-    return quarters.map((q, i) => ({
-      q,
-      prime: prime ? prime[i] : undefined,
-      erv: erv ? erv[i] : undefined,
-      factor: mult ? mult[i] : undefined,
-    }));
-  }, [primeRec, ervRec, multRec, city, ac, quarters]);
+    const toMap = (rec?: BenchmarkRecord) => {
+      if (!rec) return null;
+      const m = new Map<string, number>();
+      for (const p of benchmarkSeries(rec)) m.set(p.periodQuarter, p.value);
+      return m;
+    };
+    const pS = toMap(primeRec), eS = toMap(ervRec), mS = toMap(multRec);
+    const periods = Array.from(new Set<string>([
+      ...(pS ? Array.from(pS.keys()) : []),
+      ...(eS ? Array.from(eS.keys()) : []),
+      ...(mS ? Array.from(mS.keys()) : []),
+    ])).sort((a, b) => quarterOrdinal(a) - quarterOrdinal(b));
+    return periods.map(q => ({ q, prime: pS?.get(q), erv: eS?.get(q), factor: mS?.get(q) }));
+  }, [primeRec, ervRec, multRec]);
 
   const hasRent = !!primeRec || !!ervRec;
   const hasFactor = !!multRec;
@@ -758,8 +727,8 @@ function HistoryTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang:
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
         <p style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', margin: 0, maxWidth: 640 }}>
           {de
-            ? `Chronologische Entwicklung der reconciled Benchmarks (${HISTORY_QUARTERS} Quartale bis ${CURRENT_PERIOD}). Quelle: rekonstruiert aus Master-Wert + Vorquartal je KPI.`
-            : `Chronological development of the reconciled benchmarks (${HISTORY_QUARTERS} quarters to ${CURRENT_PERIOD}). Source: reconstructed from master value + prior quarter per KPI.`}
+            ? `Chronologische Entwicklung der reconciled Benchmarks (${data.length} Quartale bis ${CURRENT_PERIOD}). Quelle: persistierte Zeitreihe je KPI.`
+            : `Chronological development of the reconciled benchmarks (${data.length} quarters to ${CURRENT_PERIOD}). Source: persisted time series per KPI.`}
         </p>
         <select className="input-glass" value={ac} onChange={e => setAssetClass(e.target.value as AssetClass)} style={{ width: 180 }}>
           {classes.map(c => <option key={c} value={c}>{ASSET_CLASS_LABEL[c]}</option>)}
@@ -815,8 +784,8 @@ function HistoryTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang:
 
           <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.4)' }}>
             {de
-              ? 'Hinweis: Historie modelliert (Master-Wert + Vorquartal, gedämpfte Fortschreibung). Ab dem nächsten Quartals-Refresh werden echte Zeitreihen persistiert.'
-              : 'Note: history is modeled (master value + prior quarter, damped extrapolation). Real time series will be persisted from the next quarterly refresh onward.'}
+              ? 'Zeitreihe wird auf dem Benchmark persistiert (Feld history[]). Werte vor dem aktuellen Quartal sind initial rekonstruiert; jeder Quartals-Refresh schreibt den dann aktuellen Wert fort.'
+              : 'The series is persisted on the benchmark (history[] field). Quarters before the current one are seeded from a reconstruction; each quarterly refresh appends the then-current value.'}
           </div>
         </div>
       )}

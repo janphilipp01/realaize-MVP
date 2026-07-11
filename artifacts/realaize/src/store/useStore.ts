@@ -235,6 +235,16 @@ export const useStore = create<AppState>()(
             reportSources: s.reportSources.map(r =>
               r.status === 'broken' ? r : { ...r, lastFetchedAt: now },
             ),
+            // Persist the current quarter into each benchmark's history
+            // (idempotent — skip if this quarter is already the last point).
+            benchmarks: s.benchmarks.map(b => {
+              const last = b.history?.[b.history.length - 1];
+              if (last && last.periodQuarter === b.periodQuarter) return b;
+              return {
+                ...b,
+                history: [...(b.history ?? []), { periodQuarter: b.periodQuarter, value: b.value }],
+              };
+            }),
           };
         }),
 

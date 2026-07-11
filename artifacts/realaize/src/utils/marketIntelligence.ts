@@ -4,6 +4,7 @@
 import type {
   AssetClass,
   BenchmarkKpi,
+  BenchmarkHistoryPoint,
   BenchmarkRecord,
   BenchmarkSourceRecord,
   BenchmarkUnit,
@@ -289,4 +290,80 @@ export function benchmarksToScreeningSeeds(
     });
   }
   return seeds;
+}
+
+// ── Benchmark history (time series) ───────────────────────────────────────────
+// The single place quarter math and the modeled back-fill live. Real quarters
+// are persisted on BenchmarkRecord.history; until enough accrue, `modeledHistory`
+// reconstructs the prior quarters from the current value + prior-quarter value.
+
+/** Sortable ordinal for an ISO quarter label, e.g. '2025-Q3' → 8103. */
+export function quarterOrdinal(q: string): number {
+  const [y, n] = q.split('-Q');
+  return Number(y) * 4 + Number(n);
+}
+
+/** The `n` ISO quarter labels ending at `end` (inclusive), oldest → newest. */
+export function quarterLabelsEnding(end: string, n: number): string[] {
+  const [ys, qs] = end.split('-Q');
+  let y = Number(ys), q = Number(qs);
+  const out: string[] = [];
+  for (let i = 0; i < n; i++) {
+    out.unshift(`${y}-Q${q}`);
+    q -= 1;
+    if (q === 0) { q = 4; y -= 1; }
+  }
+  return out;
+}
+
+function seededRng(str: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  let s = h >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Deterministic reconstructed history (past quarters only, oldest → newest,
+ * excluding the current periodQuarter). Extends the most recent QoQ delta
+ * backwards with damping + tiny seeded noise. Used to seed the persisted series
+ * and as the History view's fallback until real quarters accrue.
+ */
+export function modeledHistory(
+  rec: { id: string; value: number; priorValue?: number; periodQuarter: string },
+  quarters = 8,
+): BenchmarkHistoryPoint[] {
+  const labels = quarterLabelsEnding(rec.periodQuarter, quarters);
+  const rnd = seededRng(rec.id);
+  const prior = rec.priorValue && rec.priorValue > 0 ? rec.priorValue : rec.value * 0.99;
+  const g = rec.value / prior - 1;
+  const vals = new Array<number>(quarters);
+  vals[quarters - 1] = rec.value;
+  for (let i = quarters - 2; i >= 0; i--) {
+    const step = g * Math.pow(0.82, (quarters - 2) - i);
+    const noise = i === quarters - 2 ? 0 : (rnd() - 0.5) * Math.abs(rec.value) * 0.006;
+    vals[i] = Math.round((vals[i + 1] / (1 + step) + noise) * 100) / 100;
+  }
+  return labels.slice(0, quarters - 1).map((q, i) => ({ periodQuarter: q, value: vals[i] }));
+}
+
+/**
+ * Full display series for a record: persisted history (or modeled fallback)
+ * plus the current quarter, deduped by quarter (current value authoritative),
+ * oldest → newest.
+ */
+export function benchmarkSeries(rec: BenchmarkRecord): BenchmarkHistoryPoint[] {
+  const past = rec.history && rec.history.length > 0 ? rec.history : modeledHistory(rec);
+  const byQuarter = new Map<string, number>();
+  for (const p of past) byQuarter.set(p.periodQuarter, p.value);
+  byQuarter.set(rec.periodQuarter, rec.value); // current is authoritative
+  return Array.from(byQuarter.entries())
+    .map(([periodQuarter, value]) => ({ periodQuarter, value }))
+    .sort((a, b) => quarterOrdinal(a.periodQuarter) - quarterOrdinal(b.periodQuarter));
 }

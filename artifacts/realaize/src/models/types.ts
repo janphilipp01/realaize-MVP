@@ -350,6 +350,12 @@ export type DataAvailability = 'current' | 'last_available' | 'unavailable';
 
 export type ConsolidationMethod = 'median' | 'trust_weighted' | 'single_source';
 
+// One persisted historical data point of a benchmark's reconciled value.
+export interface BenchmarkHistoryPoint {
+  periodQuarter: string; // ISO quarter, e.g. 2025-Q3
+  value: number;         // reconciled value as of that quarter
+}
+
 // One reconciled master value per market × asset class × KPI × quarter.
 export interface BenchmarkRecord {
   id: string;
@@ -376,6 +382,10 @@ export interface BenchmarkRecord {
   // Validation/review trail
   validationFlags?: string[];
   reviewNote?: string;
+  // Persisted quarterly time series (oldest → newest, excludes the current
+  // periodQuarter which is held by `value`). Each quarterly refresh appends the
+  // then-current value here, so the History view reads real stored points.
+  history?: BenchmarkHistoryPoint[];
 }
 
 // Individual broker contribution behind a reconciled master value.
