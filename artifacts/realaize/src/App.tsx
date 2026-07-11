@@ -9,7 +9,14 @@ import AcquisitionPage from './pages/Acquisition';
 import DealDashboard from './pages/DealDashboard';
 import { DevelopmentsPage, DevelopmentDetailPage } from './pages/Developments';
 import { SalesPage, SaleDetailPage } from './pages/Sales';
-import { MarktPage, DebtPage, CashFlowPage, DocumentsPage, AICopilotPage, DealRadarPage, NewsPage, SettingsPage } from './pages/OtherPages';
+import { MarktPage } from './pages/Markt';
+import { DebtPage } from './pages/Debt';
+import { CashFlowPage } from './pages/CashFlow';
+import { DocumentsPage } from './pages/Documents';
+import { AICopilotPage } from './pages/AICopilot';
+import { DealRadarPage } from './pages/DealRadar';
+import { NewsPage } from './pages/News';
+import { SettingsPage } from './pages/Settings';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
