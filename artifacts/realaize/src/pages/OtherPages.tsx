@@ -119,8 +119,9 @@ export function MarktPage() {
     members.slice().sort((a, b) => (statByCity.get(b)?.extracted ?? 0) - (statByCity.get(a)?.extracted ?? 0))[0] ?? members[0];
 
   const [selectedCity, setSelectedCity] = useState<string>('Düsseldorf');
-  // Which hub group is expanded to reveal its submarkets (accordion).
-  const [expandedHub, setExpandedHub] = useState<string | null>('Düsseldorf');
+  // Which hub group is expanded to reveal its submarkets (accordion). Collapsed
+  // by default — the per-tile button below drives expansion.
+  const [expandedHub, setExpandedHub] = useState<string | null>(null);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -137,12 +138,11 @@ export function MarktPage() {
     const hasSubs = variant === 'hub' && !!group && group.submarkets.length > 0;
     const isExpanded = expandedHub === city;
     const onOpen = () => {
+      // Selection only; expansion is driven by the dedicated button below the tile.
       if (isRegion) {
-        setExpandedHub(city);
         if (!group!.submarkets.includes(selectedCity)) setSelectedCity(firstMember(group!.submarkets));
       } else {
         setSelectedCity(city);
-        if (variant === 'hub') setExpandedHub(city);
       }
     };
     return (
@@ -188,26 +188,6 @@ export function MarktPage() {
         ) : (
           <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.4)', marginTop: 10 }}>{lang === 'de' ? 'Keine Daten' : 'No data'}</div>
         )}
-        {hasSubs && (
-          <span
-            role="button"
-            onClick={e => { e.stopPropagation(); setExpandedHub(isExpanded ? null : city); }}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 12,
-              padding: '5px 10px', borderRadius: 8,
-              background: isExpanded ? 'rgba(0,122,255,0.12)' : 'rgba(0,0,0,0.04)',
-              color: isExpanded ? '#0a6cff' : 'rgba(60,60,67,0.7)',
-              fontSize: 11, fontWeight: 700, cursor: 'pointer',
-            }}
-          >
-            {isExpanded
-              ? (lang === 'de' ? 'Einklappen' : 'Collapse')
-              : (group!.isRegion
-                  ? (lang === 'de' ? `${group!.submarkets.length} Städte anzeigen` : `Show ${group!.submarkets.length} cities`)
-                  : (lang === 'de' ? `${group!.submarkets.length} Sub-Märkte anzeigen` : `Show ${group!.submarkets.length} submarkets`))}
-            <ChevronDown size={13} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
-          </span>
-        )}
       </button>
     );
   };
@@ -249,9 +229,37 @@ export function MarktPage() {
         </div>
       </div>
 
-      {/* ── Primary hubs (first row) ── */}
-      <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
-        {CITY_GROUPS.map(g => renderTile(g.city, 'hub'))}
+      {/* ── Primary hubs (first row) — each with an expand button below ── */}
+      <div className="grid gap-4 mb-4 items-start" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+        {CITY_GROUPS.map(g => {
+          const hasSubs = g.submarkets.length > 0;
+          const isExpanded = expandedHub === g.city;
+          return (
+            <div key={g.city} className="flex flex-col" style={{ gap: 8 }}>
+              {renderTile(g.city, 'hub')}
+              {hasSubs && (
+                <button
+                  onClick={() => setExpandedHub(isExpanded ? null : g.city)}
+                  className="flex items-center justify-center gap-1.5"
+                  style={{
+                    padding: '7px 10px', borderRadius: 10, cursor: 'pointer',
+                    border: `1px solid ${isExpanded ? 'rgba(0,122,255,0.35)' : 'rgba(0,0,0,0.08)'}`,
+                    background: isExpanded ? 'rgba(0,122,255,0.10)' : '#ffffff',
+                    color: isExpanded ? '#0a6cff' : 'rgba(60,60,67,0.7)',
+                    fontSize: 11, fontWeight: 700,
+                  }}
+                >
+                  {isExpanded
+                    ? (lang === 'de' ? 'Einklappen' : 'Collapse')
+                    : (g.isRegion
+                        ? (lang === 'de' ? `${g.submarkets.length} Städte anzeigen` : `Show ${g.submarkets.length} cities`)
+                        : (lang === 'de' ? `${g.submarkets.length} Sub-Märkte anzeigen` : `Show ${g.submarkets.length} submarkets`))}
+                  <ChevronDown size={13} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* ── Expanded hub · catchment submarkets / member cities ── */}
