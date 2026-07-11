@@ -134,13 +134,20 @@ export function MarktPage() {
     const group = CITY_GROUPS.find(g => g.city === city);
     const isRegion = variant === 'hub' && !!group?.isRegion;
     const st = isRegion ? aggregateStat(group!.submarkets) : statByCity.get(city);
-    const active = isRegion ? group!.submarkets.includes(selectedCity) : selectedCity === city;
-    const hasSubs = variant === 'hub' && !!group && group.submarkets.length > 0;
+    // A hub is "active" when the selection is anywhere in its group.
+    const active = variant === 'hub' && group
+      ? (selectedCity === city || group.submarkets.includes(selectedCity))
+      : selectedCity === city;
     const isExpanded = expandedHub === city;
     const onOpen = () => {
-      // Selection only; expansion is driven by the dedicated button below the tile.
-      if (isRegion) {
-        if (!group!.submarkets.includes(selectedCity)) setSelectedCity(firstMember(group!.submarkets));
+      // Selection only; expansion is driven by the button under the selected hub.
+      if (variant === 'hub') {
+        if (isRegion) {
+          if (!group!.submarkets.includes(selectedCity)) setSelectedCity(firstMember(group!.submarkets));
+        } else {
+          setSelectedCity(city);
+        }
+        setExpandedHub(null); // collapse on hub select; button re-expands
       } else {
         setSelectedCity(city);
       }
@@ -228,11 +235,12 @@ export function MarktPage() {
       <div className="grid gap-4 mb-4 items-start" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
         {CITY_GROUPS.map(g => {
           const hasSubs = g.submarkets.length > 0;
+          const activeHub = selectedCity === g.city || g.submarkets.includes(selectedCity);
           const isExpanded = expandedHub === g.city;
           return (
             <div key={g.city} className="flex flex-col" style={{ gap: 8 }}>
               {renderTile(g.city, 'hub')}
-              {hasSubs && (
+              {hasSubs && activeHub && (
                 <button
                   onClick={() => setExpandedHub(isExpanded ? null : g.city)}
                   className="flex items-center justify-center gap-1.5"
@@ -261,6 +269,8 @@ export function MarktPage() {
       {(() => {
         const g = CITY_GROUPS.find(x => x.city === expandedHub);
         if (!g || g.submarkets.length === 0) return null;
+        const activeHub = selectedCity === g.city || g.submarkets.includes(selectedCity);
+        if (!activeHub) return null;
         const label = g.isRegion ? (lang === 'de' ? 'Städte' : 'Cities') : (lang === 'de' ? 'Sub-Märkte' : 'Submarkets');
         return (
           <div className="mb-6" style={{ paddingLeft: 2 }}>
