@@ -264,7 +264,7 @@ function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: Bench
                 {/* Block A — Markt-Kennzahlen (gesamtstädtisch) */}
                 <SubLabel>{lang === 'de' ? 'Markt-Kennzahlen (gesamtstädtisch)' : 'Market metrics (city-wide)'}</SubLabel>
                 {kpiTiles.length > 0 ? (
-                  <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+                  <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 14 }}>
                     {kpiTiles.map(b => {
                       const status = STATUS_STYLE[b.validationStatus];
                       const active = openKpi === b.id;
@@ -272,10 +272,10 @@ function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: Bench
                         <div
                           key={b.id}
                           onClick={() => setOpenKpi(active ? null : b.id)}
-                          style={{ padding: 12, borderRadius: 12, cursor: 'pointer', background: active ? 'rgba(0,122,255,0.05)' : 'rgba(0,0,0,0.02)', border: active ? '1px solid rgba(0,122,255,0.3)' : '1px solid rgba(0,0,0,0.05)' }}
+                          style={{ padding: '16px 20px', borderRadius: 12, cursor: 'pointer', background: active ? 'rgba(0,122,255,0.05)' : 'rgba(0,0,0,0.02)', border: active ? '1px solid rgba(0,122,255,0.3)' : '1px solid rgba(0,0,0,0.05)' }}
                         >
-                          <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', fontWeight: 600 }}>{KPI_LABEL[b.kpi]}</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, margin: '4px 0 6px', fontVariantNumeric: 'tabular-nums' }}>{formatBenchmarkValue(b.value, b.unit)}</div>
+                          <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', fontWeight: 600, whiteSpace: 'nowrap' }}>{KPI_LABEL[b.kpi]}</div>
+                          <div style={{ fontSize: 22, fontWeight: 700, margin: '6px 0 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{formatBenchmarkValue(b.value, b.unit)}</div>
                           <div className="flex items-center justify-between" style={{ fontSize: 10, color: 'rgba(60,60,67,0.5)' }}>
                             <span>{b.sourceCount} {lang === 'de' ? 'Q.' : 'src'}{b.valueSpread ? ` · Δ${b.valueSpread}` : ''}</span>
                             <span style={{ width: 7, height: 7, borderRadius: 999, background: status.color }} title={status.label} />
