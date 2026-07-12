@@ -1,5 +1,6 @@
 import { CheckCircle } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import type { AppSettings } from '@/store/appState';
 import { PageHeader, GlassPanel } from '@/components/shared';
 import { useLanguage } from '@/i18n/LanguageContext';
 
@@ -86,12 +87,12 @@ export function SettingsPage() {
                 <input
                   type="number"
                   className="input-glass"
-                  value={(settings as any)[field.key]}
+                  value={(settings[field.key as keyof AppSettings] as number)}
                   step={field.step}
-                  onChange={e => updateSettings({ [field.key]: parseFloat(e.target.value) || 0 } as any)}
+                  onChange={e => updateSettings({ [field.key]: parseFloat(e.target.value) || 0 } as Partial<AppSettings>)}
                 />
                 <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.40)', marginTop: 3 }}>
-                  {(settings as any)[field.key]}{field.unit}
+                  {(settings[field.key as keyof AppSettings] as number)}{field.unit}
                 </div>
               </div>
             ))}
@@ -115,14 +116,14 @@ export function SettingsPage() {
                   {lang === 'de' ? 'Standard-Haltedauer (Jahre)' : 'Default Holding Period (yrs)'}
                 </label>
                 <input type="number" className="input-glass" value={settings.defaultHoldingPeriod ?? 10} min={1} max={30} step={1}
-                  onChange={e => updateSettings({ defaultHoldingPeriod: parseInt(e.target.value) || 10 } as any)} />
+                  onChange={e => updateSettings({ defaultHoldingPeriod: parseInt(e.target.value) || 10 })} />
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 6, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   {lang === 'de' ? 'Standard-Baukostenpuffer (%)' : 'Default Contingency (%)'}
                 </label>
                 <input type="number" className="input-glass" value={settings.defaultContingencyPercent ?? 10} min={0} max={50} step={1}
-                  onChange={e => updateSettings({ defaultContingencyPercent: parseFloat(e.target.value) || 10 } as any)} />
+                  onChange={e => updateSettings({ defaultContingencyPercent: parseFloat(e.target.value) || 10 })} />
               </div>
             </div>
           </div>
@@ -135,7 +136,7 @@ export function SettingsPage() {
                 <label style={{ fontSize: 10, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4 }}>{ut}</label>
                 <input type="number" step="0.1" className="input-glass"
                   value={(settings.defaultExitCapRates ?? {})[ut] ?? 5.0}
-                  onChange={e => updateSettings({ defaultExitCapRates: { ...(settings.defaultExitCapRates ?? {}), [ut]: parseFloat(e.target.value) || 5 } } as any)} />
+                  onChange={e => updateSettings({ defaultExitCapRates: { ...(settings.defaultExitCapRates ?? {}), [ut]: parseFloat(e.target.value) || 5 } })} />
                 <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', marginTop: 2 }}>
                   = {(100 / ((settings.defaultExitCapRates ?? {})[ut] || 5)).toFixed(1)}x
                 </div>
@@ -151,7 +152,7 @@ export function SettingsPage() {
                 <label style={{ fontSize: 10, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4 }}>{ut}</label>
                 <input type="number" step="0.1" className="input-glass"
                   value={(settings.defaultErvGrowthRates ?? {})[ut] ?? 2.0}
-                  onChange={e => updateSettings({ defaultErvGrowthRates: { ...(settings.defaultErvGrowthRates ?? {}), [ut]: parseFloat(e.target.value) || 2 } } as any)} />
+                  onChange={e => updateSettings({ defaultErvGrowthRates: { ...(settings.defaultErvGrowthRates ?? {}), [ut]: parseFloat(e.target.value) || 2 } })} />
               </div>
             ))}
           </div>
@@ -173,8 +174,8 @@ export function SettingsPage() {
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 6, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   {field.label} ({field.unit})
                 </label>
-                <input type="number" className="input-glass" value={(settings as any)[field.key]} step={field.step}
-                  onChange={e => updateSettings({ [field.key]: parseFloat(e.target.value) || 0 } as any)} />
+                <input type="number" className="input-glass" value={(settings[field.key as keyof AppSettings] as number)} step={field.step}
+                  onChange={e => updateSettings({ [field.key]: parseFloat(e.target.value) || 0 } as Partial<AppSettings>)} />
               </div>
             ))}
           </div>
@@ -195,9 +196,9 @@ export function SettingsPage() {
               </label>
               <div className="flex items-center gap-2">
                 <input type="number" className="input-glass" step={0.1} min={0} max={10}
-                  value={(settings as any).defaultOpexInflation ?? 2.0}
-                  onChange={e => updateSettings({ defaultOpexInflation: parseFloat(e.target.value) || 2 } as any)} />
-                <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.50)' }}>{(settings as any).defaultOpexInflation ?? 2.0}%</span>
+                  value={settings.defaultOpexInflation ?? 2.0}
+                  onChange={e => updateSettings({ defaultOpexInflation: parseFloat(e.target.value) || 2 })} />
+                <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.50)' }}>{settings.defaultOpexInflation ?? 2.0}%</span>
               </div>
             </div>
             <div>
@@ -206,9 +207,9 @@ export function SettingsPage() {
               </label>
               <div className="flex items-center gap-2">
                 <input type="number" className="input-glass" step={0.1} min={0} max={10}
-                  value={(settings as any).defaultCapexInflation ?? 3.0}
-                  onChange={e => updateSettings({ defaultCapexInflation: parseFloat(e.target.value) || 3 } as any)} />
-                <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.50)' }}>{(settings as any).defaultCapexInflation ?? 3.0}%</span>
+                  value={settings.defaultCapexInflation ?? 3.0}
+                  onChange={e => updateSettings({ defaultCapexInflation: parseFloat(e.target.value) || 3 })} />
+                <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.50)' }}>{settings.defaultCapexInflation ?? 3.0}%</span>
               </div>
             </div>
             <div>
@@ -217,9 +218,9 @@ export function SettingsPage() {
               </label>
               <div className="flex items-center gap-2">
                 <input type="number" className="input-glass" step={0.1} min={0} max={10}
-                  value={(settings as any).defaultSalesCostPercent ?? 1.5}
-                  onChange={e => updateSettings({ defaultSalesCostPercent: parseFloat(e.target.value) || 1.5 } as any)} />
-                <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.50)' }}>{(settings as any).defaultSalesCostPercent ?? 1.5}%</span>
+                  value={settings.defaultSalesCostPercent ?? 1.5}
+                  onChange={e => updateSettings({ defaultSalesCostPercent: parseFloat(e.target.value) || 1.5 })} />
+                <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.50)' }}>{settings.defaultSalesCostPercent ?? 1.5}%</span>
               </div>
             </div>
             <div>

@@ -66,8 +66,8 @@ Reply ONLY with valid JSON (no markdown):
       }));
 
     return { success: true, listings };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Deal Radar search failed:', error);
-    return { success: false, listings: [], error: error.message };
+    return { success: false, listings: [], error: error instanceof Error ? error.message : String(error) };
   }
 }

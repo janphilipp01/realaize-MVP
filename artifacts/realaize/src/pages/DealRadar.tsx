@@ -121,8 +121,8 @@ export function DealRadarPage() {
       } else {
         setError(de ? 'Keine neuen Angebote gefunden.' : 'No new listings found.');
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSearching(false);
     }

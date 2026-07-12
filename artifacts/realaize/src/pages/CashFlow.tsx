@@ -106,7 +106,7 @@ export function CashFlowPage() {
 
       const isActive = absoluteYear >= acqYear && absoluteYear < saleYear;
       const yearsHeld = absoluteYear - acqYear;
-      const growthRate = ((asset.operatingCosts as any).rentalGrowthRate ?? 2.0) / 100;
+      const growthRate = (asset.operatingCosts.rentalGrowthRate ?? 2.0) / 100;
       const growthFactor = Math.pow(1 + growthRate, Math.max(0, yearsHeld));
 
       if (isActive) {
@@ -127,7 +127,7 @@ export function CashFlowPage() {
       if (absoluteYear === saleYear && saleYear < baseYear + NUM_YEARS) {
         const noiBreakdown = computeAssetNOI(asset);
         const noi0 = noiBreakdown.noi;
-        const growthRate2 = ((asset.operatingCosts as any).rentalGrowthRate ?? 2.0) / 100;
+        const growthRate2 = (asset.operatingCosts.rentalGrowthRate ?? 2.0) / 100;
         const noiAtSale = noi0 * Math.pow(1 + growthRate2, Math.max(0, yearsHeld));
         const niy = asset.currentValue > 0 && noi0 > 0 ? noi0 / asset.currentValue : 0.04;
         const exitPrice = saleObj

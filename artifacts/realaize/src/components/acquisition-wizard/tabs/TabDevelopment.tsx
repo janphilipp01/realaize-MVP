@@ -76,7 +76,7 @@ export function TabDevelopment({ pd, onChange }: { pd: PropertyData; onChange: (
                 </td>
                 <td style={{ padding: '4px 6px' }}><input className="input-glass" value={g.description} onChange={e => updateGw(g.id, { description: e.target.value })} style={{ width: 120, fontSize: 12 }} /></td>
                 <td style={{ padding: '4px 6px' }}>
-                  <select className="input-glass" value={g.budgetInputMode} onChange={e => updateGw(g.id, { budgetInputMode: e.target.value as any })} style={{ width: 80, fontSize: 12 }}>
+                  <select className="input-glass" value={g.budgetInputMode} onChange={e => updateGw(g.id, { budgetInputMode: e.target.value as typeof g.budgetInputMode })} style={{ width: 80, fontSize: 12 }}>
                     <option value="pauschal">Pausch.</option>
                     <option value="per_sqm">€/m²</option>
                   </select>
@@ -86,12 +86,12 @@ export function TabDevelopment({ pd, onChange }: { pd: PropertyData; onChange: (
                 <td style={{ padding: '4px 6px' }}><input className="input-glass" type="number" value={g.durationWeeks} onChange={e => updateGw(g.id, { durationWeeks: parseInt(e.target.value) || 1 })} style={{ width: 56, fontSize: 12 }} /></td>
                 <td style={{ padding: '4px 6px', fontWeight: 600, color: '#007aff', whiteSpace: 'nowrap' }}>{fmt(g.budgetTotal)}</td>
                 <td style={{ padding: '4px 6px' }}>
-                  <select className="input-glass" value={g.costDistribution} onChange={e => updateGw(g.id, { costDistribution: e.target.value as any })} style={{ width: 90, fontSize: 12 }}>
+                  <select className="input-glass" value={g.costDistribution} onChange={e => updateGw(g.id, { costDistribution: e.target.value as typeof g.costDistribution })} style={{ width: 90, fontSize: 12 }}>
                     {COST_DISTRIBUTIONS.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </td>
                 <td style={{ padding: '4px 6px' }}>
-                  <select className="input-glass" value={g.status} onChange={e => updateGw(g.id, { status: e.target.value as any })} style={{ width: 100, fontSize: 12 }}>
+                  <select className="input-glass" value={g.status} onChange={e => updateGw(g.id, { status: e.target.value as typeof g.status })} style={{ width: 100, fontSize: 12 }}>
                     {['Geplant', 'Beauftragt', 'Laufend', 'Abgeschlossen'].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </td>

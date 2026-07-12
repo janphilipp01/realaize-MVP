@@ -77,8 +77,8 @@ export function NewsPage() {
       } else {
         setError(result.error || (lang === 'de' ? 'Report konnte nicht generiert werden.' : 'Failed to generate report.'));
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setGenerating(false);
     }

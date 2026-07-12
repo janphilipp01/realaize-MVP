@@ -43,7 +43,7 @@ export default function PortfolioPage() {
         : acqYear + 10;
       const isActive = absoluteYear >= acqYear && absoluteYear < saleYear;
       const yearsHeld = absoluteYear - acqYear;
-      const growthRate = ((asset.operatingCosts as any).rentalGrowthRate ?? 2.0) / 100;
+      const growthRate = (asset.operatingCosts.rentalGrowthRate ?? 2.0) / 100;
       const growthFactor = Math.pow(1 + growthRate, Math.max(0, yearsHeld));
       if (isActive) {
         const grossRent = asset.annualRent * growthFactor;
@@ -196,7 +196,7 @@ export default function PortfolioPage() {
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
               <Tooltip
                 contentStyle={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 12, fontSize: 11, color: '#1c1c1e', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
-                formatter={(v: any, name: string) => {
+                formatter={(v: number, name: string) => {
                   const labels: Record<string, string> = { noi: 'NOI', transactions: 'Transactions', debtCashflow: 'Debt', freeCashflow: 'Free CF', cumulativeFreeCF: 'Kum. Free CF' };
                   const inK = Math.round(Math.abs(v) / 1000);
                   const fmt = inK.toLocaleString('de-DE');

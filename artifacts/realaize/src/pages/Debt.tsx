@@ -98,7 +98,7 @@ export function DebtPage() {
           <BarChart data={maturityData}>
             <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'rgba(245,240,235,0.4)' }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: 'rgba(245,240,235,0.4)' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}M`} />
-            <Tooltip contentStyle={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 10, fontSize: 12 }} formatter={(v: any) => [`${v} Mio. EUR`]} />
+            <Tooltip contentStyle={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 10, fontSize: 12 }} formatter={(v: number) => [`${v} Mio. EUR`]} />
             <Bar dataKey="amount" fill="#007aff" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

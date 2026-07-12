@@ -140,7 +140,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
                       </td>
                       <td style={{ padding: '8px 10px' }}>
                         {isEditing ? (
-                          <select className="input-glass" style={{ fontSize: 11, padding: '3px 4px', width: '100%' }} value={gwEdits.status || gw.status} onChange={e => setGwEdits(p => ({ ...p, status: e.target.value as any }))}>
+                          <select className="input-glass" style={{ fontSize: 11, padding: '3px 4px', width: '100%' }} value={gwEdits.status || gw.status} onChange={e => setGwEdits(p => ({ ...p, status: e.target.value as typeof gw.status }))}>
                             {['Offen', 'Ausgeschrieben', 'Angebot', 'Vergeben', 'Abgeschlossen'].map(s => <option key={s}>{s}</option>)}
                           </select>
                         ) : (
@@ -325,7 +325,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
                           <input className="input-glass" value={inv.measure} onChange={e => updateInvoice(dev.id, inv.id, { measure: e.target.value })} style={{ fontSize: 11, width: 100 }} />
                         </td>
                         <td style={{ padding: '6px 10px' }}>
-                          <select className="input-glass" value={inv.invoiceType} onChange={e => updateInvoice(dev.id, inv.id, { invoiceType: e.target.value as any })} style={{ fontSize: 11, width: 110 }}>
+                          <select className="input-glass" value={inv.invoiceType} onChange={e => updateInvoice(dev.id, inv.id, { invoiceType: e.target.value as typeof inv.invoiceType })} style={{ fontSize: 11, width: 110 }}>
                             {['Anzahlung', 'Vollzahlung', 'Baufortschritt', 'Schlussrechnung'].map(t => <option key={t}>{t}</option>)}
                           </select>
                         </td>

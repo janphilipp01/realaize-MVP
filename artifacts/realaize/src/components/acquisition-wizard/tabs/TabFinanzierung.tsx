@@ -36,14 +36,14 @@ export function TabFinanzierung({ pd, onChange }: { pd: PropertyData; onChange: 
             <button onClick={() => onChange({ financingTranches: pd.financingTranches.filter(x => x.id !== t.id) })} className="btn-ghost" style={{ color: '#f87171', padding: '4px 8px' }}><Trash2 size={14} /></button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-            <SelectField label="Finanzierungsart" value={t.financingType} onChange={e => updateTranche(t.id, { financingType: e.target.value as any })}>
+            <SelectField label="Finanzierungsart" value={t.financingType} onChange={e => updateTranche(t.id, { financingType: e.target.value as typeof t.financingType })}>
               {FINANCING_TYPES.map(ft => <option key={ft} value={ft}>{ft}</option>)}
             </SelectField>
             <Field label="Darlehensbetrag €" type="number" value={t.loanAmount || ''} onChange={e => updateTranche(t.id, { loanAmount: parseFloat(e.target.value) || 0 })} />
             <Field label="Zinssatz % p.a." type="number" step="0.1" value={t.interestRate} onChange={e => updateTranche(t.id, { interestRate: parseFloat(e.target.value) || 0 })} />
             <Field label="Zinsbindung (Jahre)" type="number" value={t.fixedRatePeriod} onChange={e => updateTranche(t.id, { fixedRatePeriod: parseInt(e.target.value) || 0 })} />
             <Field label="Laufzeit (Jahre)" type="number" value={t.loanTerm} onChange={e => updateTranche(t.id, { loanTerm: parseInt(e.target.value) || 0 })} />
-            <SelectField label="Tilgungsart" value={t.repaymentType} onChange={e => updateTranche(t.id, { repaymentType: e.target.value as any })}>
+            <SelectField label="Tilgungsart" value={t.repaymentType} onChange={e => updateTranche(t.id, { repaymentType: e.target.value as typeof t.repaymentType })}>
               {REPAYMENT_TYPES.map(rt => <option key={rt} value={rt}>{rt}</option>)}
             </SelectField>
             <Field label="Auszahlungsdatum" type="date" value={t.disbursementDate || ''} onChange={e => updateTranche(t.id, { disbursementDate: e.target.value })} />

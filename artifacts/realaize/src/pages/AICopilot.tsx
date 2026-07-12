@@ -76,12 +76,13 @@ Important: Your recommendations are advisory only. All KPIs are calculated deter
       const aiText = result.text || 'No response received.';
 
       setMessages(prev => [...prev, { role: 'assistant', text: aiText, timestamp: new Date().toISOString() }]);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       setMessages(prev => [...prev, {
         role: 'assistant',
         text: lang === 'de'
-          ? `⚠️ API-Verbindung fehlgeschlagen (${err.message}).`
-          : `⚠️ API connection failed (${err.message}).`,
+          ? `⚠️ API-Verbindung fehlgeschlagen (${msg}).`
+          : `⚠️ API connection failed (${msg}).`,
         timestamp: new Date().toISOString(),
       }]);
     } finally {

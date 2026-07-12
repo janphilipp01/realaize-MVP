@@ -11,7 +11,7 @@ import {
   type AppointmentWrite,
 } from '@workspace/api-client-react';
 import { useStore } from '@/store/useStore';
-import type { AppointmentCategory } from '@/models/types';
+import type { AppointmentCategory, Asset } from '@/models/types';
 
 const CATEGORIES: AppointmentCategory[] = [
   'Kauf', 'Verkauf', 'Vermietung', 'Bau',
@@ -271,7 +271,7 @@ function ApptRow({ appt, selected, onSelect }: { appt: Appointment; selected: Ap
   );
 }
 
-function AppointmentDetail({ appt, assets, onEdit, onDelete }: { appt: Appointment; assets: any[]; onEdit: () => void; onDelete: () => void }) {
+function AppointmentDetail({ appt, assets, onEdit, onDelete }: { appt: Appointment; assets: Asset[]; onEdit: () => void; onDelete: () => void }) {
   const linkedAsset = assets.find(a => a.id === appt.assetId);
   const color = CATEGORY_COLOR[appt.category] ?? '#8e8e93';
   return (
@@ -345,7 +345,7 @@ function InfoRow({ icon, label, children }: { icon: React.ReactNode; label: stri
 interface FormProps {
   title: string;
   data: AppointmentWrite;
-  assets: any[];
+  assets: Asset[];
   onChange: (patch: Partial<AppointmentWrite>) => void;
   onSave: () => void;
   onCancel: () => void;

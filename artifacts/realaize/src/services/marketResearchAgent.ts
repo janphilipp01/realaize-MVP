@@ -104,7 +104,7 @@ Fill in real values for ${cityName}. Rents EUR/sqm/month, prices EUR/sqm. Multip
     };
 
     return { success: true, benchmarks, updateEntry };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Market research failed:', error);
     return {
       success: false,
@@ -114,10 +114,10 @@ Fill in real values for ${cityName}. Rents EUR/sqm/month, prices EUR/sqm. Multip
         locationId: cityId,
         timestamp: now,
         updatedBy: 'AI Research Agent',
-        changes: `Research failed: ${error.message}`,
+        changes: `Research failed: ${error instanceof Error ? error.message : String(error)}`,
         sourceLabel: 'Error',
       },
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
