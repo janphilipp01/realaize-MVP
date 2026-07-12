@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { X, Info, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { KPIFormulaDetail } from '@/models/types';
 

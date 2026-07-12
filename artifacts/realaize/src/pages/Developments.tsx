@@ -1,23 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft, ChevronRight, Plus, Edit3, Save, X, AlertTriangle,
-  CheckCircle, Bot, Download, Upload, Trash2, Building2, Calendar,
-  TrendingUp, BarChart3, FileText
-} from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
+import { ArrowLeft, ChevronRight, Plus, CheckCircle, Download, Trash2, TrendingUp } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import {
-  GlassPanel, PageHeader, KPICard, SectionHeader, StatusBadge,
-  CompletenessRing, Modal, Tabs
-} from '@/components/shared';
+import { GlassPanel, PageHeader, KPICard, SectionHeader, CompletenessRing, Modal, Tabs } from '@/components/shared';
 import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
 import { formatEUR, formatPct } from '@/utils/kpiEngine';
 import { analyzeHoldSell } from '@/utils/irrCalculator';
-import { computeDealCashFlow } from '@/utils/propertyCashFlowModel';
+
 import { useLanguage } from '@/i18n/LanguageContext';
-import { useListContacts } from '@workspace/api-client-react';
-import type { GeverkPosition, GeverkCategory, ActivityEntry, Unit, UsageType, DevDebtAssumptions, DevValuationAssumptions } from '@/models/types';
 import { DEV_STATUS_COLOR } from '@/components/developments/constants';
 import { OverviewTab } from '@/components/developments/OverviewTab';
 import { RentRollTab } from '@/components/developments/RentRollTab';
@@ -29,7 +19,6 @@ import { AdvisorTab } from '@/components/developments/AdvisorTab';
 import { HoldSellTab } from '@/components/developments/HoldSellTab';
 import { CashFlowTab } from '@/components/developments/CashFlowTab';
 import { DocumentsTab } from '@/components/developments/DocumentsTab';
-
 
 // ─── Developments List ──────────────────────────────────────────────────────
 export function DevelopmentsPage() {
@@ -63,7 +52,6 @@ export function DevelopmentsPage() {
 
       <div className="grid grid-cols-3 gap-5">
         {developments.map(dev => {
-          const totalActual = dev.gewerke.reduce((s, g) => s + (g.actualCost || 0), 0);
           const totalContract = dev.gewerke.reduce((s, g) => s + (g.contractAmount || 0), 0);
           const budgetUsage = dev.totalBudget > 0 ? (totalContract / dev.totalBudget) * 100 : 0;
           return (
@@ -117,8 +105,7 @@ export function DevelopmentsPage() {
 export function DevelopmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { developments, updateDevelopment, deleteDevelopment, updateGewerk, addGewerk, deleteGewerk, addActivityToDevelopment, addDevUnit, updateDevUnit, deleteDevUnit, transferDevToBestand, transferDevToSale, settings, addOffer, updateOffer, deleteOffer, addInvoice, updateInvoice, deleteInvoice, updateDevelopmentPropertyData } = useStore();
-  const { data: contacts = [] } = useListContacts();
+  const { developments, deleteDevelopment, transferDevToBestand, transferDevToSale, settings } = useStore();
   const { t, lang } = useLanguage();
   const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
   const dev = developments.find(d => d.id === id);
@@ -149,12 +136,10 @@ export function DevelopmentDetailPage() {
     : null;
 
   // Gantt data
-  const now = new Date();
   const ganttMonths = Array.from({ length: 24 }, (_, i) => {
     const d = new Date(2024, 5 + i, 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-
 
   const handleHoldSellConfirm = (decision: 'Hold' | 'Sell') => {
     if (decision === 'Hold') transferDevToBestand(dev.id);

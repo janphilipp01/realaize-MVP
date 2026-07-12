@@ -1,12 +1,7 @@
 import React, { useState, useRef } from 'react';
 import logoImg from '@assets/realaize_logo_app_1775478192767.png';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard, Building2, TrendingUp, BarChart3, CreditCard,
-  LineChart, FolderOpen, Bot, Settings, ChevronLeft, ChevronRight,
-  AlertTriangle, BookUser, HardHat, ShoppingBag, Newspaper, Radar, CalendarDays,
-  GripVertical, Pencil, Check, Database
-} from 'lucide-react';
+import { LayoutDashboard, Building2, TrendingUp, BarChart3, CreditCard, LineChart, FolderOpen, Bot, Settings, ChevronLeft, ChevronRight, AlertTriangle, BookUser, HardHat, ShoppingBag, Newspaper, Radar, CalendarDays, GripVertical, Pencil, Check } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useListContacts, useListAppointments } from '@workspace/api-client-react';

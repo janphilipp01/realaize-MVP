@@ -1,5 +1,5 @@
 import type { AIRecommendation } from '@/models/ai';
-import type { Asset, DealStage, Document, Unit, UsageType } from '@/models/core';
+import type { DealStage, Document, Unit, UsageType } from '@/models/core';
 import type { DevDebtAssumptions, DevValuationAssumptions, GeverkCategory } from '@/models/development';
 import type { PropertyData } from '@/models/propertyData';
 

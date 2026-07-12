@@ -19,7 +19,6 @@ export function DebtPage() {
   const liveCovenants = assets.flatMap(a => {
     const noi = computeAssetNOI(a);
     const ltv = computeAssetLTV(a);
-    const totalAssetDebt = a.debtInstruments.reduce((s, d) => s + d.outstandingAmount, 0);
     const annualInterest = a.debtInstruments.reduce((s, d) => s + d.outstandingAmount * (d.interestRate / 100), 0);
     const annualAmortization = a.debtInstruments.reduce((s, d) => s + d.outstandingAmount * (d.amortizationRate / 100), 0);
     const annualDebtService = annualInterest + annualAmortization;

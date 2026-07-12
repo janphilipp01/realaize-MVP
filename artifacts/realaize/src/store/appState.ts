@@ -1,4 +1,4 @@
-import type { Asset, AcquisitionDeal, AuditLogEntry, ActivityEntry, DevelopmentProject, SaleObject, Contact, ProjectImage, GeverkPosition, BuyerLead, DailyIntelligenceReport, Document, DealRadarListing, DealRadarSearchCriteria, PropertyData, Offer, Invoice, GewerkePosition, Unit, BenchmarkRecord, MarketEventRecord, ReportSource, RefreshJob, CandidateDeal, AcquisitionProfile, UsageType } from '@/models/types';
+import type { Asset, AcquisitionDeal, AuditLogEntry, ActivityEntry, DevelopmentProject, SaleObject, Contact, ProjectImage, GeverkPosition, BuyerLead, DailyIntelligenceReport, Document, DealRadarListing, DealRadarSearchCriteria, PropertyData, Offer, Invoice, GewerkePosition, Unit, BenchmarkRecord, MarketEventRecord, ReportSource, RefreshJob, CandidateDeal, AcquisitionProfile } from '@/models/types';
 import { DEFAULT_ACQUISITION_COSTS } from '@/models/types';
 
 export interface AppSettings {
@@ -103,7 +103,6 @@ export interface AppState {
   addContact: (contact: Contact) => void;
   updateContact: (id: string, patch: Partial<Contact>) => void;
   deleteContact: (id: string) => void;
-
 
   // Images
   addImage: (image: ProjectImage) => void;

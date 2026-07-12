@@ -1,9 +1,4 @@
-import type {
-  Asset, AcquisitionDeal, MarketLocation, AuditLogEntry,
-  Unit, DebtInstrument, Covenant, CashFlowEntry, Document,
-  DevelopmentProject, SaleObject, Contact, DailyIntelligenceReport,
-  DealRadarListing, Appointment
-} from '@/models/types';
+import type { Asset, AcquisitionDeal, MarketLocation, AuditLogEntry, CashFlowEntry, DevelopmentProject, SaleObject, Contact, DailyIntelligenceReport, DealRadarListing, Appointment } from '@/models/types';
 
 // ─── Assets (Owned Portfolio) ─────────────────────────────────────────────────
 

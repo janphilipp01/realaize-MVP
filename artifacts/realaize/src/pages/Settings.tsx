@@ -1,4 +1,4 @@
-import { CheckCircle, Target } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { PageHeader, GlassPanel } from '@/components/shared';
 import { useLanguage } from '@/i18n/LanguageContext';

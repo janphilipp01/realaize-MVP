@@ -1,38 +1,14 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import {
-  X, ChevronLeft, ChevronRight, Plus, Trash2, Lock, Copy,
-  Building2, DollarSign, Users, Settings2, TrendingUp, HardHat,
-  CreditCard, BarChart3, CheckCircle2, AlertTriangle
-} from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid, Legend, ReferenceLine
-} from 'recharts';
+import React, { useState, useMemo } from 'react';
+import { X, Plus, Trash2, Copy, BarChart3, AlertTriangle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend, ReferenceLine } from 'recharts';
 import { GlassPanel, KPICard } from '@/components/shared';
 import { formatEUR, formatPct } from '@/utils/kpiEngine';
 import { useStore } from '@/store/useStore';
 import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, PRIME_SUBMARKETS, submarketsForCity, BUILD_COST_RATES, SCOPE_LABEL, type RenovationScope } from '@/utils/valueAddScreening';
-import {
-  pdComputeTotalAcquisitionCosts, pdComputeAnnualRent, pdComputeTotalArea,
-  pdComputeWeightedERV, pdComputeWALT, pdComputeTotalDevBudget,
-  pdComputeTotalCapitalRequirement, pdComputeTotalLoan, pdComputeEquity,
-  pdComputePropertyNOI, pdComputePropertyCashFlowMonthly, pdAggregateToYears,
-  pdComputePropertyKPIs,
-} from '@/utils/propertyCashFlowModel';
-import type {
-  PropertyData, RentRollUnit, AcquisitionCostItem, GewerkePosition,
-  FinancingTranche, MarketAssumptionPerUsage, FloorLevel, DealType
-} from '@/models/types';
-import {
-  createDefaultPropertyData, DEFAULT_ACQUISITION_COSTS,
-  DEFAULT_ERV_GROWTH, DEFAULT_EXIT_CAP, DEFAULT_GEWERKE_CATEGORIES
-} from '@/models/types';
-import {
-  USAGE_TYPES, MAIN_USAGE, FLOORS, DEV_TYPES, FINANCING_TYPES, REPAYMENT_TYPES,
-  COST_DISTRIBUTIONS, uid, fmt, pct, Field, SelectField, Chip, SH,
-  UsageTypePicker, FloorTagPicker, TAB_ICONS, INVESTMENT_TABS, DEVELOPMENT_TABS,
-  type TabKey,
-} from '@/components/acquisition-wizard/shared';
+import { pdComputeTotalAcquisitionCosts, pdComputeAnnualRent, pdComputeTotalArea, pdComputeWALT, pdComputeTotalDevBudget, pdComputeTotalCapitalRequirement, pdComputeTotalLoan, pdComputeEquity, pdComputePropertyNOI, pdComputePropertyCashFlowMonthly, pdAggregateToYears, pdComputePropertyKPIs } from '@/utils/propertyCashFlowModel';
+import type { PropertyData, RentRollUnit, AcquisitionCostItem, GewerkePosition, FinancingTranche, MarketAssumptionPerUsage, FloorLevel, DealType } from '@/models/types';
+import { DEFAULT_ERV_GROWTH, DEFAULT_EXIT_CAP, DEFAULT_GEWERKE_CATEGORIES } from '@/models/types';
+import { USAGE_TYPES, FLOORS, DEV_TYPES, FINANCING_TYPES, REPAYMENT_TYPES, COST_DISTRIBUTIONS, uid, fmt, pct, Field, SelectField, Chip, SH, UsageTypePicker, FloorTagPicker } from '@/components/acquisition-wizard/shared';
 
 export function TabStammdaten({ pd, onChange }: { pd: PropertyData; onChange: (p: Partial<PropertyData>) => void }) {
   const isDev = pd.dealType === 'Development';

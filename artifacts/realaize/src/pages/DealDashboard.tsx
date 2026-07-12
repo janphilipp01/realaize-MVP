@@ -1,24 +1,17 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-  ArrowLeft, CheckCircle, AlertTriangle, FileText, Download,
-  Edit3, Save, X, ChevronRight, Bot, Clock, Upload,
-  Zap, Info, TrendingUp, TrendingDown, ExternalLink, Plus, Trash2, HardHat
-} from 'lucide-react';
+import { ArrowLeft, CheckCircle, AlertTriangle, FileText, Download, Edit3, Save, X, ChevronRight, Bot, Upload, Zap, Info, Plus, Trash2, HardHat } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import {
-  GlassPanel, PageHeader, KPICard, FormulaDrawer, StageBadge,
-  StatusBadge, Modal, Tabs, SectionHeader, CompletenessRing, FreshnessBadge
-} from '@/components/shared';
+import { GlassPanel, FormulaDrawer, StageBadge, Modal, Tabs, SectionHeader, CompletenessRing } from '@/components/shared';
 import { computeDealKPIs, getKPIFormulaDetails, formatEUR, formatPct, formatX } from '@/utils/kpiEngine';
 import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer } from '@/utils/valueAddScreening';
 import { computeDealCashFlow } from '@/utils/propertyCashFlowModel';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { exportInvestmentMemoPDF, exportDealExcel } from '@/utils/exportUtils';
-import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
+import ImageManager from '@/components/ImageManager';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { AcquisitionWizard } from '@/pages/AcquisitionWizard';
-import type { KPIFormulaDetail, ActivityEntry, PropertyData } from '@/models/types';
+import type { KPIFormulaDetail, PropertyData } from '@/models/types';
 import { createDefaultPropertyData } from '@/models/types';
 
 export default function DealDashboard() {

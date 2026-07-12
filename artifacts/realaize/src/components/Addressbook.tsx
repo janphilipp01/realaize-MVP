@@ -1,15 +1,7 @@
 import React, { useState } from 'react';
-import { X, Plus, Search, Phone, Mail, Building2, Tag, Link2, ChevronRight, Edit3, Save, Trash2 } from 'lucide-react';
+import { X, Plus, Search, Phone, Mail, Building2, Link2, ChevronRight, Edit3, Save, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  useListContacts,
-  useCreateContact,
-  useUpdateContact,
-  useDeleteContact,
-  getListContactsQueryKey,
-  type Contact,
-  type ContactWrite,
-} from '@workspace/api-client-react';
+import { useListContacts, useCreateContact, useUpdateContact, useDeleteContact, getListContactsQueryKey, type Contact, type ContactWrite } from '@workspace/api-client-react';
 import type { ContactCategory, HandwerkerSubcategory } from '@/models/types';
 
 const CATEGORIES: ContactCategory[] = [

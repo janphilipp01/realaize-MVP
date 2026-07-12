@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Area } from 'recharts';
+
 import { RefreshCw, Search, AlertTriangle, X, Bot, ExternalLink, Radar, Target, ThumbsDown, ArrowRight } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { PageHeader, GlassPanel } from '@/components/shared';

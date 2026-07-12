@@ -1,5 +1,5 @@
 import type { ActivityEntry } from '@/models/acquisition';
-import type { Asset, Document, UsageType } from '@/models/core';
+import type { Document, UsageType } from '@/models/core';
 import type { ProjectImage } from '@/models/development';
 
 // ─── Sales ───────────────────────────────────────────────────────────────────

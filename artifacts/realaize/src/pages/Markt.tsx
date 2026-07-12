@@ -125,7 +125,6 @@ export function MarktPage() {
     const active = variant === 'hub' && group
       ? (selectedCity === city || group.submarkets.includes(selectedCity))
       : selectedCity === city;
-    const isExpanded = expandedHub === city;
     const onOpen = () => {
       // Selection only; expansion is driven by the button under the selected hub.
       if (variant === 'hub') {

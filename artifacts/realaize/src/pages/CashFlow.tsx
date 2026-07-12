@@ -303,7 +303,6 @@ export function CashFlowPage() {
     },
   ];
 
-  const grandTotalRow: CFRow = { key: 'freeCashflow', label: 'Free Cashflow', sign: '==', isSubtotal: false, isGrandTotal: true, section: 'total', positiveIsGood: true };
 
   return (
     <div className="p-8 max-w-[1800px] mx-auto">

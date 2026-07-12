@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
-import {
-  ComposedChart, AreaChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, ReferenceLine
-} from 'recharts';
-import {
-  Building2, TrendingUp, AlertTriangle, CheckCircle, Clock, ArrowRight,
-  Zap, RefreshCw, Activity, Newspaper, BarChart3, ExternalLink
-} from 'lucide-react';
+import React from 'react';
+import { ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
+import { TrendingUp, AlertTriangle, CheckCircle, ArrowRight, Zap, RefreshCw, Activity, Newspaper, BarChart3 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useListMarketLocations } from '@workspace/api-client-react';
 import { PageHeader, KPICard, GlassPanel, StageBadge, StatusBadge, FreshnessBadge } from '@/components/shared';
-import { formatEUR, formatPct, computeAssetNOI, computePortfolioNIY, computeAssetMonthlyCashFlow } from '@/utils/kpiEngine';
+import { formatEUR, formatPct, computeAssetNOI, computePortfolioNIY } from '@/utils/kpiEngine';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 
