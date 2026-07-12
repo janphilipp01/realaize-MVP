@@ -18,8 +18,8 @@ export function SettingsPage() {
 
         {/* ── Hold/Sell & IRR ── */}
         <GlassPanel style={{ padding: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e', marginBottom: 4 }}>{t('settings.holdSell')}</div>
-          <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)', marginBottom: 20 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{t('settings.holdSell')}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
             {t('settings.holdSellDesc')}
           </div>
           <div className="grid grid-cols-2 gap-6">
@@ -58,8 +58,8 @@ export function SettingsPage() {
 
         {/* ── Advisor Language ── */}
         <GlassPanel style={{ padding: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e', marginBottom: 4 }}>{t('settings.constructionAdvisor')}</div>
-          <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)', marginBottom: 16 }}>{t('settings.advisorDesc')}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{t('settings.constructionAdvisor')}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('settings.advisorDesc')}</div>
           <div>
             <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 6, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{t('settings.language')}</label>
             <select className="input-glass" style={{ width: 200 }} value={settings.advisorLanguage} onChange={e => updateSettings({ advisorLanguage: e.target.value as 'de' | 'en' })}>
@@ -71,8 +71,8 @@ export function SettingsPage() {
 
         {/* ── KPI Thresholds ── */}
         <GlassPanel style={{ padding: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e', marginBottom: 4 }}>{t('settings.kpiThresholds')}</div>
-          <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)', marginBottom: 20 }}>{t('settings.kpiThresholdsDesc')}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{t('settings.kpiThresholds')}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>{t('settings.kpiThresholdsDesc')}</div>
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: 'Min. DSCR', key: 'minDSCR', unit: 'x', step: 0.05 },
@@ -101,10 +101,10 @@ export function SettingsPage() {
 
         {/* ── Marktannahmen ── */}
         <GlassPanel style={{ padding: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e', marginBottom: 4 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
             {lang === 'de' ? 'Marktannahmen & DCF-Parameter' : 'Market Assumptions & DCF Parameters'}
           </div>
-          <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)', marginBottom: 20 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
             {lang === 'de'
               ? 'Standardwerte für Exit-Cap-Rates und Mietwachstum nach Nutzungsart. Werden beim Anlegen neuer Deals und beim Überführen in den Bestand verwendet.'
               : 'Default values for exit cap rates and rent growth by usage type. Used when creating new deals and transferring to portfolio.'}
@@ -160,8 +160,8 @@ export function SettingsPage() {
 
         {/* ── Default Operating Costs ── */}
         <GlassPanel style={{ padding: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e', marginBottom: 4 }}>{lang === 'de' ? 'Standard-Betriebskosten' : 'Default Operating Costs'}</div>
-          <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)', marginBottom: 20 }}>{lang === 'de' ? 'Voreinstellungen für neue Assets und Deals. Können pro Objekt überschrieben werden.' : 'Defaults for new assets and deals. Can be overridden per object.'}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{lang === 'de' ? 'Standard-Betriebskosten' : 'Default Operating Costs'}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>{lang === 'de' ? 'Voreinstellungen für neue Assets und Deals. Können pro Objekt überschrieben werden.' : 'Defaults for new assets and deals. Can be overridden per object.'}</div>
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: 'Vacancy Rate', key: 'defaultVacancyRate', unit: '%', step: 0.5 },
@@ -183,10 +183,10 @@ export function SettingsPage() {
 
         {/* ── Market Defaults (neue Felder) ── */}
         <GlassPanel style={{ padding: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e', marginBottom: 4 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
             {t('settings.marketDefaults')}
           </div>
-          <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)', marginBottom: 20 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
             {t('settings.marketDefaultsDesc')}
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -244,8 +244,8 @@ export function SettingsPage() {
           { title: 'Data Freshness', desc: lang === 'de' ? 'Maximales Alter von Markt-Benchmarks und Bewertungen.' : 'Maximum age of market benchmarks and valuations.', items: [lang === 'de' ? 'Marktdaten: max. 90 Tage' : 'Market data: max. 90 days', lang === 'de' ? 'Bewertungen: max. 12 Monate' : 'Valuations: max. 12 months', lang === 'de' ? 'CF-Forecast: Quartalsmäßig' : 'CF Forecast: Quarterly'] },
         ].map(section => (
           <GlassPanel key={section.title} style={{ padding: 24 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e', marginBottom: 4 }}>{section.title}</div>
-            <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)', marginBottom: 16 }}>{section.desc}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{section.title}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{section.desc}</div>
             <div className="grid grid-cols-2 gap-2">
               {section.items.map(item => (
                 <div key={item} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'rgba(0,0,0,0.03)' }}>
@@ -260,7 +260,7 @@ export function SettingsPage() {
         {/* ── Reset ── */}
         <GlassPanel style={{ padding: 24 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#cc1a14', marginBottom: 4 }}>{t('settings.resetTitle')}</div>
-          <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.45)', marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
             {t('settings.resetDesc')}
           </div>
           <button
