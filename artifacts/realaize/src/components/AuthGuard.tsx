@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { supabase } from "../lib/supabase";
-import { useAuthStore } from "../store/useAuthStore";
-import { fetchMe, bootstrap } from "../lib/api";
-import { AUTH_DISABLED } from "../lib/devAuth";
+import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/store/useAuthStore";
+import { fetchMe, bootstrap } from "@/lib/api";
+import { AUTH_DISABLED } from "@/lib/devAuth";
 
 interface Props {
   children: ReactNode;

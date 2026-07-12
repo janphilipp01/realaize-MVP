@@ -1,5 +1,5 @@
 import { aiChat } from '@workspace/api-client-react';
-import type { NewsArticle, NewsCategory, DailyIntelligenceReport } from '../models/types';
+import type { NewsArticle, NewsCategory, DailyIntelligenceReport } from '@/models/types';
 
 export interface NewsResearchResult {
   success: boolean;
@@ -50,8 +50,8 @@ Reply ONLY with valid JSON (no markdown):
     };
 
     return { success: true, report };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('News research failed:', error);
-    return { success: false, report: null, error: error.message };
+    return { success: false, report: null, error: error instanceof Error ? error.message : String(error) };
   }
 }

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, Info, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import type { KPIFormulaDetail } from '../models/types';
+import React from 'react';
+import { X, Info, TrendingUp, TrendingDown, Minus, type LucideIcon } from 'lucide-react';
+import type { KPIFormulaDetail } from '@/models/types';
 
 // ── Glass Panel ──────────────────────────────────────────
 interface GlassPanelProps {
@@ -262,7 +262,7 @@ export function SectionHeader({ title, action }: { title: string; action?: React
 }
 
 // ── Empty State ───────────────────────────────────────────
-export function EmptyState({ icon: Icon, title, sub }: { icon: any; title: string; sub?: string }) {
+export function EmptyState({ icon: Icon, title, sub }: { icon: LucideIcon; title: string; sub?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>

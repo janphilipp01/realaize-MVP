@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { AUTH_DISABLED } from "./devAuth";
+import { AUTH_DISABLED } from "@/lib/devAuth";
 
 const url = import.meta.env["VITE_SUPABASE_URL"];
 const anonKey = import.meta.env["VITE_SUPABASE_ANON_KEY"];

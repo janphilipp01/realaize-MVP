@@ -14,7 +14,7 @@ import type {
   ProfileMatch,
   ScreeningBenchmarkSeed,
   CandidateStatus,
-} from '../models/types';
+} from '@/models/types';
 
 function toScreeningProfile(p: AcquisitionProfile): ScreeningProfile {
   return {

@@ -1,6 +1,6 @@
-import type { Asset, PropertyData, RentRollUnit, GewerkePosition, AcquisitionCostItem, FinancingTranche, SaleObject } from '../models/types';
-import { computeAssetNOI } from './kpiEngine';
-import { calculateIRR, calculateNPV } from './irrCalculator';
+import type { Asset, PropertyData, RentRollUnit, GewerkePosition, AcquisitionCostItem, FinancingTranche, SaleObject } from '@/models/types';
+import { computeAssetNOI } from '@/utils/kpiEngine';
+import { calculateIRR, calculateNPV } from '@/utils/irrCalculator';
 
 // ══════════════════════════════════════════════════════════
 // PROPERTY CASHFLOW MODEL — annual DCF over holding period
@@ -59,7 +59,6 @@ export function computePropertyCashFlow(
 
   // Growth rates
   const rentGrowth = (asset.operatingCosts.rentalGrowthRate ?? 2.0) / 100;
-  const ervGrowth = rentGrowth; // simplification — can extend
 
   // Year-1 base from asset NOI
   const baseNOI = computeAssetNOI(asset);
@@ -74,7 +73,6 @@ export function computePropertyCashFlow(
     const g = Math.pow(1 + rentGrowth, year - 1);
     const grossRent = baseNOI.grossRent * g;
     const vacancyLoss = grossRent * (asset.operatingCosts.vacancyRatePercent / 100);
-    const effectiveGrossIncome = grossRent - vacancyLoss + baseNOI.noi - (baseNOI.effectiveGrossIncome - baseNOI.totalOperatingExpenses);
     // Recompute properly:
     const mgmtCost = grossRent * (asset.operatingCosts.managementCostPercent / 100);
     const maintenance = asset.operatingCosts.maintenanceReservePerSqm * asset.lettableArea;
@@ -133,7 +131,6 @@ export function computePropertyCashFlow(
   const totalNOI = annualRows.reduce((s, r) => s + r.noi, 0);
   const totalDebtService = annualDebtService * holdingPeriodYears;
 
-  const totalReturns = totalNOI + terminalValue;
   const equityMultiple = equityInvested > 0 ? (equityInvested + totalNOI - totalDebtService + equityAtExit) / equityInvested : 0;
 
   return {
@@ -155,8 +152,8 @@ export function computePropertyCashFlow(
 // DEAL-LEVEL CASHFLOW (from underwriting, pre-acquisition)
 // ══════════════════════════════════════════════════════════
 
-import type { UnderwritingAssumptions, FinancingAssumptions } from '../models/types';
-import { computeDealKPIs } from './kpiEngine';
+import type { UnderwritingAssumptions, FinancingAssumptions } from '@/models/types';
+import { computeDealKPIs } from '@/utils/kpiEngine';
 
 export interface DealAnnualCashFlow {
   year: number;

@@ -1,4 +1,4 @@
-import { useAuthStore } from "../store/useAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 /**
  * Minimal dropdown that shows the user's orgs and lets them switch the

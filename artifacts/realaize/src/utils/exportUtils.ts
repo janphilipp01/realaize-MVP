@@ -1,5 +1,5 @@
-import type { AcquisitionDeal } from '../models/types';
-import { computeDealKPIs, formatEUR, formatPct, formatX } from './kpiEngine';
+import type { AcquisitionDeal } from '@/models/types';
+import { computeDealKPIs, formatEUR, formatPct, formatX } from '@/utils/kpiEngine';
 
 // ── PDF Export (jsPDF) ────────────────────────────────────────────────────────
 export async function exportInvestmentMemoPDF(deal: AcquisitionDeal): Promise<void> {
@@ -263,7 +263,7 @@ export async function exportDealExcel(deal: AcquisitionDeal): Promise<void> {
 // NEWS REPORT — PDF EXPORT
 // ══════════════════════════════════════════════════════════
 
-import type { DailyIntelligenceReport } from '../models/types';
+import type { DailyIntelligenceReport } from '@/models/types';
 import type { MarketLocation } from '@workspace/api-client-react';
 
 export async function exportNewsReportPDF(report: DailyIntelligenceReport): Promise<void> {

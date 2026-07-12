@@ -1,4 +1,4 @@
-import type { AuthUser, OrgMembership } from "../store/useAuthStore";
+import type { AuthUser, OrgMembership } from "@/store/useAuthStore";
 
 /**
  * Temporary login bypass for development.

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { supabase } from "../lib/supabase";
-import { useAuthStore } from "../store/useAuthStore";
+import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/store/useAuthStore";
 
 type Mode = "signin" | "signup";
 

@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft, ChevronRight, Plus, Download, Upload, FileText,
-  User, Mail, Phone, Building2, Edit3, Save, X, TrendingUp,
-  Trash2, CheckCircle, RotateCcw, TrendingDown
-} from 'lucide-react';
-import { useStore } from '../store/useStore';
-import {
-  GlassPanel, PageHeader, KPICard, SectionHeader, StatusBadge, Tabs, Modal, CompletenessRing
-} from '../components/shared';
-import ImageManager, { TitleImageDisplay } from '../components/ImageManager';
-import { formatEUR, formatPct } from '../utils/kpiEngine';
-import { useLanguage } from '../i18n/LanguageContext';
-import type { BuyerLead, BuyerStage } from '../models/types';
+import { ArrowLeft, ChevronRight, Plus, Download, Upload, FileText, Mail, Phone, Trash2, CheckCircle, RotateCcw } from 'lucide-react';
+import { useStore } from '@/store/useStore';
+import { GlassPanel, PageHeader, KPICard, SectionHeader, Tabs, Modal } from '@/components/shared';
+import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
+import { formatEUR } from '@/utils/kpiEngine';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
+import type { BuyerLead, BuyerStage } from '@/models/types';
 
 const BUYER_STAGES: BuyerStage[] = [
   'Kontaktiert', 'Besichtigung', 'NDA', 'Angebot', 'LOI', 'Due Diligence', 'Signing', 'Closing', 'Abgesagt'
@@ -28,7 +22,7 @@ const STAGE_COLOR: Record<string, string> = {
 export function SalesPage() {
   const { sales } = useStore();
   const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const [activeTab, setActiveTab] = useState<'aktiv' | 'uebersicht'>('aktiv');
 
   const activeSales = sales.filter(s => s.status !== 'Verkauft');
@@ -211,9 +205,9 @@ export function SalesPage() {
 export function SaleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { sales, updateSale, addBuyer, updateBuyer, markSaleAsSold, returnSaleToBestand, deleteSale } = useStore();
-  const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const { sales, addBuyer, updateBuyer, markSaleAsSold, returnSaleToBestand, deleteSale } = useStore();
+  const { t } = useLanguage();
+  const dateLocale = useDateLocale();
   const sale = sales.find(s => s.id === id);
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddBuyer, setShowAddBuyer] = useState(false);

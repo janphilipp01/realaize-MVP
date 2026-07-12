@@ -11,10 +11,10 @@ import type {
   UsageType,
   ScreeningAssetClass,
   DealRadarListing,
-} from '../models/types';
-import { screenCandidateAllProfiles } from '../utils/screening';
-import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
-import { mockBenchmarks } from './marketIntelData';
+} from '@/models/types';
+import { screenCandidateAllProfiles } from '@/utils/screening';
+import { benchmarksToScreeningSeeds } from '@/utils/marketIntelligence';
+import { mockBenchmarks } from '@/data/marketIntelData';
 
 export const BENCHMARK_AS_OF = '2026-Q2';
 

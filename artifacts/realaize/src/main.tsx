@@ -6,11 +6,11 @@ import {
   setAuthTokenGetter,
   setOrgIdGetter,
 } from "@workspace/api-client-react";
-import App from "./App";
-import { LanguageProvider } from "./i18n/LanguageContext";
-import { supabase } from "./lib/supabase";
-import { useAuthStore } from "./store/useAuthStore";
-import { AUTH_DISABLED, DEV_ORG_ID, DEV_USER, DEV_MEMBERSHIP } from "./lib/devAuth";
+import App from "@/App";
+import { LanguageProvider } from "@/i18n/LanguageContext";
+import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/store/useAuthStore";
+import { AUTH_DISABLED, DEV_ORG_ID, DEV_USER, DEV_MEMBERSHIP } from "@/lib/devAuth";
 import "./index.css";
 
 const apiBaseUrl = import.meta.env["VITE_API_BASE_URL"] ?? "";

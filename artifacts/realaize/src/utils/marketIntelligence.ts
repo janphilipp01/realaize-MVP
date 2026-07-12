@@ -13,7 +13,7 @@ import type {
   BenchmarkSourceType,
   ValidationStatus,
   ScreeningBenchmarkSeed,
-} from '../models/types';
+} from '@/models/types';
 
 // ── Labels ──────────────────────────────────────────────────────────────────
 

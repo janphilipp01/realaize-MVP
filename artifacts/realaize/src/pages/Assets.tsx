@@ -1,25 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import {
-  Building2, Search, Filter, ChevronRight, ArrowLeft,
-  Edit3, Save, X, FileText, AlertTriangle, TrendingUp,
-  BarChart3, Home, Info, Trash2
-} from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid } from 'recharts';
-import { useStore } from '../store/useStore';
-import { PageHeader, GlassPanel, KPICard, StatusBadge, CompletenessRing, SectionHeader, StageBadge } from '../components/shared';
-import { formatEUR, formatPct, computeAssetNOI, computeAssetLTV, computeAssetMonthlyCashFlow } from '../utils/kpiEngine';
-import { computePropertyCashFlow } from '../utils/propertyCashFlowModel';
-import ImageManager, { TitleImageDisplay } from '../components/ImageManager';
-import DocumentUpload from '../components/DocumentUpload';
-import { useLanguage } from '../i18n/LanguageContext';
-import type { Asset, AssetOperatingCosts } from '../models/types';
+import { Search, ChevronRight, ArrowLeft, Edit3, Save, X, FileText, AlertTriangle, Trash2 } from 'lucide-react';
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from 'recharts';
+import { useStore } from '@/store/useStore';
+import { PageHeader, GlassPanel, KPICard, StatusBadge, CompletenessRing, SectionHeader } from '@/components/shared';
+import { formatEUR, formatPct, computeAssetNOI, computeAssetLTV } from '@/utils/kpiEngine';
+import { computePropertyCashFlow } from '@/utils/propertyCashFlowModel';
+import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
+import DocumentUpload from '@/components/DocumentUpload';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
+import type { AssetOperatingCosts } from '@/models/types';
 
 // ─── Assets List Page ─────────────────────────────────────────────────────────
 export function AssetsPage() {
   const { assets } = useStore();
-  const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('Alle');
   const [view, setView] = useState<'cards' | 'table'>('cards');
@@ -150,7 +145,7 @@ export function AssetDetailPage() {
   const navigate = useNavigate();
   const { assets, updateAsset, deleteAsset, addDocumentToAsset, deleteDocument } = useStore();
   const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const asset = assets.find(a => a.id === id);
   const [activeTab, setActiveTab] = useState('overview');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -172,20 +167,6 @@ export function AssetDetailPage() {
   const unrealisedGain = asset.currentValue - asset.purchasePrice;
   const unrealisedGainPct = asset.purchasePrice > 0 ? (unrealisedGain / asset.purchasePrice) * 100 : 0;
 
-  // CF chart
-  const now = new Date();
-  const cfData = Array.from({ length: 10 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 4 + i, 1);
-    const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const inflow = asset.cashFlows.filter(c => c.period === period && c.amount > 0).reduce((s, c) => s + c.amount, 0);
-    const outflow = Math.abs(asset.cashFlows.filter(c => c.period === period && c.amount < 0).reduce((s, c) => s + c.amount, 0));
-    return {
-      period: d.toLocaleDateString(dateLocale, { month: 'short' }),
-      Einnahmen: Math.round(inflow / 1000),
-      Ausgaben: Math.round(outflow / 1000),
-      isForecast: i > 4,
-    };
-  });
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto">
@@ -535,7 +516,7 @@ export function AssetDetailPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
                   <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'rgba(60,60,67,0.55)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: 'rgba(60,60,67,0.55)' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}k`} />
-                  <Tooltip contentStyle={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 10, fontSize: 12 }} formatter={(v: any) => [`${v}k €`]} />
+                  <Tooltip contentStyle={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 10, fontSize: 12 }} formatter={(v: number) => [`${v}k €`]} />
                   <Bar dataKey="NOI" fill="rgba(0,122,255,0.7)" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="Levered CF" fill="rgba(74,222,128,0.7)" radius={[4, 4, 0, 0]} />
                 </BarChart>

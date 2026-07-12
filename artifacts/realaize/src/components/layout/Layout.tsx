@@ -1,18 +1,14 @@
 import React, { useState, useRef } from 'react';
 import logoImg from '@assets/realaize_logo_app_1775478192767.png';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard, Building2, TrendingUp, BarChart3, CreditCard,
-  LineChart, FolderOpen, Bot, Settings, ChevronLeft, ChevronRight,
-  AlertTriangle, BookUser, HardHat, ShoppingBag, Newspaper, Radar, CalendarDays,
-  GripVertical, Pencil, Check, Database
-} from 'lucide-react';
-import { useStore } from '../../store/useStore';
-import { useLanguage } from '../../i18n/LanguageContext';
+import type { LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Building2, TrendingUp, BarChart3, CreditCard, LineChart, FolderOpen, Bot, Settings, ChevronLeft, ChevronRight, AlertTriangle, BookUser, HardHat, ShoppingBag, Newspaper, Radar, CalendarDays, GripVertical, Pencil, Check } from 'lucide-react';
+import { useStore } from '@/store/useStore';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { useListContacts, useListAppointments } from '@workspace/api-client-react';
-import Addressbook from '../Addressbook';
-import Calendar from '../Calendar';
-import ApiStatusBadge from '../ApiStatusBadge';
+import Addressbook from '@/components/Addressbook';
+import Calendar from '@/components/Calendar';
+import ApiStatusBadge from '@/components/ApiStatusBadge';
 
 /* ── Flag SVGs ──────────────────────────────────────────── */
 function FlagDE({ size = 18 }: { size?: number }) {
@@ -38,11 +34,11 @@ function FlagEN({ size = 18 }: { size?: number }) {
 }
 
 /* ── Types ────────────────────────────────────────────── */
-interface SubNavItem { key: string; label: string; icon: any; path: string; }
+interface SubNavItem { key: string; label: string; icon: LucideIcon; path: string; }
 interface NavItem {
   key: string;
   label: string;
-  icon: any;
+  icon: LucideIcon;
   path: string;
   sub?: SubNavItem[];
 }

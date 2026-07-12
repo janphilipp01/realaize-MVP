@@ -1,196 +1,19 @@
 import { useMemo, useState } from 'react';
-import {
-  Activity,
-  AlertTriangle,
-  BadgeCheck,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Database,
-  FileText,
-  Newspaper,
-  ShieldCheck,
-  Sparkles,
-  TrendingUp,
-  X,
-} from 'lucide-react';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from 'recharts';
-import { useStore } from '../store/useStore';
-import { useLanguage } from '../i18n/LanguageContext';
-import { CURRENT_PERIOD } from '../data/marketIntelData';
-import {
-  ASSET_CLASS_LABEL,
-  benchmarkSeries,
-  formatBenchmarkValue,
-  KPI_LABEL,
-  quarterOrdinal,
-} from '../utils/marketIntelligence';
-import type {
-  AssetClass,
-  BenchmarkKpi,
-  BenchmarkRecord,
-  ConfidenceTier,
-  ImpactTier,
-  ValidationStatus,
-} from '../models/types';
-
-const REVIEWER = 'J. Pleuker';
+import { AlertTriangle, Check, ChevronDown, ChevronRight, Copy, Sparkles, X } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { useStore } from '@/store/useStore';
+import { CURRENT_PERIOD } from '@/data/marketIntelData';
+import { ASSET_CLASS_LABEL, benchmarkSeries, formatBenchmarkValue, KPI_LABEL, quarterOrdinal } from '@/utils/marketIntelligence';
+import { dateLocaleFor } from '@/i18n/LanguageContext';
+import type { AssetClass, BenchmarkKpi, BenchmarkRecord } from '@/models/types';
+import { REVIEWER, STATUS_STYLE, IMPACT_STYLE, Badge, SubLabel, ASSET_ORDER, KPI_ORDER, CLASS_RGB, ProvenanceDrilldown } from '@/components/market-intelligence/shared';
 
 // ── Small style helpers ───────────────────────────────────────────────────────
-
-const TIER_STYLE: Record<ConfidenceTier, { bg: string; color: string; label: string }> = {
-  pipeline_validated: { bg: 'rgba(52,199,89,0.12)', color: '#1f9d4d', label: 'Pipeline validated' },
-  ai_indicative: { bg: 'rgba(255,149,0,0.14)', color: '#c2750a', label: 'AI indicative' },
-  manual_override: { bg: 'rgba(175,82,222,0.14)', color: '#8e3fc0', label: 'Manual override' },
-};
-
-const STATUS_STYLE: Record<ValidationStatus, { bg: string; color: string; label: string }> = {
-  auto_passed: { bg: 'rgba(52,199,89,0.12)', color: '#1f9d4d', label: 'Auto-passed' },
-  manual_approved: { bg: 'rgba(0,122,255,0.12)', color: '#0a6cff', label: 'Approved' },
-  pending: { bg: 'rgba(255,149,0,0.14)', color: '#c2750a', label: 'Pending' },
-  rejected: { bg: 'rgba(255,59,48,0.12)', color: '#d92c20', label: 'Rejected' },
-};
-
-const IMPACT_STYLE: Record<ImpactTier, { bg: string; color: string }> = {
-  high: { bg: 'rgba(255,59,48,0.12)', color: '#d92c20' },
-  medium: { bg: 'rgba(255,149,0,0.14)', color: '#c2750a' },
-  low: { bg: 'rgba(60,60,67,0.10)', color: 'rgba(60,60,67,0.7)' },
-};
-
-function Badge({ bg, color, children }: { bg: string; color: string; children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        padding: '2px 8px',
-        borderRadius: 6,
-        fontSize: 11,
-        fontWeight: 700,
-        background: bg,
-        color,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-const TABS = [
-  { key: 'benchmarks', label: 'Benchmarks', icon: Database },
-  { key: 'review', label: 'Review Queue', icon: ShieldCheck },
-  { key: 'news', label: 'News Layer', icon: Newspaper },
-  { key: 'crossval', label: 'Cross-Validation', icon: Activity },
-  { key: 'memo', label: 'IC Memo Block', icon: FileText },
-  { key: 'history', label: 'Historie', icon: TrendingUp },
-  { key: 'sources', label: 'Sources', icon: BadgeCheck },
-] as const;
-
-type TabKey = (typeof TABS)[number]['key'];
-
-// Per-city Market Intelligence body: the KPI tiles + all six tabs, scoped to a
-// single city. Rendered inside the merged Markt page when a city tile is opened.
-export function MarketIntelligencePanel({ city }: { city: string }) {
-  const { lang } = useLanguage();
-  const allBenchmarks = useStore(s => s.benchmarks);
-  const allEvents = useStore(s => s.marketEvents);
-  const allSources = useStore(s => s.reportSources);
-  const refreshJobs = useStore(s => s.refreshJobs);
-
-  const benchmarks = useMemo(
-    () => allBenchmarks.filter(b => b.city === city),
-    [allBenchmarks, city],
-  );
-  const marketEvents = useMemo(
-    () => allEvents.filter(e => !e.city || e.city === city),
-    [allEvents, city],
-  );
-  const reportSources = useMemo(
-    () => allSources.filter(r => r.market === city),
-    [allSources, city],
-  );
-
-  const [tab, setTab] = useState<TabKey>('benchmarks');
-
-  const pendingCount = benchmarks.filter(b => b.validationStatus === 'pending').length;
-
-  return (
-    <div>
-      {/* KPI summary now sits inline next to the city title (see MarktPage). */}
-      {/* ── Tabs ── */}
-      <div className="flex gap-1 mb-5 flex-wrap" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-        {TABS.map(tb => {
-          const active = tab === tb.key;
-          const count = tb.key === 'review' ? pendingCount : undefined;
-          return (
-            <button
-              key={tb.key}
-              onClick={() => setTab(tb.key)}
-              className="flex items-center gap-2 text-sm"
-              style={{
-                padding: '9px 14px',
-                fontWeight: active ? 700 : 500,
-                color: active ? '#0a6cff' : 'rgba(60,60,67,0.6)',
-                borderBottom: active ? '2px solid #0a6cff' : '2px solid transparent',
-                marginBottom: -1,
-                cursor: 'pointer',
-                background: 'none',
-              }}
-            >
-              <tb.icon size={14} />
-              {tb.label}
-              {count !== undefined && count > 0 && (
-                <span style={{ background: 'rgba(255,149,0,0.16)', color: '#c2750a', borderRadius: 999, padding: '0 7px', fontSize: 11, fontWeight: 700 }}>{count}</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {tab === 'benchmarks' && <BenchmarksTab benchmarks={benchmarks} lang={lang} hideCityFilter />}
-      {tab === 'review' && <ReviewTab benchmarks={benchmarks} lang={lang} />}
-      {tab === 'news' && <NewsTab events={marketEvents} lang={lang} />}
-      {tab === 'crossval' && <CrossValTab benchmarks={benchmarks} lang={lang} />}
-      {tab === 'memo' && <MemoTab benchmarks={benchmarks} events={marketEvents} lang={lang} lockedCity={city} />}
-      {tab === 'history' && <HistoryTab benchmarks={benchmarks} lang={lang} />}
-      {tab === 'sources' && <SourcesTab reportSources={reportSources} refreshJobs={refreshJobs} lang={lang} />}
-    </div>
-  );
-}
 
 // ── Benchmarks tab ────────────────────────────────────────────────────────────
 
 // Benchmark display order: usage class (section) → KPI (column).
-const ASSET_ORDER: AssetClass[] = ['residential', 'office', 'retail', 'logistics', 'mixed_use'];
-const KPI_ORDER: BenchmarkKpi[] = ['prime_rent', 'erv', 'net_initial_yield', 'prime_yield', 'multiplier', 'vacancy'];
-const CLASS_RGB: Record<string, string> = {
-  residential: '96,165,250', office: '201,169,110', retail: '248,113,113',
-  logistics: '74,222,128', mixed_use: '167,139,250',
-};
-
-function SubLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.45)', margin: '0 0 10px' }}>
-      {children}
-    </div>
-  );
-}
-
-// Segmented by usage (section) → city-wide KPI row (Block A) + submarket
-// comparison table (Block B), with KPIs in a fixed order across both.
-function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: BenchmarkRecord[]; lang: string; hideCityFilter?: boolean }) {
+export function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: BenchmarkRecord[]; lang: string; hideCityFilter?: boolean }) {
   const [filterCity, setFilterCity] = useState('all');
   const [filterClass, setFilterClass] = useState<'all' | AssetClass>('all');
   const [openKpi, setOpenKpi] = useState<string | null>(null);   // benchmark id
@@ -204,7 +27,7 @@ function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: Bench
 
   const classesPresent = ASSET_ORDER.filter(ac => scoped.some(b => b.assetClass === ac));
   const shownClasses = filterClass === 'all' ? classesPresent : classesPresent.filter(ac => ac === filterClass);
-  const num = (n: number) => n.toLocaleString(lang === 'de' ? 'de-DE' : 'en-GB');
+  const num = (n: number) => n.toLocaleString(dateLocaleFor(lang));
 
   return (
     <div>
@@ -334,47 +157,9 @@ function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks: Bench
   );
 }
 
-function ProvenanceDrilldown({ b, lang }: { b: BenchmarkRecord; lang: string }) {
-  return (
-    <div style={{ padding: '4px 18px 18px 18px', background: 'rgba(0,0,0,0.015)' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(60,60,67,0.5)', margin: '12px 0 8px' }}>
-        {lang === 'de' ? 'Provenance · Einzelquellen' : 'Provenance · individual sources'} ({b.consolidationMethod})
-      </div>
-      {b.sources.length === 0 && (
-        <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.55)' }}>
-          {b.sourceType === 'ai_qualitative'
-            ? lang === 'de' ? 'AI-qualitative Schätzung — keine Broker-Quellen.' : 'AI qualitative estimate — no broker sources.'
-            : lang === 'de' ? 'Direkt erfasster Wert.' : 'Directly captured value.'}
-        </div>
-      )}
-      {b.sources.map(s => (
-        <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '110px 90px 1fr 70px', gap: 12, padding: '8px 10px', alignItems: 'baseline', background: s.isOutlier ? 'rgba(255,59,48,0.05)' : 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.05)', borderRadius: 8, marginBottom: 6, fontSize: 12 }}>
-          <div style={{ fontWeight: 700 }}>
-            {s.provider}
-            {s.isOutlier && <span title="outlier" style={{ color: '#d92c20', marginLeft: 6 }}>⚠</span>}
-          </div>
-          <div style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatBenchmarkValue(s.value, s.unit)}</div>
-          <div style={{ color: 'rgba(60,60,67,0.6)', fontStyle: 'italic' }}>
-            „{s.originalText}"
-            <span style={{ color: 'rgba(60,60,67,0.4)', fontStyle: 'normal' }}> · {s.documentTitle}{s.pageNo ? `, p.${s.pageNo}` : ''}</span>
-          </div>
-          <div style={{ textAlign: 'right', color: 'rgba(60,60,67,0.5)' }}>trust {s.trustScore.toFixed(2)}</div>
-        </div>
-      ))}
-      {b.validationFlags && b.validationFlags.length > 0 && (
-        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {b.validationFlags.map((f, i) => (
-            <Badge key={i} bg="rgba(255,149,0,0.12)" color="#c2750a"><AlertTriangle size={11} /> {f}</Badge>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Review queue tab ──────────────────────────────────────────────────────────
 
-function ReviewTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
+export function ReviewTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
   const approve = useStore(s => s.approveBenchmark);
   const reject = useStore(s => s.rejectBenchmark);
   const correct = useStore(s => s.correctBenchmark);
@@ -459,7 +244,7 @@ function ReviewCard({ b, lang, onApprove, onReject, onCorrect }: { b: BenchmarkR
 
 // ── News tab ──────────────────────────────────────────────────────────────────
 
-function NewsTab({ events, lang }: { events: ReturnType<typeof useStore.getState>['marketEvents']; lang: string }) {
+export function NewsTab({ events, lang }: { events: ReturnType<typeof useStore.getState>['marketEvents']; lang: string }) {
   return (
     <div>
       <p style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', marginBottom: 14 }}>
@@ -478,7 +263,7 @@ function NewsTab({ events, lang }: { events: ReturnType<typeof useStore.getState
                 {e.city && <Badge bg="rgba(0,122,255,0.10)" color="#0a6cff">{e.city}</Badge>}
                 {e.assetClass && <Badge bg="rgba(0,0,0,0.06)" color="rgba(60,60,67,0.7)">{ASSET_CLASS_LABEL[e.assetClass]}</Badge>}
                 <span style={{ marginLeft: 'auto', fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>
-                  {new Date(e.publishedAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB')}
+                  {new Date(e.publishedAt).toLocaleDateString(dateLocaleFor(lang))}
                 </span>
               </div>
               <div style={{ fontWeight: 700, fontSize: 14 }}>{e.headline}</div>
@@ -493,7 +278,7 @@ function NewsTab({ events, lang }: { events: ReturnType<typeof useStore.getState
 
 // ── Cross-validation tab ──────────────────────────────────────────────────────
 
-function CrossValTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
+export function CrossValTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
   const realised = benchmarks.find(b => b.sourceType === 'portfolio_realised');
   const broker = benchmarks.find(
     b => b.sourceType === 'extracted_report' && b.submarket === realised?.submarket && b.kpi === realised?.kpi && b.assetClass === realised?.assetClass,
@@ -543,7 +328,7 @@ function CrossValTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang
 
 // ── IC memo block tab ─────────────────────────────────────────────────────────
 
-function MemoTab({ benchmarks, events, lang, lockedCity }: { benchmarks: BenchmarkRecord[]; events: ReturnType<typeof useStore.getState>['marketEvents']; lang: string; lockedCity?: string }) {
+export function MemoTab({ benchmarks, events, lang, lockedCity }: { benchmarks: BenchmarkRecord[]; events: ReturnType<typeof useStore.getState>['marketEvents']; lang: string; lockedCity?: string }) {
   const cities = useMemo(() => Array.from(new Set(benchmarks.map(b => b.city))).sort(), [benchmarks]);
   const [city, setCity] = useState(lockedCity ?? cities[0] ?? 'Düsseldorf');
   const [assetClass, setAssetClass] = useState<AssetClass>('residential');
@@ -646,7 +431,7 @@ function HistTooltip({ active, payload, label, unit }: any) {
   );
 }
 
-function HistoryTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
+export function HistoryTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang: string }) {
   const classes = useMemo(
     () => ASSET_ORDER.filter(ac => benchmarks.some(b => b.assetClass === ac && !b.submarket && (b.kpi === 'prime_rent' || b.kpi === 'erv' || b.kpi === 'multiplier'))),
     [benchmarks],
@@ -772,7 +557,7 @@ function HistoryTab({ benchmarks, lang }: { benchmarks: BenchmarkRecord[]; lang:
 
 // ── Sources tab ───────────────────────────────────────────────────────────────
 
-function SourcesTab({ reportSources, refreshJobs, lang }: { reportSources: ReturnType<typeof useStore.getState>['reportSources']; refreshJobs: ReturnType<typeof useStore.getState>['refreshJobs']; lang: string }) {
+export function SourcesTab({ reportSources, refreshJobs, lang }: { reportSources: ReturnType<typeof useStore.getState>['reportSources']; refreshJobs: ReturnType<typeof useStore.getState>['refreshJobs']; lang: string }) {
   const byProvider = useMemo(() => {
     const m = new Map<string, typeof reportSources>();
     for (const r of reportSources) {
@@ -820,7 +605,7 @@ function SourcesTab({ reportSources, refreshJobs, lang }: { reportSources: Retur
                 <Badge bg={j.trigger === 'manual' ? 'rgba(88,86,214,0.12)' : 'rgba(0,122,255,0.10)'} color={j.trigger === 'manual' ? '#5856d6' : '#0a6cff'}>{j.trigger}</Badge>
               </div>
               <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', marginTop: 6 }}>
-                {new Date(j.triggeredAt).toLocaleString(lang === 'de' ? 'de-DE' : 'en-GB')}
+                {new Date(j.triggeredAt).toLocaleString(dateLocaleFor(lang))}
               </div>
               <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.7)', marginTop: 6 }}>
                 {j.reportsFetched} reports · {j.dataPointsExtracted} {lang === 'de' ? 'Datenpunkte' : 'data points'} · {j.autoPassed} auto-passed · {j.pendingReview} pending

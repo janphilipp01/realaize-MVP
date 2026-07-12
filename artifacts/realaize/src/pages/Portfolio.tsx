@@ -1,24 +1,19 @@
-import React, { useState } from 'react';
-import {
-  ComposedChart, AreaChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, ReferenceLine
-} from 'recharts';
-import {
-  Building2, TrendingUp, AlertTriangle, CheckCircle, Clock, ArrowRight,
-  Zap, RefreshCw, Activity, Newspaper, BarChart3, ExternalLink
-} from 'lucide-react';
-import { useStore } from '../store/useStore';
+import React from 'react';
+import { ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
+import { TrendingUp, AlertTriangle, CheckCircle, ArrowRight, Zap, RefreshCw, Activity, Newspaper, BarChart3 } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 import { useListMarketLocations } from '@workspace/api-client-react';
-import { PageHeader, KPICard, GlassPanel, StageBadge, StatusBadge, FreshnessBadge } from '../components/shared';
-import { formatEUR, formatPct, computeAssetNOI, computePortfolioNIY, computeAssetMonthlyCashFlow } from '../utils/kpiEngine';
+import { PageHeader, KPICard, GlassPanel, StageBadge, StatusBadge, FreshnessBadge } from '@/components/shared';
+import { formatEUR, formatPct, computeAssetNOI, computePortfolioNIY } from '@/utils/kpiEngine';
 import { Link, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 
 export default function PortfolioPage() {
   const { assets, deals, sales, auditLog, newsReports, settings } = useStore();
   const { data: marketLocations = [] } = useListMarketLocations();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
 
   // Portfolio summary
   const totalValue = assets.reduce((s, a) => s + a.currentValue, 0);
@@ -48,7 +43,7 @@ export default function PortfolioPage() {
         : acqYear + 10;
       const isActive = absoluteYear >= acqYear && absoluteYear < saleYear;
       const yearsHeld = absoluteYear - acqYear;
-      const growthRate = ((asset.operatingCosts as any).rentalGrowthRate ?? 2.0) / 100;
+      const growthRate = (asset.operatingCosts.rentalGrowthRate ?? 2.0) / 100;
       const growthFactor = Math.pow(1 + growthRate, Math.max(0, yearsHeld));
       if (isActive) {
         const grossRent = asset.annualRent * growthFactor;
@@ -201,7 +196,7 @@ export default function PortfolioPage() {
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
               <Tooltip
                 contentStyle={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 12, fontSize: 11, color: '#1c1c1e', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
-                formatter={(v: any, name: string) => {
+                formatter={(v: number, name: string) => {
                   const labels: Record<string, string> = { noi: 'NOI', transactions: 'Transactions', debtCashflow: 'Debt', freeCashflow: 'Free CF', cumulativeFreeCF: 'Kum. Free CF' };
                   const inK = Math.round(Math.abs(v) / 1000);
                   const fmt = inK.toLocaleString('de-DE');

@@ -1,4 +1,4 @@
-import type { AnnualCashFlow } from '../models/types';
+import type { AnnualCashFlow } from '@/models/types';
 
 // ══════════════════════════════════════════════════════════
 // Newton-Raphson IRR calculation
