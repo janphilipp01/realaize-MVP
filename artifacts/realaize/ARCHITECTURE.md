@@ -72,12 +72,20 @@ components call `useStore(s => s.something)`.
 ```
 pnpm --filter @workspace/realaize test     # Vitest unit tests (pure domain logic + store)
 pnpm --filter @workspace/realaize typecheck
-SMOKE_START_SERVER=1 pnpm --filter @workspace/realaize smoke   # loads every route, fails on render errors
+SMOKE_START_SERVER=1 pnpm --filter @workspace/realaize smoke         # loads every route, fails on render errors
+INT_START_SERVER=1 pnpm --filter @workspace/realaize interaction    # drives key user flows, asserts on behaviour
 ```
 
-Unit tests cover `kpiEngine`, `propertyCashFlowModel`, the screening engine,
-`marketIntelligence`, `valueAddScreening` and the store actions. Run them (plus a
-production build) before shipping non-trivial changes.
+Three layers, no extra dependencies (the interaction layer reuses Playwright):
+- **Unit tests** cover `kpiEngine`, `propertyCashFlowModel`, the screening engine,
+  `marketIntelligence`, `valueAddScreening` and the store actions.
+- **Smoke** (`scripts/smoke.mjs`) loads every route and fails on a page error,
+  empty body, or a rendered error boundary.
+- **Interaction** (`scripts/interaction.mjs`) drives real flows in a browser and
+  asserts on behaviour: creating a deal through the wizard, editing + saving a
+  deal's underwriting, and switching through the Developments detail tabs.
+
+Run them (plus a production build) before shipping non-trivial changes.
 
 ## Conventions
 
