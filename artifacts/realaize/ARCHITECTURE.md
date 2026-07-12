@@ -9,10 +9,17 @@ A React 19 + Vite + Zustand SPA. This document orients a new developer after the
 app entry        App.tsx (routing), main.tsx, components/AuthGuard.tsx
 pages/           one file per route: Portfolio, Assets, Acquisition, Developments,
                  Sales, Debt, CashFlow, Markt, DealRadar, Documents, AICopilot,
-                 News, Settings, Login … (each page is self-contained)
+                 News, Settings, Login … Large tab-based pages are thin shells that
+                 compose co-located tab components (see components/ below).
 components/
   market-intelligence/   the MI feature: MarketIntelligencePanel.tsx, tabs.tsx,
                          shared.tsx (Badge, styles, ProvenanceDrilldown, constants)
+  developments/          Developments detail tabs: OverviewTab, RentRollTab,
+                         BudgetTab, GanttTab, DebtTab, ValuationTab, AdvisorTab,
+                         HoldSellTab, CashFlowTab, DocumentsTab + constants.ts
+  acquisition-wizard/    the deal-entry wizard: shared.tsx (constants, tab
+                         registry, field primitives) + tabs.tsx (the Tab* steps);
+                         orchestrated by pages/AcquisitionWizard.tsx
   shared.tsx, layout/    cross-page building blocks
   ui/                    generated shadcn/ui primitives — do not hand-edit
 store/
@@ -26,7 +33,10 @@ services/        API-calling "agents": marketResearchAgent, newsAgent, dealRadar
 utils/           pure logic & helpers: kpiEngine, propertyCashFlowModel,
                  marketIntelligence (reconcile/validate/history/seeds),
                  screening (adapter), valueAddScreening, exportUtils
-data/            seed/mock data: mockData, marketIntelData, dealSourcingData
+data/            seed/mock data. mockData.ts is a barrel over mock/* (one file
+                 per domain: assets, deals, developments, sales, contacts, …).
+                 marketIntelData.ts holds the MI seed + derived exports; its
+                 builder functions live in marketIntelFactories.ts. dealSourcingData
 i18n/            LanguageContext + translations
 lib/             api client, supabase, dev auth, cn() util
 hooks/           small React hooks
@@ -49,7 +59,7 @@ components call `useStore(s => s.something)`.
 
 - Benchmark master, reconciliation, validation, history and the screening-seed
   adapter live in `utils/marketIntelligence.ts`. Seed/mock data in
-  `data/marketIntelData.ts`. UI in `components/market-intelligence/`, surfaced by
+  `data/marketIntelData.ts` (built by `data/marketIntelFactories.ts`). UI in `components/market-intelligence/`, surfaced by
   the merged **Markt** page (`pages/Markt.tsx`).
 - The **screening engine** (`runHardFilters`, `runTestA/B`, `screenCandidate`) is
   owned by `@workspace/screening` — the single source of truth. Its enums
@@ -71,6 +81,9 @@ production build) before shipping non-trivial changes.
 
 ## Conventions
 
-- Import shared types from `../models/types` (the barrel), not the domain files.
+- Import shared types from `@/models/types` (the barrel), not the domain files.
+- Use the `@/` alias for all intra-`src` imports (no `./` / `../`) so files move freely.
 - Keep pure logic in `utils/`, side-effecting/API code in `services/`.
 - Don't edit `components/ui/*` (generated). Don't put multiple pages in one file.
+- `noUnusedLocals` is on: the typecheck fails on unused imports/vars, so it doubles
+  as the linter — keep imports tight.
