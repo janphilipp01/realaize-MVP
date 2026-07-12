@@ -5,14 +5,14 @@ import {
   User, Mail, Phone, Building2, Edit3, Save, X, TrendingUp,
   Trash2, CheckCircle, RotateCcw, TrendingDown
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '@/store/useStore';
 import {
   GlassPanel, PageHeader, KPICard, SectionHeader, StatusBadge, Tabs, Modal, CompletenessRing
-} from '../components/shared';
-import ImageManager, { TitleImageDisplay } from '../components/ImageManager';
-import { formatEUR, formatPct } from '../utils/kpiEngine';
-import { useLanguage } from '../i18n/LanguageContext';
-import type { BuyerLead, BuyerStage } from '../models/types';
+} from '@/components/shared';
+import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
+import { formatEUR, formatPct } from '@/utils/kpiEngine';
+import { useLanguage } from '@/i18n/LanguageContext';
+import type { BuyerLead, BuyerStage } from '@/models/types';
 
 const BUYER_STAGES: BuyerStage[] = [
   'Kontaktiert', 'Besichtigung', 'NDA', 'Angebot', 'LOI', 'Due Diligence', 'Signing', 'Closing', 'Abgesagt'

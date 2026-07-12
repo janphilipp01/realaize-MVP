@@ -1,6 +1,6 @@
 import { Activity, AlertTriangle, BadgeCheck, Database, FileText, Newspaper, ShieldCheck, TrendingUp } from 'lucide-react';
-import { formatBenchmarkValue } from '../../utils/marketIntelligence';
-import type { AssetClass, BenchmarkKpi, BenchmarkRecord, ConfidenceTier, ImpactTier, ValidationStatus } from '../../models/types';
+import { formatBenchmarkValue } from '@/utils/marketIntelligence';
+import type { AssetClass, BenchmarkKpi, BenchmarkRecord, ConfidenceTier, ImpactTier, ValidationStatus } from '@/models/types';
 
 export const REVIEWER = 'J. Pleuker';
 

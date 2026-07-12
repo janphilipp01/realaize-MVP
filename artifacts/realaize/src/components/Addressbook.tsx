@@ -10,7 +10,7 @@ import {
   type Contact,
   type ContactWrite,
 } from '@workspace/api-client-react';
-import type { ContactCategory, HandwerkerSubcategory } from '../models/types';
+import type { ContactCategory, HandwerkerSubcategory } from '@/models/types';
 
 const CATEGORIES: ContactCategory[] = [
   'Handwerker', 'Architekt & Planer', 'Property Manager', 'Facility Manager',

@@ -1,15 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Area } from 'recharts';
 import { RefreshCw, Search, AlertTriangle, X, Bot, ExternalLink, Radar, Target, ThumbsDown, ArrowRight } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { PageHeader, GlassPanel } from '../components/shared';
-import { formatEUR } from '../utils/kpiEngine';
-import { useLanguage } from '../i18n/LanguageContext';
-import { searchDealRadar } from '../services/dealRadarAgent';
-import { bestSignal, discountTone } from '../utils/screening';
-import { benchmarksToScreeningSeeds } from '../utils/marketIntelligence';
-import type { CandidateDeal, ProfileMatch } from '../models/types';
-import { screenValueAdd, BUILD_COST_RATES, SCOPE_LABEL, DEFAULT_SCREEN_PROFILE, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, type RenovationScope } from '../utils/valueAddScreening';
+import { useStore } from '@/store/useStore';
+import { PageHeader, GlassPanel } from '@/components/shared';
+import { formatEUR } from '@/utils/kpiEngine';
+import { useLanguage } from '@/i18n/LanguageContext';
+import { searchDealRadar } from '@/services/dealRadarAgent';
+import { bestSignal, discountTone } from '@/utils/screening';
+import { benchmarksToScreeningSeeds } from '@/utils/marketIntelligence';
+import type { CandidateDeal, ProfileMatch } from '@/models/types';
+import { screenValueAdd, BUILD_COST_RATES, SCOPE_LABEL, DEFAULT_SCREEN_PROFILE, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, type RenovationScope } from '@/utils/valueAddScreening';
 
 // ══════════════════════════════════════════════════════════
 // DEAL RADAR PAGE

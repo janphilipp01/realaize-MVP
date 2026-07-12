@@ -1,4 +1,4 @@
-import type { UsageType } from './core';
+import type { UsageType } from '@/models/core';
 
 // ─── Market Intelligence ─────────────────────────────────────────────────────
 

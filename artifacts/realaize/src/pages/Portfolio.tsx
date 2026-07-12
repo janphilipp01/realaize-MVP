@@ -6,12 +6,12 @@ import {
   Building2, TrendingUp, AlertTriangle, CheckCircle, Clock, ArrowRight,
   Zap, RefreshCw, Activity, Newspaper, BarChart3, ExternalLink
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '@/store/useStore';
 import { useListMarketLocations } from '@workspace/api-client-react';
-import { PageHeader, KPICard, GlassPanel, StageBadge, StatusBadge, FreshnessBadge } from '../components/shared';
-import { formatEUR, formatPct, computeAssetNOI, computePortfolioNIY, computeAssetMonthlyCashFlow } from '../utils/kpiEngine';
+import { PageHeader, KPICard, GlassPanel, StageBadge, StatusBadge, FreshnessBadge } from '@/components/shared';
+import { formatEUR, formatPct, computeAssetNOI, computePortfolioNIY, computeAssetMonthlyCashFlow } from '@/utils/kpiEngine';
 import { Link, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../i18n/LanguageContext';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function PortfolioPage() {
   const { assets, deals, sales, auditLog, newsReports, settings } = useStore();

@@ -1,4 +1,4 @@
-import type { Asset, Document } from './core';
+import type { Asset, Document } from '@/models/core';
 
 // ─── Computed KPIs ───────────────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-import type { ConfidenceLevel, RecommendationType } from './core';
+import type { ConfidenceLevel, RecommendationType } from '@/models/core';
 
 // ─── AI / Recommendations ────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Info, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import type { KPIFormulaDetail } from '../models/types';
+import type { KPIFormulaDetail } from '@/models/types';
 
 // ── Glass Panel ──────────────────────────────────────────
 interface GlassPanelProps {

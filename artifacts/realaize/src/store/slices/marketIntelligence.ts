@@ -1,7 +1,7 @@
-import type { RefreshJob } from '../../models/types';
-import { mockBenchmarks, mockPortfolioBenchmark, mockMarketEvents, mockReportSources, mockRefreshJobs, CURRENT_PERIOD } from '../../data/marketIntelData';
-import type { SetState, GetState } from './types';
-import type { AppState } from '../appState';
+import type { RefreshJob } from '@/models/types';
+import { mockBenchmarks, mockPortfolioBenchmark, mockMarketEvents, mockReportSources, mockRefreshJobs, CURRENT_PERIOD } from '@/data/marketIntelData';
+import type { SetState, GetState } from '@/store/slices/types';
+import type { AppState } from '@/store/appState';
 
 export const marketIntelligenceSlice = (set: SetState, get: GetState): Pick<AppState, 'benchmarks' | 'marketEvents' | 'reportSources' | 'refreshJobs' | 'triggerQuarterlyRefresh' | 'refreshCityBenchmarks' | 'approveBenchmark' | 'rejectBenchmark' | 'correctBenchmark'> => ({
       benchmarks: [...mockBenchmarks, mockPortfolioBenchmark],

@@ -5,21 +5,21 @@ import {
   Edit3, Save, X, ChevronRight, Bot, Clock, Upload,
   Zap, Info, TrendingUp, TrendingDown, ExternalLink, Plus, Trash2, HardHat
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '@/store/useStore';
 import {
   GlassPanel, PageHeader, KPICard, FormulaDrawer, StageBadge,
   StatusBadge, Modal, Tabs, SectionHeader, CompletenessRing, FreshnessBadge
-} from '../components/shared';
-import { computeDealKPIs, getKPIFormulaDetails, formatEUR, formatPct, formatX } from '../utils/kpiEngine';
-import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer } from '../utils/valueAddScreening';
-import { computeDealCashFlow } from '../utils/propertyCashFlowModel';
+} from '@/components/shared';
+import { computeDealKPIs, getKPIFormulaDetails, formatEUR, formatPct, formatX } from '@/utils/kpiEngine';
+import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer } from '@/utils/valueAddScreening';
+import { computeDealCashFlow } from '@/utils/propertyCashFlowModel';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { exportInvestmentMemoPDF, exportDealExcel } from '../utils/exportUtils';
-import ImageManager, { TitleImageDisplay } from '../components/ImageManager';
-import { useLanguage } from '../i18n/LanguageContext';
-import { AcquisitionWizard } from './AcquisitionWizard';
-import type { KPIFormulaDetail, ActivityEntry, PropertyData } from '../models/types';
-import { createDefaultPropertyData } from '../models/types';
+import { exportInvestmentMemoPDF, exportDealExcel } from '@/utils/exportUtils';
+import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
+import { useLanguage } from '@/i18n/LanguageContext';
+import { AcquisitionWizard } from '@/pages/AcquisitionWizard';
+import type { KPIFormulaDetail, ActivityEntry, PropertyData } from '@/models/types';
+import { createDefaultPropertyData } from '@/models/types';
 
 export default function DealDashboard() {
   const { id } = useParams<{ id: string }>();

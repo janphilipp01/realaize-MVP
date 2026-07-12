@@ -1,4 +1,4 @@
-import type { UnderwritingAssumptions, FinancingAssumptions, DealKPIs, Asset, AssetOperatingCosts } from '../models/types';
+import type { UnderwritingAssumptions, FinancingAssumptions, DealKPIs, Asset, AssetOperatingCosts } from '@/models/types';
 
 // ══════════════════════════════════════════════════════════
 // ASSET-LEVEL NOI CALCULATION (real data, no hardcoded %)

@@ -1,5 +1,5 @@
 import { aiChat } from '@workspace/api-client-react';
-import type { NewsArticle, NewsCategory, DailyIntelligenceReport } from '../models/types';
+import type { NewsArticle, NewsCategory, DailyIntelligenceReport } from '@/models/types';
 
 export interface NewsResearchResult {
   success: boolean;

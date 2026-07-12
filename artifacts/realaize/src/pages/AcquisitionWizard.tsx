@@ -8,25 +8,25 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, Legend, ReferenceLine
 } from 'recharts';
-import { GlassPanel, KPICard } from '../components/shared';
-import { formatEUR, formatPct } from '../utils/kpiEngine';
-import { useStore } from '../store/useStore';
-import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, PRIME_SUBMARKETS, submarketsForCity, BUILD_COST_RATES, SCOPE_LABEL, type RenovationScope } from '../utils/valueAddScreening';
+import { GlassPanel, KPICard } from '@/components/shared';
+import { formatEUR, formatPct } from '@/utils/kpiEngine';
+import { useStore } from '@/store/useStore';
+import { screenValueAdd, lookupMarketAssumptions, resolveExitYieldBuffer, EXIT_BUFFER_PRIME, PRIME_SUBMARKETS, submarketsForCity, BUILD_COST_RATES, SCOPE_LABEL, type RenovationScope } from '@/utils/valueAddScreening';
 import {
   pdComputeTotalAcquisitionCosts, pdComputeAnnualRent, pdComputeTotalArea,
   pdComputeWeightedERV, pdComputeWALT, pdComputeTotalDevBudget,
   pdComputeTotalCapitalRequirement, pdComputeTotalLoan, pdComputeEquity,
   pdComputePropertyNOI, pdComputePropertyCashFlowMonthly, pdAggregateToYears,
   pdComputePropertyKPIs,
-} from '../utils/propertyCashFlowModel';
+} from '@/utils/propertyCashFlowModel';
 import type {
   PropertyData, RentRollUnit, AcquisitionCostItem, GewerkePosition,
   FinancingTranche, MarketAssumptionPerUsage, FloorLevel, DealType
-} from '../models/types';
+} from '@/models/types';
 import {
   createDefaultPropertyData, DEFAULT_ACQUISITION_COSTS,
   DEFAULT_ERV_GROWTH, DEFAULT_EXIT_CAP, DEFAULT_GEWERKE_CATEGORIES
-} from '../models/types';
+} from '@/models/types';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const USAGE_TYPES = ['Wohnen', 'Büro', 'Einzelhandel', 'Lager', 'Stellplatz', 'Sonstiges'] as const;

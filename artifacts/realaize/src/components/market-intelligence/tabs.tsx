@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Copy, Sparkles, X } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { useStore } from '../../store/useStore';
-import { CURRENT_PERIOD } from '../../data/marketIntelData';
-import { ASSET_CLASS_LABEL, benchmarkSeries, formatBenchmarkValue, KPI_LABEL, quarterOrdinal } from '../../utils/marketIntelligence';
-import type { AssetClass, BenchmarkKpi, BenchmarkRecord } from '../../models/types';
-import { REVIEWER, STATUS_STYLE, IMPACT_STYLE, Badge, SubLabel, ASSET_ORDER, KPI_ORDER, CLASS_RGB, ProvenanceDrilldown } from './shared';
+import { useStore } from '@/store/useStore';
+import { CURRENT_PERIOD } from '@/data/marketIntelData';
+import { ASSET_CLASS_LABEL, benchmarkSeries, formatBenchmarkValue, KPI_LABEL, quarterOrdinal } from '@/utils/marketIntelligence';
+import type { AssetClass, BenchmarkKpi, BenchmarkRecord } from '@/models/types';
+import { REVIEWER, STATUS_STYLE, IMPACT_STYLE, Badge, SubLabel, ASSET_ORDER, KPI_ORDER, CLASS_RGB, ProvenanceDrilldown } from '@/components/market-intelligence/shared';
 
 // ── Small style helpers ───────────────────────────────────────────────────────
 

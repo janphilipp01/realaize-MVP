@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { useStore } from '../../store/useStore';
-import { useLanguage } from '../../i18n/LanguageContext';
-import { TABS, type TabKey } from './shared';
-import { BenchmarksTab, ReviewTab, NewsTab, CrossValTab, MemoTab, HistoryTab, SourcesTab } from './tabs';
+import { useStore } from '@/store/useStore';
+import { useLanguage } from '@/i18n/LanguageContext';
+import { TABS, type TabKey } from '@/components/market-intelligence/shared';
+import { BenchmarksTab, ReviewTab, NewsTab, CrossValTab, MemoTab, HistoryTab, SourcesTab } from '@/components/market-intelligence/tabs';
 
 export function MarketIntelligencePanel({ city }: { city: string }) {
   const { lang } = useLanguage();

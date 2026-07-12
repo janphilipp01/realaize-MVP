@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, Line, Area, ComposedChart, ReferenceLine, CartesianGrid } from 'recharts';
 import { ChevronDown } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { PageHeader, GlassPanel, KPICard } from '../components/shared';
-import { formatEUR, computeAssetNOI } from '../utils/kpiEngine';
-import type { DebtInstrument } from '../models/types';
+import { useStore } from '@/store/useStore';
+import { PageHeader, GlassPanel, KPICard } from '@/components/shared';
+import { formatEUR, computeAssetNOI } from '@/utils/kpiEngine';
+import type { DebtInstrument } from '@/models/types';
 
 // ══════════════════════════════════════════════════════════
 // CASHFLOW PAGE — 10-Year Portfolio Investment Model

@@ -1,6 +1,6 @@
-import type { Asset, PropertyData, RentRollUnit, GewerkePosition, AcquisitionCostItem, FinancingTranche, SaleObject } from '../models/types';
-import { computeAssetNOI } from './kpiEngine';
-import { calculateIRR, calculateNPV } from './irrCalculator';
+import type { Asset, PropertyData, RentRollUnit, GewerkePosition, AcquisitionCostItem, FinancingTranche, SaleObject } from '@/models/types';
+import { computeAssetNOI } from '@/utils/kpiEngine';
+import { calculateIRR, calculateNPV } from '@/utils/irrCalculator';
 
 // ══════════════════════════════════════════════════════════
 // PROPERTY CASHFLOW MODEL — annual DCF over holding period
@@ -155,8 +155,8 @@ export function computePropertyCashFlow(
 // DEAL-LEVEL CASHFLOW (from underwriting, pre-acquisition)
 // ══════════════════════════════════════════════════════════
 
-import type { UnderwritingAssumptions, FinancingAssumptions } from '../models/types';
-import { computeDealKPIs } from './kpiEngine';
+import type { UnderwritingAssumptions, FinancingAssumptions } from '@/models/types';
+import { computeDealKPIs } from '@/utils/kpiEngine';
 
 export interface DealAnnualCashFlow {
   year: number;

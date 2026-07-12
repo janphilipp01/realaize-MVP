@@ -1,9 +1,9 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { AlertTriangle } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { PageHeader, GlassPanel, KPICard, StatusBadge, SectionHeader } from '../components/shared';
-import { formatEUR, computeAssetNOI, computeAssetLTV } from '../utils/kpiEngine';
-import { useLanguage } from '../i18n/LanguageContext';
+import { useStore } from '@/store/useStore';
+import { PageHeader, GlassPanel, KPICard, StatusBadge, SectionHeader } from '@/components/shared';
+import { formatEUR, computeAssetNOI, computeAssetLTV } from '@/utils/kpiEngine';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 // ══════════════════════════════════════════════════════════
 // DEBT PAGE

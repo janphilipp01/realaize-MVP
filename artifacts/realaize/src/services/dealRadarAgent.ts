@@ -1,5 +1,5 @@
 import { aiChat } from '@workspace/api-client-react';
-import type { DealRadarListing, DealRadarSearchCriteria, UsageType } from '../models/types';
+import type { DealRadarListing, DealRadarSearchCriteria, UsageType } from '@/models/types';
 
 export interface DealRadarResult {
   success: boolean;

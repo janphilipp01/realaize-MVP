@@ -1,6 +1,6 @@
-import { mockContacts } from '../../data/mockData';
-import type { SetState, GetState } from './types';
-import type { AppState } from '../appState';
+import { mockContacts } from '@/data/mockData';
+import type { SetState, GetState } from '@/store/slices/types';
+import type { AppState } from '@/store/appState';
 
 export const contactsSlice = (set: SetState, get: GetState): Pick<AppState, 'contacts' | 'addContact' | 'updateContact' | 'deleteContact'> => ({
       contacts: mockContacts,

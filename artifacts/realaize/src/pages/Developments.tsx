@@ -6,18 +6,18 @@ import {
   TrendingUp, BarChart3, FileText
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
-import { useStore } from '../store/useStore';
+import { useStore } from '@/store/useStore';
 import {
   GlassPanel, PageHeader, KPICard, SectionHeader, StatusBadge,
   CompletenessRing, Modal, Tabs
-} from '../components/shared';
-import ImageManager, { TitleImageDisplay } from '../components/ImageManager';
-import { formatEUR, formatPct } from '../utils/kpiEngine';
-import { analyzeHoldSell } from '../utils/irrCalculator';
-import { computeDealCashFlow } from '../utils/propertyCashFlowModel';
-import { useLanguage } from '../i18n/LanguageContext';
+} from '@/components/shared';
+import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
+import { formatEUR, formatPct } from '@/utils/kpiEngine';
+import { analyzeHoldSell } from '@/utils/irrCalculator';
+import { computeDealCashFlow } from '@/utils/propertyCashFlowModel';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { useListContacts } from '@workspace/api-client-react';
-import type { GeverkPosition, GeverkCategory, ActivityEntry, Unit, UsageType, DevDebtAssumptions, DevValuationAssumptions } from '../models/types';
+import type { GeverkPosition, GeverkCategory, ActivityEntry, Unit, UsageType, DevDebtAssumptions, DevValuationAssumptions } from '@/models/types';
 
 const GEWERK_CATEGORIES: GeverkCategory[] = [
   'Abbruch & Entsorgung', 'Rohbau', 'Dach & Abdichtung', 'Fassade & Außenanlagen',

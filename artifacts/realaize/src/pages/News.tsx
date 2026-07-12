@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { RefreshCw, AlertTriangle, X, Zap, Download, TrendingUp, Newspaper, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { PageHeader, GlassPanel, SectionHeader } from '../components/shared';
-import { exportNewsReportPDF, exportNewsExcel } from '../utils/exportUtils';
-import { useLanguage } from '../i18n/LanguageContext';
-import { generateDailyIntelligenceReport } from '../services/newsAgent';
+import { useStore } from '@/store/useStore';
+import { PageHeader, GlassPanel, SectionHeader } from '@/components/shared';
+import { exportNewsReportPDF, exportNewsExcel } from '@/utils/exportUtils';
+import { useLanguage } from '@/i18n/LanguageContext';
+import { generateDailyIntelligenceReport } from '@/services/newsAgent';
 
 // ══════════════════════════════════════════════════════════
 // NEWS & INTELLIGENCE PAGE

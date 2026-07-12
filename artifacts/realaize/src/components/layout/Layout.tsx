@@ -7,12 +7,12 @@ import {
   AlertTriangle, BookUser, HardHat, ShoppingBag, Newspaper, Radar, CalendarDays,
   GripVertical, Pencil, Check, Database
 } from 'lucide-react';
-import { useStore } from '../../store/useStore';
-import { useLanguage } from '../../i18n/LanguageContext';
+import { useStore } from '@/store/useStore';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { useListContacts, useListAppointments } from '@workspace/api-client-react';
-import Addressbook from '../Addressbook';
-import Calendar from '../Calendar';
-import ApiStatusBadge from '../ApiStatusBadge';
+import Addressbook from '@/components/Addressbook';
+import Calendar from '@/components/Calendar';
+import ApiStatusBadge from '@/components/ApiStatusBadge';
 
 /* ── Flag SVGs ──────────────────────────────────────────── */
 function FlagDE({ size = 18 }: { size?: number }) {

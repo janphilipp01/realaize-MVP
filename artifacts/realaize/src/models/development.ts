@@ -1,6 +1,6 @@
-import type { ActivityEntry } from './acquisition';
-import type { Asset, Document, Unit, UsageType } from './core';
-import type { Invoice, Offer, PropertyData } from './propertyData';
+import type { ActivityEntry } from '@/models/acquisition';
+import type { Asset, Document, Unit, UsageType } from '@/models/core';
+import type { Invoice, Offer, PropertyData } from '@/models/propertyData';
 
 // ─── Development ─────────────────────────────────────────────────────────────
 

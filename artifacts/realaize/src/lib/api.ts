@@ -3,7 +3,7 @@
 // spec covers them — keeping them hand-written here lets Phase 1 ship without
 // regenerating the full client.
 
-import type { AuthUser, OrgMembership } from "../store/useAuthStore";
+import type { AuthUser, OrgMembership } from "@/store/useAuthStore";
 
 const baseUrl: string = import.meta.env["VITE_API_BASE_URL"] ?? "";
 

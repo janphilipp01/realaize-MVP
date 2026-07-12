@@ -1,4 +1,4 @@
-import type { PropertyData } from './propertyData';
+import type { PropertyData } from '@/models/propertyData';
 
 // ─── Core Domain Types ───────────────────────────────────────────────────────
 

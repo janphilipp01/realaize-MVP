@@ -12,14 +12,14 @@ import type {
   MarketEventRecord,
   RefreshJob,
   ReportSource,
-} from '../models/types';
+} from '@/models/types';
 import {
   confidenceTierFor,
   KPI_UNIT,
   modeledHistory,
   reconcile,
   validateBenchmark,
-} from '../utils/marketIntelligence';
+} from '@/utils/marketIntelligence';
 
 const PERIOD = '2026-Q1';
 

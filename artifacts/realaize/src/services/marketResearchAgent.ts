@@ -1,5 +1,5 @@
 import { aiChat } from '@workspace/api-client-react';
-import type { MarketBenchmark, MarketUpdateEntry, UsageType } from '../models/types';
+import type { MarketBenchmark, MarketUpdateEntry, UsageType } from '@/models/types';
 
 export const GERMAN_TOP_CITIES = [
   { id: 'loc-berlin', city: 'Berlin', region: 'Berlin-Brandenburg', submarket: 'City-wide' },

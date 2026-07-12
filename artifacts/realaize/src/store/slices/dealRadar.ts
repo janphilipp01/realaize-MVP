@@ -1,7 +1,7 @@
-import type { AcquisitionDeal } from '../../models/types';
-import { mockDealRadarListings } from '../../data/mockData';
-import type { SetState, GetState } from './types';
-import type { AppState } from '../appState';
+import type { AcquisitionDeal } from '@/models/types';
+import { mockDealRadarListings } from '@/data/mockData';
+import type { SetState, GetState } from '@/store/slices/types';
+import type { AppState } from '@/store/appState';
 
 export const dealRadarSlice = (set: SetState, get: GetState): Pick<AppState, 'dealRadarListings' | 'dealRadarCriteria' | 'addRadarListings' | 'updateRadarListing' | 'dismissRadarListing' | 'convertToAcquisition' | 'updateRadarCriteria'> => ({
       dealRadarListings: mockDealRadarListings,

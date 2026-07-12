@@ -8,7 +8,7 @@
 //
 // Market rent comes from Market Intelligence in EUR/m²/MONTH → annualized ×12.
 
-import type { AssetClass, BenchmarkRecord, UsageType } from '../models/types';
+import type { AssetClass, BenchmarkRecord, UsageType } from '@/models/types';
 
 export type RenovationScope = 'modernisierung' | 'sanierung' | 'ausbau' | 'redevelopment';
 

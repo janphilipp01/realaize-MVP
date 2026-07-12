@@ -1,9 +1,9 @@
-import type { AcquisitionDeal, UsageType } from '../../models/types';
-import { mockCandidateDeals, defaultAcquisitionProfiles, listingToCandidate } from '../../data/dealSourcingData';
-import { runLocalMatcher } from '../../utils/screening';
-import { benchmarksToScreeningSeeds } from '../../utils/marketIntelligence';
-import type { SetState, GetState } from './types';
-import type { AppState } from '../appState';
+import type { AcquisitionDeal, UsageType } from '@/models/types';
+import { mockCandidateDeals, defaultAcquisitionProfiles, listingToCandidate } from '@/data/dealSourcingData';
+import { runLocalMatcher } from '@/utils/screening';
+import { benchmarksToScreeningSeeds } from '@/utils/marketIntelligence';
+import type { SetState, GetState } from '@/store/slices/types';
+import type { AppState } from '@/store/appState';
 
 export const dealSourcingSlice = (set: SetState, get: GetState): Pick<AppState, 'candidateDeals' | 'acquisitionProfiles' | 'lastScreeningAt' | 'runScreening' | 'ingestCandidatesFromListings' | 'shortlistCandidate' | 'rejectCandidate' | 'promoteCandidate' | 'updateAcquisitionProfile'> => ({
       candidateDeals: mockCandidateDeals,

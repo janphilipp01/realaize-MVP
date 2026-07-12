@@ -1,7 +1,7 @@
-import type { Asset, DevelopmentProject, SaleObject, PropertyData } from '../../models/types';
-import { mockAssets, mockDeals, mockDevelopments, mockSales } from '../../data/mockData';
-import type { SetState, GetState } from './types';
-import type { AppState } from '../appState';
+import type { Asset, DevelopmentProject, SaleObject, PropertyData } from '@/models/types';
+import { mockAssets, mockDeals, mockDevelopments, mockSales } from '@/data/mockData';
+import type { SetState, GetState } from '@/store/slices/types';
+import type { AppState } from '@/store/appState';
 
 export const portfolioSlice = (set: SetState, get: GetState): Pick<AppState, 'assets' | 'deals' | 'developments' | 'sales' | 'updateAsset' | 'deleteAsset' | 'addDeal' | 'updateDeal' | 'addActivityToDeal' | 'deleteDeal' | 'transferToBestand' | 'transferToDevelopment' | 'updateDevelopment' | 'deleteDevelopment' | 'addGewerk' | 'updateGewerk' | 'deleteGewerk' | 'addActivityToDevelopment' | 'addDevUnit' | 'updateDevUnit' | 'deleteDevUnit' | 'transferDevToBestand' | 'transferDevToSale' | 'addOffer' | 'updateOffer' | 'deleteOffer' | 'addInvoice' | 'updateInvoice' | 'deleteInvoice' | 'addGewerkePosition' | 'updateGewerkePosition' | 'deleteGewerkePosition' | 'updateDealPropertyData' | 'updateDevelopmentPropertyData' | 'updateSale' | 'deleteSale' | 'markSaleAsSold' | 'returnSaleToBestand' | 'addBuyer' | 'updateBuyer'> => ({
       assets: mockAssets,
@@ -256,7 +256,7 @@ export const portfolioSlice = (set: SetState, get: GetState): Pick<AppState, 'as
       returnSaleToBestand: (id) => {
         const sale = get().sales.find(s => s.id === id);
         if (!sale) return;
-        const newAsset: import('../../models/types').Asset = {
+        const newAsset: import('@/models/types').Asset = {
           id: `asset-${Date.now()}`,
           name: sale.name,
           address: sale.address,

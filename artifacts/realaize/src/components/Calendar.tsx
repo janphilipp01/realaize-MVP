@@ -10,8 +10,8 @@ import {
   type Appointment,
   type AppointmentWrite,
 } from '@workspace/api-client-react';
-import { useStore } from '../store/useStore';
-import type { AppointmentCategory } from '../models/types';
+import { useStore } from '@/store/useStore';
+import type { AppointmentCategory } from '@/models/types';
 
 const CATEGORIES: AppointmentCategory[] = [
   'Kauf', 'Verkauf', 'Vermietung', 'Bau',

@@ -3,7 +3,7 @@ import type {
   Unit, DebtInstrument, Covenant, CashFlowEntry, Document,
   DevelopmentProject, SaleObject, Contact, DailyIntelligenceReport,
   DealRadarListing, Appointment
-} from '../models/types';
+} from '@/models/types';
 
 // ─── Assets (Owned Portfolio) ─────────────────────────────────────────────────
 

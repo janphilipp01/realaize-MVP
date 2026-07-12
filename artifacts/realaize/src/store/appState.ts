@@ -1,5 +1,5 @@
-import type { Asset, AcquisitionDeal, AuditLogEntry, ActivityEntry, DevelopmentProject, SaleObject, Contact, ProjectImage, GeverkPosition, BuyerLead, DailyIntelligenceReport, Document, DealRadarListing, DealRadarSearchCriteria, PropertyData, Offer, Invoice, GewerkePosition, Unit, BenchmarkRecord, MarketEventRecord, ReportSource, RefreshJob, CandidateDeal, AcquisitionProfile, UsageType } from '../models/types';
-import { DEFAULT_ACQUISITION_COSTS } from '../models/types';
+import type { Asset, AcquisitionDeal, AuditLogEntry, ActivityEntry, DevelopmentProject, SaleObject, Contact, ProjectImage, GeverkPosition, BuyerLead, DailyIntelligenceReport, Document, DealRadarListing, DealRadarSearchCriteria, PropertyData, Offer, Invoice, GewerkePosition, Unit, BenchmarkRecord, MarketEventRecord, ReportSource, RefreshJob, CandidateDeal, AcquisitionProfile, UsageType } from '@/models/types';
+import { DEFAULT_ACQUISITION_COSTS } from '@/models/types';
 
 export interface AppSettings {
   hurrleRate: number; // percent, default 15
@@ -25,7 +25,7 @@ export interface AppSettings {
   defaultOpexInflation: number;    // % p.a., default 2.0
   defaultCapexInflation: number;   // % p.a., default 3.0
   defaultSalesCostPercent: number; // %, default 1.5
-  defaultAcquisitionCosts: import('../models/types').AcquisitionCostItem[];
+  defaultAcquisitionCosts: import('@/models/types').AcquisitionCostItem[];
 }
 
 export interface AppState {

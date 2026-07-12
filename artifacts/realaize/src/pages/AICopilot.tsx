@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { RefreshCw, Bot, Shield } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { PageHeader, GlassPanel, SectionHeader } from '../components/shared';
-import { computeAssetNOI, computeAssetLTV } from '../utils/kpiEngine';
-import { useLanguage } from '../i18n/LanguageContext';
+import { useStore } from '@/store/useStore';
+import { PageHeader, GlassPanel, SectionHeader } from '@/components/shared';
+import { computeAssetNOI, computeAssetLTV } from '@/utils/kpiEngine';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { aiChat, useListMarketLocations } from '@workspace/api-client-react';
 
 // ══════════════════════════════════════════════════════════

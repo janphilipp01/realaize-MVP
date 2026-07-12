@@ -1,6 +1,6 @@
-import { mockAuditLog } from '../../data/mockData';
-import type { SetState, GetState } from './types';
-import type { AppState } from '../appState';
+import { mockAuditLog } from '@/data/mockData';
+import type { SetState, GetState } from '@/store/slices/types';
+import type { AppState } from '@/store/appState';
 
 export const mediaSlice = (set: SetState, get: GetState): Pick<AppState, 'images' | 'auditLog' | 'addImage' | 'setTitleImage' | 'deleteImage' | 'addDocumentToAsset' | 'addDocumentToDeal' | 'deleteDocument' | 'addAuditEntry'> => ({
       images: [],

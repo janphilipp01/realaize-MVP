@@ -1,18 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AppState } from './appState';
-import { defaultSettings } from './appState';
-import { mockAssets, mockDeals, mockAuditLog, mockDevelopments, mockSales, mockContacts, mockNewsReports, mockDealRadarListings } from '../data/mockData';
-import { mockBenchmarks, mockPortfolioBenchmark, mockMarketEvents, mockReportSources, mockRefreshJobs } from '../data/marketIntelData';
-import { mockCandidateDeals, defaultAcquisitionProfiles } from '../data/dealSourcingData';
-import { marketIntelligenceSlice } from './slices/marketIntelligence';
-import { portfolioSlice } from './slices/portfolio';
-import { contactsSlice } from './slices/contacts';
-import { mediaSlice } from './slices/media';
-import { newsSlice } from './slices/news';
-import { dealRadarSlice } from './slices/dealRadar';
-import { dealSourcingSlice } from './slices/dealSourcing';
-import { settingsSlice } from './slices/settings';
+import type { AppState } from '@/store/appState';
+import { defaultSettings } from '@/store/appState';
+import { mockAssets, mockDeals, mockAuditLog, mockDevelopments, mockSales, mockContacts, mockNewsReports, mockDealRadarListings } from '@/data/mockData';
+import { mockBenchmarks, mockPortfolioBenchmark, mockMarketEvents, mockReportSources, mockRefreshJobs } from '@/data/marketIntelData';
+import { mockCandidateDeals, defaultAcquisitionProfiles } from '@/data/dealSourcingData';
+import { marketIntelligenceSlice } from '@/store/slices/marketIntelligence';
+import { portfolioSlice } from '@/store/slices/portfolio';
+import { contactsSlice } from '@/store/slices/contacts';
+import { mediaSlice } from '@/store/slices/media';
+import { newsSlice } from '@/store/slices/news';
+import { dealRadarSlice } from '@/store/slices/dealRadar';
+import { dealSourcingSlice } from '@/store/slices/dealSourcing';
+import { settingsSlice } from '@/store/slices/settings';
 
 export const useStore = create<AppState>()(
   persist(

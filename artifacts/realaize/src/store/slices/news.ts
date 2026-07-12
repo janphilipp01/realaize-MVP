@@ -1,6 +1,6 @@
-import { mockNewsReports } from '../../data/mockData';
-import type { SetState, GetState } from './types';
-import type { AppState } from '../appState';
+import { mockNewsReports } from '@/data/mockData';
+import type { SetState, GetState } from '@/store/slices/types';
+import type { AppState } from '@/store/appState';
 
 export const newsSlice = (set: SetState, get: GetState): Pick<AppState, 'newsReports' | 'addNewsReport' | 'pruneOldReports'> => ({
       newsReports: mockNewsReports,

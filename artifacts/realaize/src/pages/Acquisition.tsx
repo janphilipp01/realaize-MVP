@@ -5,17 +5,17 @@ import {
   Zap, CheckCircle, Building2, HardHat, Trash2, TrendingUp, BarChart3
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { useStore } from '../store/useStore';
-import { PageHeader, StageBadge, CompletenessRing, GlassPanel, KPICard, Modal } from '../components/shared';
-import { computeDealKPIs, formatEUR, formatPct, formatX } from '../utils/kpiEngine';
-import { computeDealCashFlow } from '../utils/propertyCashFlowModel';
-import { useLanguage } from '../i18n/LanguageContext';
-import { AcquisitionWizard } from './AcquisitionWizard';
+import { useStore } from '@/store/useStore';
+import { PageHeader, StageBadge, CompletenessRing, GlassPanel, KPICard, Modal } from '@/components/shared';
+import { computeDealKPIs, formatEUR, formatPct, formatX } from '@/utils/kpiEngine';
+import { computeDealCashFlow } from '@/utils/propertyCashFlowModel';
+import { useLanguage } from '@/i18n/LanguageContext';
+import { AcquisitionWizard } from '@/pages/AcquisitionWizard';
 import type {
   AcquisitionDeal, DealType, UsageType, UnderwritingAssumptions, FinancingAssumptions,
   GeverkCategory, Unit, PropertyData
-} from '../models/types';
-import { createDefaultPropertyData } from '../models/types';
+} from '@/models/types';
+import { createDefaultPropertyData } from '@/models/types';
 
 const STAGE_ORDER = ['Screening', 'LOI', 'Due Diligence', 'Signing', 'Closing'];
 const USAGE_TYPES: UsageType[] = ['Wohnen', 'Büro', 'Einzelhandel', 'Logistik', 'Mixed Use'];

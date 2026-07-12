@@ -1,6 +1,6 @@
-import type { ActivityEntry } from './acquisition';
-import type { Asset, Document, UsageType } from './core';
-import type { ProjectImage } from './development';
+import type { ActivityEntry } from '@/models/acquisition';
+import type { Asset, Document, UsageType } from '@/models/core';
+import type { ProjectImage } from '@/models/development';
 
 // ─── Sales ───────────────────────────────────────────────────────────────────
 

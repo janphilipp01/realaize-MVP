@@ -1,5 +1,5 @@
-import type { DealType } from './acquisition';
-import type { UsageType } from './core';
+import type { DealType } from '@/models/acquisition';
+import type { UsageType } from '@/models/core';
 
 // ─── Property Data Model (Underwriting) ────────────────────────────────────
 

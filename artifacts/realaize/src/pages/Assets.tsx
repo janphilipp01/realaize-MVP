@@ -6,14 +6,14 @@ import {
   BarChart3, Home, Info, Trash2
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid } from 'recharts';
-import { useStore } from '../store/useStore';
-import { PageHeader, GlassPanel, KPICard, StatusBadge, CompletenessRing, SectionHeader, StageBadge } from '../components/shared';
-import { formatEUR, formatPct, computeAssetNOI, computeAssetLTV, computeAssetMonthlyCashFlow } from '../utils/kpiEngine';
-import { computePropertyCashFlow } from '../utils/propertyCashFlowModel';
-import ImageManager, { TitleImageDisplay } from '../components/ImageManager';
-import DocumentUpload from '../components/DocumentUpload';
-import { useLanguage } from '../i18n/LanguageContext';
-import type { Asset, AssetOperatingCosts } from '../models/types';
+import { useStore } from '@/store/useStore';
+import { PageHeader, GlassPanel, KPICard, StatusBadge, CompletenessRing, SectionHeader, StageBadge } from '@/components/shared';
+import { formatEUR, formatPct, computeAssetNOI, computeAssetLTV, computeAssetMonthlyCashFlow } from '@/utils/kpiEngine';
+import { computePropertyCashFlow } from '@/utils/propertyCashFlowModel';
+import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
+import DocumentUpload from '@/components/DocumentUpload';
+import { useLanguage } from '@/i18n/LanguageContext';
+import type { Asset, AssetOperatingCosts } from '@/models/types';
 
 // ─── Assets List Page ─────────────────────────────────────────────────────────
 export function AssetsPage() {

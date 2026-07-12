@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Upload, Search, FileText } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { PageHeader, GlassPanel } from '../components/shared';
-import { useLanguage } from '../i18n/LanguageContext';
+import { useStore } from '@/store/useStore';
+import { PageHeader, GlassPanel } from '@/components/shared';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 // ══════════════════════════════════════════════════════════
 // DOCUMENTS PAGE

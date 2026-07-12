@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Upload, X, Star, Image as ImageIcon, Trash2 } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import type { ProjectImage } from '../models/types';
+import { useStore } from '@/store/useStore';
+import type { ProjectImage } from '@/models/types';
 
 interface ImageManagerProps {
   entityId: string;

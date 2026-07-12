@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, X, Trash2, ExternalLink } from 'lucide-react';
-import type { Document, DocumentCategory } from '../models/types';
+import type { Document, DocumentCategory } from '@/models/types';
 
 const DOC_CATEGORIES: DocumentCategory[] = [
   'Kaufvertrag', 'Mietvertrag', 'Finanzierung', 'Gutachten', 'Due Diligence', 'IC Memo', 'Sonstiges'
