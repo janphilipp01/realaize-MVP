@@ -7,7 +7,7 @@ import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
 import { formatEUR, formatPct } from '@/utils/kpiEngine';
 import { analyzeHoldSell } from '@/utils/irrCalculator';
 
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 import { DEV_STATUS_COLOR } from '@/components/developments/constants';
 import { OverviewTab } from '@/components/developments/OverviewTab';
 import { RentRollTab } from '@/components/developments/RentRollTab';
@@ -24,7 +24,7 @@ import { DocumentsTab } from '@/components/developments/DocumentsTab';
 export function DevelopmentsPage() {
   const { developments } = useStore();
   const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
 
   const totalBudget = developments.reduce((s, d) => s + d.totalBudget, 0);
   const totalSpent = developments.reduce((s, d) =>
@@ -106,8 +106,8 @@ export function DevelopmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { developments, deleteDevelopment, transferDevToBestand, transferDevToSale, settings } = useStore();
-  const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const { t } = useLanguage();
+  const dateLocale = useDateLocale();
   const dev = developments.find(d => d.id === id);
   const [activeTab, setActiveTab] = useState('overview');
   const [showDeleteModal, setShowDeleteModal] = useState(false);

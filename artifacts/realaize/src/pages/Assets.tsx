@@ -8,7 +8,7 @@ import { formatEUR, formatPct, computeAssetNOI, computeAssetLTV } from '@/utils/
 import { computePropertyCashFlow } from '@/utils/propertyCashFlowModel';
 import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
 import DocumentUpload from '@/components/DocumentUpload';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 import type { AssetOperatingCosts } from '@/models/types';
 
 // ─── Assets List Page ─────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ export function AssetDetailPage() {
   const navigate = useNavigate();
   const { assets, updateAsset, deleteAsset, addDocumentToAsset, deleteDocument } = useStore();
   const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const asset = assets.find(a => a.id === id);
   const [activeTab, setActiveTab] = useState('overview');
   const [showDeleteModal, setShowDeleteModal] = useState(false);

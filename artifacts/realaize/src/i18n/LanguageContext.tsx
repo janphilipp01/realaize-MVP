@@ -47,3 +47,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 export function useLanguage() {
   return useContext(LanguageContext);
 }
+
+/** Map a language to its Intl locale string. Use when you already hold a `lang` value. */
+export const dateLocaleFor = (lang: string): 'de-DE' | 'en-GB' => (lang === 'de' ? 'de-DE' : 'en-GB');
+
+/** Intl locale for the active language (e.g. for toLocaleDateString). */
+export function useDateLocale(): 'de-DE' | 'en-GB' {
+  return dateLocaleFor(useLanguage().lang);
+}

@@ -3,13 +3,12 @@ import { Edit3, Save, X } from 'lucide-react';
 import { GlassPanel, SectionHeader } from '@/components/shared';
 import { formatEUR } from '@/utils/kpiEngine';
 import { useStore } from '@/store/useStore';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useDateLocale } from '@/i18n/LanguageContext';
 import { STATUS_COLORS } from '@/components/developments/constants';
 import type { DevelopmentProject } from '@/models/types';
 
 export function GanttTab({ dev, ganttMonths }: { dev: DevelopmentProject; ganttMonths: string[] }) {
-  const { lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const { updateGewerk } = useStore();
   const [editingGanttGw, setEditingGanttGw] = useState<string | null>(null);
   const [ganttGwEdits, setGanttGwEdits] = useState<{ ganttStart?: string; ganttDurationMonths?: number }>({});

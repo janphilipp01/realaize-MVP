@@ -5,7 +5,7 @@ import { useStore } from '@/store/useStore';
 import { GlassPanel, PageHeader, KPICard, SectionHeader, Tabs, Modal } from '@/components/shared';
 import ImageManager, { TitleImageDisplay } from '@/components/ImageManager';
 import { formatEUR } from '@/utils/kpiEngine';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 import type { BuyerLead, BuyerStage } from '@/models/types';
 
 const BUYER_STAGES: BuyerStage[] = [
@@ -22,7 +22,7 @@ const STAGE_COLOR: Record<string, string> = {
 export function SalesPage() {
   const { sales } = useStore();
   const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const [activeTab, setActiveTab] = useState<'aktiv' | 'uebersicht'>('aktiv');
 
   const activeSales = sales.filter(s => s.status !== 'Verkauft');
@@ -206,8 +206,8 @@ export function SaleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { sales, addBuyer, updateBuyer, markSaleAsSold, returnSaleToBestand, deleteSale } = useStore();
-  const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const { t } = useLanguage();
+  const dateLocale = useDateLocale();
   const sale = sales.find(s => s.id === id);
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddBuyer, setShowAddBuyer] = useState(false);

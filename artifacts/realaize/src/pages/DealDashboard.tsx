@@ -9,7 +9,7 @@ import { computeDealCashFlow } from '@/utils/propertyCashFlowModel';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { exportInvestmentMemoPDF, exportDealExcel } from '@/utils/exportUtils';
 import ImageManager from '@/components/ImageManager';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 import { AcquisitionWizard } from '@/pages/AcquisitionWizard';
 import type { KPIFormulaDetail, PropertyData } from '@/models/types';
 import { createDefaultPropertyData } from '@/models/types';
@@ -21,7 +21,7 @@ export default function DealDashboard() {
   const benchmarks = useStore(s => s.benchmarks);
   const targetNIY = useStore(s => s.settings.targetNIY);
   const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const deal = deals.find(d => d.id === id);
 
   const [activeTab, setActiveTab] = useState('overview');

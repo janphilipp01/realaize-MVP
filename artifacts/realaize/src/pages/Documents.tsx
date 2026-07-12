@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { Upload, Search, FileText } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { PageHeader, GlassPanel } from '@/components/shared';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 
 // ══════════════════════════════════════════════════════════
 // DOCUMENTS PAGE
 // ══════════════════════════════════════════════════════════
 export function DocumentsPage() {
   const { assets, deals } = useStore();
-  const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const { t } = useLanguage();
+  const dateLocale = useDateLocale();
   const [filterCat, setFilterCat] = useState('Alle');
   const [search, setSearch] = useState('');
 

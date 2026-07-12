@@ -4,7 +4,7 @@ import { Plus, AlertTriangle, FileText, Search } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { PageHeader, StageBadge, CompletenessRing } from '@/components/shared';
 import { computeDealKPIs, formatEUR, formatPct, formatX } from '@/utils/kpiEngine';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 import { AcquisitionWizard } from '@/pages/AcquisitionWizard';
 import type { AcquisitionDeal, UsageType, PropertyData } from '@/models/types';
 
@@ -16,8 +16,8 @@ function DealCard({ deal }: { deal: AcquisitionDeal }) {
   const kpis = computeDealKPIs(deal.underwritingAssumptions, deal.financingAssumptions);
   const alerts = deal.aiRecommendations.filter(r => r.isAlert);
   const hasDeviation = alerts.some(a => (a.deviationPercent || 0) > 10);
-  const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const { t } = useLanguage();
+  const dateLocale = useDateLocale();
   return (
     <Link to={`/acquisition/${deal.id}`} style={{ textDecoration: 'none' }}>
       <div className="glass-card" style={{ padding: 0, overflow: 'hidden', cursor: 'pointer', border: hasDeviation ? '1px solid rgba(251,191,36,0.25)' : '1px solid rgba(255,255,255,0.10)' }}>

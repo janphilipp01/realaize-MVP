@@ -3,12 +3,11 @@ import { Plus, Trash2 } from 'lucide-react';
 import { KPICard, GlassPanel, StatusBadge, Modal, SectionHeader } from '@/components/shared';
 import { formatEUR } from '@/utils/kpiEngine';
 import { useStore } from '@/store/useStore';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useDateLocale } from '@/i18n/LanguageContext';
 import type { DevelopmentProject, Unit, UsageType } from '@/models/types';
 
 export function RentRollTab({ dev }: { dev: DevelopmentProject }) {
-  const { lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const { addDevUnit, deleteDevUnit } = useStore();
   const [showAddUnitModal, setShowAddUnitModal] = useState(false);
   const [newUnit, setNewUnit] = useState<Partial<Unit>>({ leaseType: 'Leerstand', usageType: 'Wohnen', floor: 0 });

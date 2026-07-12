@@ -3,7 +3,7 @@ import { RefreshCw, Bot, Shield } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { PageHeader, GlassPanel, SectionHeader } from '@/components/shared';
 import { computeAssetNOI, computeAssetLTV } from '@/utils/kpiEngine';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 import { aiChat, useListMarketLocations } from '@workspace/api-client-react';
 
 // ══════════════════════════════════════════════════════════
@@ -13,7 +13,7 @@ export function AICopilotPage() {
   const { t, lang } = useLanguage();
   const { assets, deals, developments, sales, settings } = useStore();
   const { data: marketLocations = [] } = useListMarketLocations();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const [messages, setMessages] = useState<{ role: string; text: string; timestamp?: string }[]>([
     { role: 'assistant', text: t('ai.welcome'), timestamp: new Date().toISOString() },
   ]);

@@ -4,6 +4,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { useStore } from '@/store/useStore';
 import { CURRENT_PERIOD } from '@/data/marketIntelData';
 import { ASSET_CLASS_LABEL, benchmarkSeries, formatBenchmarkValue, KPI_LABEL, quarterOrdinal } from '@/utils/marketIntelligence';
+import { dateLocaleFor } from '@/i18n/LanguageContext';
 import type { AssetClass, BenchmarkKpi, BenchmarkRecord } from '@/models/types';
 import { REVIEWER, STATUS_STYLE, IMPACT_STYLE, Badge, SubLabel, ASSET_ORDER, KPI_ORDER, CLASS_RGB, ProvenanceDrilldown } from '@/components/market-intelligence/shared';
 
@@ -26,7 +27,7 @@ export function BenchmarksTab({ benchmarks, lang, hideCityFilter }: { benchmarks
 
   const classesPresent = ASSET_ORDER.filter(ac => scoped.some(b => b.assetClass === ac));
   const shownClasses = filterClass === 'all' ? classesPresent : classesPresent.filter(ac => ac === filterClass);
-  const num = (n: number) => n.toLocaleString(lang === 'de' ? 'de-DE' : 'en-GB');
+  const num = (n: number) => n.toLocaleString(dateLocaleFor(lang));
 
   return (
     <div>
@@ -262,7 +263,7 @@ export function NewsTab({ events, lang }: { events: ReturnType<typeof useStore.g
                 {e.city && <Badge bg="rgba(0,122,255,0.10)" color="#0a6cff">{e.city}</Badge>}
                 {e.assetClass && <Badge bg="rgba(0,0,0,0.06)" color="rgba(60,60,67,0.7)">{ASSET_CLASS_LABEL[e.assetClass]}</Badge>}
                 <span style={{ marginLeft: 'auto', fontSize: 11, color: 'rgba(60,60,67,0.45)' }}>
-                  {new Date(e.publishedAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB')}
+                  {new Date(e.publishedAt).toLocaleDateString(dateLocaleFor(lang))}
                 </span>
               </div>
               <div style={{ fontWeight: 700, fontSize: 14 }}>{e.headline}</div>
@@ -604,7 +605,7 @@ export function SourcesTab({ reportSources, refreshJobs, lang }: { reportSources
                 <Badge bg={j.trigger === 'manual' ? 'rgba(88,86,214,0.12)' : 'rgba(0,122,255,0.10)'} color={j.trigger === 'manual' ? '#5856d6' : '#0a6cff'}>{j.trigger}</Badge>
               </div>
               <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.6)', marginTop: 6 }}>
-                {new Date(j.triggeredAt).toLocaleString(lang === 'de' ? 'de-DE' : 'en-GB')}
+                {new Date(j.triggeredAt).toLocaleString(dateLocaleFor(lang))}
               </div>
               <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.7)', marginTop: 6 }}>
                 {j.reportsFetched} reports · {j.dataPointsExtracted} {lang === 'de' ? 'Datenpunkte' : 'data points'} · {j.autoPassed} auto-passed · {j.pendingReview} pending

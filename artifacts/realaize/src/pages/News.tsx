@@ -3,7 +3,7 @@ import { RefreshCw, AlertTriangle, X, Zap, Download, TrendingUp, Newspaper, Chev
 import { useStore } from '@/store/useStore';
 import { PageHeader, GlassPanel, SectionHeader } from '@/components/shared';
 import { exportNewsReportPDF, exportNewsExcel } from '@/utils/exportUtils';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 import { generateDailyIntelligenceReport } from '@/services/newsAgent';
 
 // ══════════════════════════════════════════════════════════
@@ -28,7 +28,7 @@ const IMPACT_STYLES: Record<string, { bg: string; border: string; color: string;
 export function NewsPage() {
   const { newsReports, addNewsReport, pruneOldReports } = useStore();
   const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

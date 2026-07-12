@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { RefreshCw, CheckCircle, ChevronDown } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 import { GERMAN_TOP_CITIES } from '@/services/marketResearchAgent';
 import { MarketIntelligencePanel } from '@/components/market-intelligence/MarketIntelligencePanel';
 import { CURRENT_PERIOD } from '@/data/marketIntelData';
@@ -15,7 +15,7 @@ export function MarktPage() {
   const refreshJobs = useStore(s => s.refreshJobs);
   const triggerRefresh = useStore(s => s.triggerQuarterlyRefresh);
   const refreshCity = useStore(s => s.refreshCityBenchmarks);
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
 
   const REVIEWER = 'J. Pleuker';
   const [refreshing, setRefreshing] = useState(false);

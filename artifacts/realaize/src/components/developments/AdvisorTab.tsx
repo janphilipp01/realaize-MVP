@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { Bot } from 'lucide-react';
 import { GlassPanel, SectionHeader } from '@/components/shared';
 import { useStore } from '@/store/useStore';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useDateLocale } from '@/i18n/LanguageContext';
 import type { DevelopmentProject } from '@/models/types';
 
 export function AdvisorTab({ dev }: { dev: DevelopmentProject }) {
-  const { lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const { updateDevelopment } = useStore();
   const [advisorInput, setAdvisorInput] = useState('');
   const [advisorMessages, setAdvisorMessages] = useState(dev.advisorMessages || []);

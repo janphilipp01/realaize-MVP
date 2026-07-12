@@ -3,15 +3,15 @@ import { AlertTriangle } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { PageHeader, GlassPanel, KPICard, StatusBadge, SectionHeader } from '@/components/shared';
 import { formatEUR, computeAssetNOI, computeAssetLTV } from '@/utils/kpiEngine';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage, useDateLocale } from '@/i18n/LanguageContext';
 
 // ══════════════════════════════════════════════════════════
 // DEBT PAGE
 // ══════════════════════════════════════════════════════════
 export function DebtPage() {
   const { assets } = useStore();
-  const { t, lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const { t } = useLanguage();
+  const dateLocale = useDateLocale();
   const allDebt = assets.flatMap(a => a.debtInstruments.map(d => ({ ...d, assetName: a.name, assetCity: a.city, assetId: a.id })));
   const totalDebt = allDebt.reduce((s, d) => s + d.outstandingAmount, 0);
 

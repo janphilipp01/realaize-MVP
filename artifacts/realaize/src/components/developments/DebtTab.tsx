@@ -1,13 +1,12 @@
 import { GlassPanel, SectionHeader } from '@/components/shared';
 import { formatEUR } from '@/utils/kpiEngine';
 import { useStore } from '@/store/useStore';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useDateLocale } from '@/i18n/LanguageContext';
 import type { DevelopmentProject, DevDebtAssumptions } from '@/models/types';
 import { useState } from 'react';
 
 export function DebtTab({ dev, totalBudget }: { dev: DevelopmentProject; totalBudget: number }) {
-  const { lang } = useLanguage();
-  const dateLocale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const dateLocale = useDateLocale();
   const { updateDevelopment } = useStore();
   const [debtForm, setDebtForm] = useState<DevDebtAssumptions>(dev.debtAssumptions || { ltvPct: 60, ltcPct: 70, interestRatePct: 4.5, loanType: 'Bullet', annuityTermYears: 15 });
         const purchaseLoan = dev.purchasePrice * (debtForm.ltvPct / 100);
