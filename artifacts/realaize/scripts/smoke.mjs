@@ -59,10 +59,18 @@ async function main() {
     const onErr = (e) => errors.push(String(e?.message || e));
     page.on('pageerror', onErr);
     try {
-      await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await wait(1200);
-      const bodyLen = await page.evaluate(() => document.body?.innerText?.trim().length || 0);
-      if (errors.length) failures.push(`${route}: pageerror → ${errors[0]}`);
+      // networkidle waits for lazy route chunks to load; the fallback text guard
+      // then rides out the brief Suspense placeholder before we read content.
+      await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 30000 });
+      await page
+        .waitForFunction(() => !/Lädt…/.test(document.body?.innerText || ''), { timeout: 8000 })
+        .catch(() => {});
+      const body = await page.evaluate(() => document.body?.innerText?.trim() || '');
+      const bodyLen = body.length;
+      // A crashed lazy route renders the error boundary, which is >40 chars — catch it explicitly.
+      if (/Something went wrong|Failed to fetch dynamically imported module/.test(body)) {
+        failures.push(`${route}: error boundary rendered`);
+      } else if (errors.length) failures.push(`${route}: pageerror → ${errors[0]}`);
       else if (bodyLen < 40) failures.push(`${route}: empty main content (len ${bodyLen})`);
       else console.log(`OK  ${route}  (${bodyLen} chars)`);
     } catch (e) {
