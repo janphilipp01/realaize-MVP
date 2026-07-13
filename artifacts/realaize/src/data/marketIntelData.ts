@@ -123,6 +123,23 @@ const rawBenchmarks: BenchmarkRecord[] = [
       { provider: 'C&W', value: 10.5, pageNo: 11, originalText: 'Vacancy rate 10.5%' },
     ],
   }),
+  // ── Düsseldorf · office · NIY → flagged for review (QoQ jump + broker outlier) ──
+  // Demo case for the Review Queue: reconciled NIY jumps ~70bps vs prior quarter
+  // and BNP prints an outlier, so the pipeline holds it as `pending` for sign-off.
+  makeBenchmark({
+    city: 'Düsseldorf',
+    assetClass: 'office',
+    kpi: 'net_initial_yield',
+    priorValue: 4.2,
+    brokers: [
+      { provider: 'JLL', value: 4.85, pageNo: 5, originalText: 'Net initial yield prime office: 4.85%' },
+      { provider: 'CBRE', value: 4.9, pageNo: 4, originalText: 'Nettoanfangsrendite Büro 4,90%' },
+      { provider: 'Colliers', value: 4.95, pageNo: 8, originalText: 'Büro-Spitzenrendite 4,95%' },
+      { provider: 'BNP', value: 5.9, pageNo: 6, originalText: 'Ausreißer-Transaktion Nettorendite 5,90% (Non-Core-Lage)', confidence: 0.68 },
+    ],
+    note:
+      'NIY sprang ~70bps QoQ — vor IC-Nutzung gegen Q4-Transaktionen prüfen. BNP-Wert stammt aus einer Non-Core-Lage und wurde als Ausreißer markiert.',
+  }),
 
   // ── Top-7 · residential ERV (city level) ──
   makeBenchmark({
