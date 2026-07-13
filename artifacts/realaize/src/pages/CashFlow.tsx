@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { PageHeader, GlassPanel, KPICard } from '@/components/shared';
 import { formatEUR, computeAssetNOI } from '@/utils/kpiEngine';
+import { useLanguage } from '@/i18n/LanguageContext';
 import type { DebtInstrument } from '@/models/types';
 
 // ══════════════════════════════════════════════════════════
@@ -47,6 +48,7 @@ function fmtMio(n: number): string {
 
 export function CashFlowPage() {
   const { assets, developments, sales, settings } = useStore();
+  const de = useLanguage().lang === 'de';
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['noi', 'transactions', 'debt']));
   const [colWidths, setColWidths] = useState<Record<number, number>>({});
   const resizeRef = useRef<{ colIdx: number; startX: number; startWidth: number } | null>(null);
@@ -272,8 +274,8 @@ export function CashFlowPage() {
       color: '#007aff',
       rows: [
         { key: 'grossRentalIncome', label: 'Gross Rental Income', sign: '+', isSubtotal: false, isGrandTotal: false, section: 'noi', positiveIsGood: true },
-        { key: 'operatingCosts', label: 'Operating Costs (Bewirtschaftung)', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'noi', positiveIsGood: false },
-        { key: 'capex', label: 'Capex / Baukosten', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'noi', positiveIsGood: false },
+        { key: 'operatingCosts', label: 'Operating Costs', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'noi', positiveIsGood: false },
+        { key: 'capex', label: 'Capex / Construction', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'noi', positiveIsGood: false },
         { key: 'noi', label: 'Net Operating Income (NOI)', sign: '=', isSubtotal: true, isGrandTotal: false, section: 'noi', positiveIsGood: true },
       ],
     },
@@ -282,11 +284,11 @@ export function CashFlowPage() {
       label: 'Transaction Cashflow',
       color: '#ff9500',
       rows: [
-        { key: 'acquisitions', label: 'Ankauf (Kaufpreis)', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'transactions', positiveIsGood: false },
-        { key: 'acquisitionCosts', label: 'Erwerbsnebenkosten', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'transactions', positiveIsGood: false },
-        { key: 'salesProceeds', label: 'Verkaufserlös', sign: '+', isSubtotal: false, isGrandTotal: false, section: 'transactions', positiveIsGood: true },
-        { key: 'salesCosts', label: 'Verkaufsnebenkosten', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'transactions', positiveIsGood: false },
-        { key: 'cashflowFromTransactions', label: 'Cashflow Transaktionen', sign: '=', isSubtotal: true, isGrandTotal: false, section: 'transactions', positiveIsGood: true },
+        { key: 'acquisitions', label: 'Acquisition (Purchase Price)', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'transactions', positiveIsGood: false },
+        { key: 'acquisitionCosts', label: 'Acquisition Costs', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'transactions', positiveIsGood: false },
+        { key: 'salesProceeds', label: 'Sale Proceeds', sign: '+', isSubtotal: false, isGrandTotal: false, section: 'transactions', positiveIsGood: true },
+        { key: 'salesCosts', label: 'Sale Costs', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'transactions', positiveIsGood: false },
+        { key: 'cashflowFromTransactions', label: 'Transaction Cash Flow', sign: '=', isSubtotal: true, isGrandTotal: false, section: 'transactions', positiveIsGood: true },
       ],
     },
     {
@@ -294,10 +296,10 @@ export function CashFlowPage() {
       label: 'Financing Cashflow',
       color: '#f87171',
       rows: [
-        { key: 'loanReceived', label: 'Darlehensauszahlung', sign: '+', isSubtotal: false, isGrandTotal: false, section: 'debt', positiveIsGood: true },
-        { key: 'interestPayments', label: 'Zinsen', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'debt', positiveIsGood: false },
-        { key: 'otherLoanCosts', label: 'Sonstige Darlehenskosten', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'debt', positiveIsGood: false },
-        { key: 'loanRepayments', label: 'Tilgung', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'debt', positiveIsGood: false },
+        { key: 'loanReceived', label: 'Loan Disbursement', sign: '+', isSubtotal: false, isGrandTotal: false, section: 'debt', positiveIsGood: true },
+        { key: 'interestPayments', label: 'Interest', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'debt', positiveIsGood: false },
+        { key: 'otherLoanCosts', label: 'Other Loan Costs', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'debt', positiveIsGood: false },
+        { key: 'loanRepayments', label: 'Amortization', sign: '-', isSubtotal: false, isGrandTotal: false, section: 'debt', positiveIsGood: false },
         { key: 'debtCashflow', label: 'Debt Cashflow', sign: '=', isSubtotal: true, isGrandTotal: false, section: 'debt', positiveIsGood: true },
       ],
     },
@@ -307,17 +309,17 @@ export function CashFlowPage() {
   return (
     <div className="p-8 max-w-[1800px] mx-auto">
       <PageHeader
-        title="10-Jahres Portfolio Cash Flow"
-        subtitle={`Investitionsrechnung — Lestate Real GmbH · Basisjahr ${baseYear}`}
-        badge={`${assets.length + developments.length} Objekte`}
+        title={de ? '10-Jahres Portfolio Cash Flow' : '10-Year Portfolio Cash Flow'}
+        subtitle={`${de ? 'Investitionsrechnung' : 'Investment model'} — Lestate Real GmbH · ${de ? 'Basisjahr' : 'Base year'} ${baseYear}`}
+        badge={`${assets.length + developments.length} ${de ? 'Objekte' : 'Objects'}`}
       />
 
       {/* KPI Summary */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <KPICard label="NOI 10J Gesamt" value={formatEUR(totalNOI, true)} status={totalNOI > 0 ? 'good' : 'danger'} />
+        <KPICard label="NOI 10Y Total" value={formatEUR(totalNOI, true)} status={totalNOI > 0 ? 'good' : 'danger'} />
         <KPICard label="Ø NOI p.a." value={formatEUR(avgAnnualNOI, true)} status="neutral" />
-        <KPICard label="Free Cashflow 10J" value={formatEUR(totalFCF, true)} status={totalFCF > 0 ? 'good' : 'warning'} />
-        <KPICard label="Verkaufserlöse (gesamt)" value={formatEUR(totalSalesProceeds, true)} status="neutral" />
+        <KPICard label="Free Cash Flow 10Y" value={formatEUR(totalFCF, true)} status={totalFCF > 0 ? 'good' : 'warning'} />
+        <KPICard label="Sale Proceeds (total)" value={formatEUR(totalSalesProceeds, true)} status="neutral" />
       </div>
 
       {/* Area Chart with Gradient Fills */}
@@ -533,7 +535,9 @@ export function CashFlowPage() {
           <tfoot>
             <tr>
               <td colSpan={colHeaders.length + 2} style={{ padding: '10px 16px', fontSize: 10, color: 'rgba(0,0,0,0.35)', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                Angaben in EUR Tausend ('000). Mietindexierung gemäß individualem Wachstumssatz pro Objekt. Verkäufe basierend auf NOI-Exit-Yield oder Angebotspreisen. Alle Werte sind Planwerte.
+                {de
+                  ? "Angaben in EUR Tausend ('000). Mietindexierung gemäß individualem Wachstumssatz pro Objekt. Verkäufe basierend auf NOI-Exit-Yield oder Angebotspreisen. Alle Werte sind Planwerte."
+                  : "Figures in EUR thousand ('000). Rent indexation per object-specific growth rate. Sales based on NOI exit yield or asking prices. All values are projections."}
               </td>
             </tr>
           </tfoot>

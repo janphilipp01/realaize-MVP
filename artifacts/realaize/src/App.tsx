@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import AuthGuard from '@/components/AuthGuard';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 // Route pages are code-split via React.lazy so each loads on demand instead of
 // bundling into one initial chunk. Layout/AuthGuard stay eager (they wrap every
@@ -29,9 +30,10 @@ const SettingsPage = lazy(() => import('@/pages/Settings').then(m => ({ default:
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 function PageFallback() {
+  const de = useLanguage().lang === 'de';
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 240, color: 'rgba(60,60,67,0.35)', fontSize: 13 }}>
-      Lädt…
+      {de ? 'Lädt…' : 'Loading…'}
     </div>
   );
 }

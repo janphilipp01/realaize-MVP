@@ -383,7 +383,7 @@ export default function PortfolioPage() {
             {ytdDisposalGain >= 0 ? '+' : ''}{formatEUR(ytdDisposalGain, true)}
           </div>
           <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.50)', marginBottom: 20 }}>
-            {ytdSales.length} {ytdSales.length === 1 ? 'Verkauf' : 'Verkäufe'} · {new Date().getFullYear()}
+            {ytdSales.length} {lang === 'de' ? (ytdSales.length === 1 ? 'Verkauf' : 'Verkäufe') : (ytdSales.length === 1 ? 'sale' : 'sales')} · {new Date().getFullYear()}
           </div>
           {ytdSales.length > 0 ? (
             <div className="space-y-2">

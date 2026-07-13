@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Search, Phone, Mail, Building2, Link2, ChevronRight, Edit3, Save, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useListContacts, useCreateContact, useUpdateContact, useDeleteContact, getListContactsQueryKey, type Contact, type ContactWrite } from '@workspace/api-client-react';
+import { useLanguage } from '@/i18n/LanguageContext';
 import type { ContactCategory, HandwerkerSubcategory } from '@/models/types';
 
 const CATEGORIES: ContactCategory[] = [
@@ -36,6 +37,7 @@ const emptyWrite = (): ContactWrite => ({
 
 export default function Addressbook({ onClose }: AddressbookProps) {
   const qc = useQueryClient();
+  const de = useLanguage().lang === 'de';
   const invalidate = () => qc.invalidateQueries({ queryKey: getListContactsQueryKey() });
 
   const { data: contacts = [], isLoading } = useListContacts();
@@ -132,13 +134,13 @@ export default function Addressbook({ onClose }: AddressbookProps) {
           {/* Header */}
           <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
             <div className="flex items-center justify-between mb-3">
-              <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: '#1c1c1e', margin: 0 }}>Adressbuch</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: '#1c1c1e', margin: 0 }}>{de ? 'Adressbuch' : 'Address Book'}</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => { setAdding(true); setEditing(false); setSelected(null); }}
                   style={{ background: '#007aff', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 4, color: '#fff', fontSize: 12, fontWeight: 600 }}
                 >
-                  <Plus size={12} /> Neu
+                  <Plus size={12} /> {de ? 'Neu' : 'New'}
                 </button>
                 <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8, cursor: 'pointer', padding: '5px 7px' }}>
                   <X size={14} color="#3c3c43" />
@@ -149,7 +151,7 @@ export default function Addressbook({ onClose }: AddressbookProps) {
               <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'rgba(60,60,67,0.45)' }} />
               <input
                 className="input-glass"
-                placeholder="Suchen..."
+                placeholder={de ? 'Suchen...' : 'Search...'}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 style={{ paddingLeft: 28, fontSize: 13 }}
@@ -161,7 +163,7 @@ export default function Addressbook({ onClose }: AddressbookProps) {
               onChange={e => setFilterCat(e.target.value as ContactCategory | 'Alle')}
               style={{ fontSize: 12 }}
             >
-              <option value="Alle">Alle Kategorien</option>
+              <option value="Alle">{de ? 'Alle Kategorien' : 'All categories'}</option>
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
@@ -170,12 +172,12 @@ export default function Addressbook({ onClose }: AddressbookProps) {
           <div style={{ padding: '8px 8px' }}>
             {isLoading && (
               <div style={{ textAlign: 'center', padding: 32, color: 'rgba(60,60,67,0.45)', fontSize: 13 }}>
-                Lädt…
+                {de ? 'Lädt…' : 'Loading…'}
               </div>
             )}
             {!isLoading && Object.keys(grouped).length === 0 && (
               <div style={{ textAlign: 'center', padding: 32, color: 'rgba(60,60,67,0.45)', fontSize: 13 }}>
-                Keine Kontakte gefunden.
+                {de ? 'Keine Kontakte gefunden.' : 'No contacts found.'}
               </div>
             )}
             {Object.entries(grouped).map(([cat, items]) => (
@@ -228,7 +230,7 @@ export default function Addressbook({ onClose }: AddressbookProps) {
         }}>
           {adding && (
             <ContactForm
-              title="Neuer Kontakt"
+              title={de ? 'Neuer Kontakt' : 'New Contact'}
               data={newContact}
               onChange={patch => setNewContact(prev => ({ ...prev, ...patch }))}
               onSave={handleSaveNew}
@@ -239,7 +241,7 @@ export default function Addressbook({ onClose }: AddressbookProps) {
           {selected && !adding && (
             editing ? (
               <ContactForm
-                title="Kontakt bearbeiten"
+                title={de ? 'Kontakt bearbeiten' : 'Edit Contact'}
                 data={editDraft}
                 onChange={patch => setEditDraft(prev => ({ ...prev, ...patch }))}
                 onSave={handleSaveEdit}
@@ -258,8 +260,8 @@ export default function Addressbook({ onClose }: AddressbookProps) {
           {!selected && !adding && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(60,60,67,0.40)' }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>👤</div>
-              <div style={{ fontSize: 14, fontWeight: 500 }}>Kontakt auswählen</div>
-              <div style={{ fontSize: 12, marginTop: 4 }}>oder neuen Kontakt anlegen</div>
+              <div style={{ fontSize: 14, fontWeight: 500 }}>{de ? 'Kontakt auswählen' : 'Select a contact'}</div>
+              <div style={{ fontSize: 12, marginTop: 4 }}>{de ? 'oder neuen Kontakt anlegen' : 'or create a new one'}</div>
             </div>
           )}
         </div>
@@ -269,6 +271,7 @@ export default function Addressbook({ onClose }: AddressbookProps) {
 }
 
 function ContactDetail({ contact, onEdit, onDelete }: { contact: Contact; onEdit: () => void; onDelete: () => void }) {
+  const de = useLanguage().lang === 'de';
   return (
     <div style={{ padding: 28 }}>
       <div className="flex items-start justify-between mb-6">
@@ -286,7 +289,7 @@ function ContactDetail({ contact, onEdit, onDelete }: { contact: Contact; onEdit
         </div>
         <div className="flex gap-2">
           <button onClick={onEdit} style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 10, cursor: 'pointer', padding: '6px 12px', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, color: '#3c3c43' }}>
-            <Edit3 size={13} /> Bearbeiten
+            <Edit3 size={13} /> {de ? 'Bearbeiten' : 'Edit'}
           </button>
         </div>
       </div>
@@ -310,7 +313,7 @@ function ContactDetail({ contact, onEdit, onDelete }: { contact: Contact; onEdit
           <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
             <Phone size={15} color="#34c759" />
             <div>
-              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em' }}>TELEFON</div>
+              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em' }}>{de ? 'TELEFON' : 'PHONE'}</div>
               <div style={{ fontSize: 13, fontWeight: 500, color: '#1c1c1e' }}>{contact.phone}</div>
             </div>
           </div>
@@ -319,7 +322,7 @@ function ContactDetail({ contact, onEdit, onDelete }: { contact: Contact; onEdit
           <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
             <Phone size={15} color="#5ac8fa" />
             <div>
-              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em' }}>MOBIL</div>
+              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em' }}>{de ? 'MOBIL' : 'MOBILE'}</div>
               <div style={{ fontSize: 13, fontWeight: 500, color: '#1c1c1e' }}>{contact.mobile}</div>
             </div>
           </div>
@@ -328,7 +331,7 @@ function ContactDetail({ contact, onEdit, onDelete }: { contact: Contact; onEdit
           <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
             <Building2 size={15} color="rgba(60,60,67,0.5)" />
             <div>
-              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em' }}>ADRESSE</div>
+              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em' }}>{de ? 'ADRESSE' : 'ADDRESS'}</div>
               <div style={{ fontSize: 13, color: '#1c1c1e' }}>{contact.address}{contact.city ? `, ${contact.city}` : ''}</div>
             </div>
           </div>
@@ -344,7 +347,7 @@ function ContactDetail({ contact, onEdit, onDelete }: { contact: Contact; onEdit
         )}
         {contact.notes && (
           <div className="p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
-            <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em', marginBottom: 4 }}>NOTIZEN</div>
+            <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em', marginBottom: 4 }}>{de ? 'NOTIZEN' : 'NOTES'}</div>
             <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.75)', lineHeight: 1.6 }}>{contact.notes}</div>
           </div>
         )}
@@ -357,11 +360,11 @@ function ContactDetail({ contact, onEdit, onDelete }: { contact: Contact; onEdit
 
       <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
         <button onClick={onDelete} style={{ background: 'rgba(255,59,48,0.08)', border: '1px solid rgba(255,59,48,0.15)', borderRadius: 10, cursor: 'pointer', padding: '6px 14px', fontSize: 13, color: '#cc1a14', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Trash2 size={13} /> Löschen
+          <Trash2 size={13} /> {de ? 'Löschen' : 'Delete'}
         </button>
       </div>
       <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.35)', marginTop: 12 }}>
-        Erstellt: {new Date(contact.createdAt).toLocaleDateString('de-DE')}
+        {de ? 'Erstellt' : 'Created'}: {new Date(contact.createdAt).toLocaleDateString(de ? 'de-DE' : 'en-GB')}
       </div>
     </div>
   );
@@ -377,28 +380,29 @@ interface ContactFormProps {
   busy?: boolean;
 }
 function ContactForm({ title, data, onChange, onSave, onCancel, onDelete, busy }: ContactFormProps) {
+  const de = useLanguage().lang === 'de';
   return (
     <div style={{ padding: 28 }}>
       <div className="flex items-center justify-between mb-6">
         <h2 style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', color: '#1c1c1e' }}>{title}</h2>
         <div className="flex gap-2">
-          <button onClick={onCancel} disabled={busy} style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 10, cursor: 'pointer', padding: '6px 12px', fontSize: 13, color: '#3c3c43' }}>Abbrechen</button>
+          <button onClick={onCancel} disabled={busy} style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 10, cursor: 'pointer', padding: '6px 12px', fontSize: 13, color: '#3c3c43' }}>{de ? 'Abbrechen' : 'Cancel'}</button>
           <button onClick={onSave} disabled={busy} style={{ background: '#007aff', border: 'none', borderRadius: 10, cursor: busy ? 'wait' : 'pointer', padding: '6px 14px', fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 4, opacity: busy ? 0.6 : 1 }}>
-            <Save size={13} /> {busy ? 'Speichert…' : 'Speichern'}
+            <Save size={13} /> {busy ? (de ? 'Speichert…' : 'Saving…') : (de ? 'Speichern' : 'Save')}
           </button>
         </div>
       </div>
       <div className="space-y-3">
         {([
-          { label: 'Vorname *', key: 'firstName', type: 'text' },
-          { label: 'Nachname *', key: 'lastName', type: 'text' },
-          { label: 'Firma', key: 'company', type: 'text' },
+          { label: de ? 'Vorname *' : 'First Name *', key: 'firstName', type: 'text' },
+          { label: de ? 'Nachname *' : 'Last Name *', key: 'lastName', type: 'text' },
+          { label: de ? 'Firma' : 'Company', key: 'company', type: 'text' },
           { label: 'Position', key: 'position', type: 'text' },
           { label: 'E-Mail', key: 'email', type: 'email' },
-          { label: 'Telefon', key: 'phone', type: 'tel' },
-          { label: 'Mobil', key: 'mobile', type: 'tel' },
-          { label: 'Adresse', key: 'address', type: 'text' },
-          { label: 'Stadt', key: 'city', type: 'text' },
+          { label: de ? 'Telefon' : 'Phone', key: 'phone', type: 'tel' },
+          { label: de ? 'Mobil' : 'Mobile', key: 'mobile', type: 'tel' },
+          { label: de ? 'Adresse' : 'Address', key: 'address', type: 'text' },
+          { label: de ? 'Stadt' : 'City', key: 'city', type: 'text' },
           { label: 'Website', key: 'website', type: 'text' },
         ] as const).map(field => (
           <div key={field.key}>
@@ -412,14 +416,14 @@ function ContactForm({ title, data, onChange, onSave, onCancel, onDelete, busy }
           </div>
         ))}
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', letterSpacing: '0.04em', display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Kategorie *</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', letterSpacing: '0.04em', display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>{de ? 'Kategorie *' : 'Category *'}</label>
           <select className="input-glass" value={data.category ?? 'Sonstiges'} onChange={e => onChange({ category: e.target.value as ContactCategory })}>
             {CATEGORIES.map(c => <option key={c}>{c}</option>)}
           </select>
         </div>
         {data.category === 'Handwerker' && (
           <div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', letterSpacing: '0.04em', display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Subkategorie</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', letterSpacing: '0.04em', display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>{de ? 'Subkategorie' : 'Subcategory'}</label>
             <select className="input-glass" value={data.subcategory ?? ''} onChange={e => onChange({ subcategory: e.target.value as HandwerkerSubcategory || null })}>
               <option value="">—</option>
               {HANDWERKER_SUBS.map(s => <option key={s}>{s}</option>)}
@@ -427,7 +431,7 @@ function ContactForm({ title, data, onChange, onSave, onCancel, onDelete, busy }
           </div>
         )}
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', letterSpacing: '0.04em', display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Notizen</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', letterSpacing: '0.04em', display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>{de ? 'Notizen' : 'Notes'}</label>
           <textarea
             className="input-glass"
             value={data.notes ?? ''}
@@ -439,7 +443,7 @@ function ContactForm({ title, data, onChange, onSave, onCancel, onDelete, busy }
       </div>
       {onDelete && (
         <button onClick={onDelete} disabled={busy} style={{ marginTop: 24, background: 'rgba(255,59,48,0.08)', border: '1px solid rgba(255,59,48,0.15)', borderRadius: 10, cursor: 'pointer', padding: '6px 14px', fontSize: 13, color: '#cc1a14', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Trash2 size={13} /> Kontakt löschen
+          <Trash2 size={13} /> {de ? 'Kontakt löschen' : 'Delete contact'}
         </button>
       )}
     </div>

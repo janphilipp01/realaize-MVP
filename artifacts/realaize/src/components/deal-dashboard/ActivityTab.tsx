@@ -3,12 +3,13 @@ import { Plus } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { GlassPanel } from '@/components/shared';
 
-import { useDateLocale } from '@/i18n/LanguageContext';
+import { useDateLocale, useLanguage } from '@/i18n/LanguageContext';
 
 import type { AcquisitionDeal } from '@/models/types';
 
 export function ActivityTab({ deal }: { deal: AcquisitionDeal }) {
   const { addActivityToDeal } = useStore();
+  const { t } = useLanguage();
   const dateLocale = useDateLocale();
   const [noteText, setNoteText] = useState('');
   const handleAddNote = () => {
@@ -30,14 +31,14 @@ export function ActivityTab({ deal }: { deal: AcquisitionDeal }) {
             <div className="mb-4">
               <textarea
                 className="input-glass"
-                placeholder="Notiz hinzufügen..."
+                placeholder={t('acq.notePlaceholder')}
                 value={noteText}
                 onChange={e => setNoteText(e.target.value)}
                 rows={2}
                 style={{ resize: 'none' }}
               />
               <button onClick={handleAddNote} className="btn-accent px-4 py-2 rounded-xl text-sm mt-2 flex items-center gap-2">
-                <Plus size={14} /> Notiz speichern
+                <Plus size={14} /> {t('acq.addNote')}
               </button>
             </div>
             <div className="divider mb-4" />

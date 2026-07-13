@@ -309,7 +309,7 @@ export function DealRadarPage() {
                       <div style={{ fontSize: 18, fontWeight: 700, color: '#1c1c1e' }}>{formatEUR(pm.askingPricePerSqm)}</div>
                     </div>
                     <div className="p-3 rounded-xl" style={{ background: 'rgba(255,149,0,0.06)' }}>
-                      <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>Brutto-Rendite</div>
+                      <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>Gross Yield</div>
                       <div style={{ fontSize: 18, fontWeight: 700, color: '#FF9500' }}>{pm.impliedGrossYield.toFixed(2)} %</div>
                     </div>
                   </>

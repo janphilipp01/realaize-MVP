@@ -3,23 +3,24 @@ import { FileText, Upload } from 'lucide-react';
 
 import { GlassPanel, SectionHeader } from '@/components/shared';
 
-import { useDateLocale } from '@/i18n/LanguageContext';
+import { useDateLocale, useLanguage } from '@/i18n/LanguageContext';
 
 import type { AcquisitionDeal } from '@/models/types';
 
 export function DocumentsTab({ deal }: { deal: AcquisitionDeal }) {
   const dateLocale = useDateLocale();
+  const { t, lang } = useLanguage();
   return (
         <div className="animate-fade-in">
           <GlassPanel style={{ padding: 24 }}>
             <div className="flex items-center justify-between mb-4">
-              <SectionHeader title="Dokumente" />
+              <SectionHeader title="Documents" />
               <button className="btn-glass px-3 py-2 rounded-xl text-sm flex items-center gap-2">
-                <Upload size={14} /> Hochladen
+                <Upload size={14} /> {t('documents.upload')}
               </button>
             </div>
             {deal.documents.length === 0 ? (
-              <div className="text-center py-8" style={{ color: 'rgba(60,60,67,0.45)' }}>Noch keine Dokumente vorhanden.</div>
+              <div className="text-center py-8" style={{ color: 'rgba(60,60,67,0.45)' }}>{lang === 'de' ? 'Noch keine Dokumente vorhanden.' : 'No documents yet.'}</div>
             ) : (
               <div className="space-y-2">
                 {deal.documents.map(doc => (

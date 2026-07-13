@@ -195,7 +195,7 @@ export function FormulaDrawer({ detail, onClose }: FormulaDrawerProps) {
             background: `rgba(${detail.status === 'good' ? '52,199,89' : detail.status === 'warning' ? '255,149,0' : detail.status === 'danger' ? '255,59,48' : '0,122,255'},0.08)`,
             border: `1px solid rgba(${detail.status === 'good' ? '52,199,89' : detail.status === 'warning' ? '255,149,0' : detail.status === 'danger' ? '255,59,48' : '0,122,255'},0.18)`,
           }}>
-            <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.50)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>Ergebnis</div>
+            <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.50)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>Result</div>
             <div style={{ fontSize: 30, fontWeight: 700, color: statusColors[detail.status], letterSpacing: '-0.03em' }}>{detail.result}</div>
           </div>
 

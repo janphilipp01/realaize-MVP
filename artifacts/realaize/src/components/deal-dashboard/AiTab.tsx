@@ -3,23 +3,26 @@ import { AlertTriangle, Bot, Zap } from 'lucide-react';
 
 import { GlassPanel } from '@/components/shared';
 
-import { useDateLocale } from '@/i18n/LanguageContext';
+import { useDateLocale, useLanguage } from '@/i18n/LanguageContext';
 
 import type { AcquisitionDeal } from '@/models/types';
 
 export function AiTab({ deal }: { deal: AcquisitionDeal }) {
   const dateLocale = useDateLocale();
+  const de = useLanguage().lang === 'de';
   return (
         <div className="space-y-4 animate-fade-in">
           <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: 'rgba(0,122,255,0.05)', border: '1px solid rgba(0,122,255,0.12)' }}>
             <Bot size={18} color="#007aff" />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#007aff' }}>AI Researcher — Empfehlungsmodul</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#007aff' }}>AI Researcher — {de ? 'Empfehlungsmodul' : 'Recommendation Module'}</div>
               <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>
-                Deterministischer Vergleich von Underwriting-Annahmen mit Markt-Benchmarks. Nur Unterstützung — KPIs bleiben Referenz.
+                {de
+                  ? 'Deterministischer Vergleich von Underwriting-Annahmen mit Markt-Benchmarks. Nur Unterstützung — KPIs bleiben Referenz.'
+                  : 'Deterministic comparison of underwriting assumptions against market benchmarks. Advisory only — KPIs remain the reference.'}
               </div>
             </div>
-            <span className="badge-neutral">Simuliert · Kein LLM</span>
+            <span className="badge-neutral">{de ? 'Simuliert · Kein LLM' : 'Simulated · No LLM'}</span>
           </div>
 
           {deal.aiRecommendations.map(rec => (
@@ -44,20 +47,20 @@ export function AiTab({ deal }: { deal: AcquisitionDeal }) {
                   {rec.benchmarkValue !== undefined && rec.userValue !== undefined && (
                     <div className="flex gap-4">
                       <div className="p-3 rounded-lg flex-1" style={{ background: 'rgba(0,0,0,0.03)' }}>
-                        <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.05em' }}>IHRE ANNAHME</div>
+                        <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.05em' }}>{de ? 'IHRE ANNAHME' : 'YOUR ASSUMPTION'}</div>
                         <div style={{ fontSize: 16, fontWeight: 700, color: rec.isAlert ? '#fbbf24' : 'var(--text-primary)' }}>
                           {rec.userValue?.toFixed(2)} {rec.type === 'Miete' ? '€/m²' : 'x'}
                         </div>
                       </div>
                       <div className="p-3 rounded-lg flex-1" style={{ background: 'rgba(74,222,128,0.07)', border: '1px solid rgba(74,222,128,0.15)' }}>
-                        <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.05em' }}>MARKT-BENCHMARK</div>
+                        <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.05em' }}>{de ? 'MARKT-BENCHMARK' : 'MARKET BENCHMARK'}</div>
                         <div style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>
                           {rec.benchmarkValue?.toFixed(2)} {rec.type === 'Miete' ? '€/m²' : 'x'}
                         </div>
                       </div>
                       {rec.deviationPercent !== undefined && (
                         <div className="p-3 rounded-lg flex-1" style={{ background: 'rgba(0,0,0,0.03)' }}>
-                          <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.05em' }}>ABWEICHUNG</div>
+                          <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.05em' }}>{de ? 'ABWEICHUNG' : 'DEVIATION'}</div>
                           <div style={{ fontSize: 16, fontWeight: 700, color: Math.abs(rec.deviationPercent) > 10 ? '#f87171' : '#fbbf24' }}>
                             {rec.deviationPercent > 0 ? '+' : ''}{rec.deviationPercent.toFixed(1)}%
                           </div>
@@ -66,7 +69,7 @@ export function AiTab({ deal }: { deal: AcquisitionDeal }) {
                     </div>
                   )}
                   <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 8 }}>
-                    Quelle: {rec.benchmarkLabel} · {new Date(rec.generatedAt).toLocaleDateString(dateLocale)}
+                    {de ? 'Quelle' : 'Source'}: {rec.benchmarkLabel} · {new Date(rec.generatedAt).toLocaleDateString(dateLocale)}
                   </div>
                 </div>
               </div>
@@ -75,7 +78,7 @@ export function AiTab({ deal }: { deal: AcquisitionDeal }) {
           {deal.aiRecommendations.length === 0 && (
             <div className="text-center py-12">
               <Bot size={32} color="var(--text-muted)" />
-              <div style={{ color: 'rgba(60,60,67,0.45)', marginTop: 8 }}>Keine AI-Empfehlungen verfügbar.</div>
+              <div style={{ color: 'rgba(60,60,67,0.45)', marginTop: 8 }}>{de ? 'Keine AI-Empfehlungen verfügbar.' : 'No AI recommendations available.'}</div>
             </div>
           )}
         </div>

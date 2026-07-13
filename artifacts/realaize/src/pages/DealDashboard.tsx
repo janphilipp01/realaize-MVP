@@ -29,6 +29,7 @@ export default function DealDashboard() {
   const benchmarks = useStore(s => s.benchmarks);
   const targetNIY = useStore(s => s.settings.targetNIY);
   const { t, lang } = useLanguage();
+  const de = lang === 'de';
   const deal = deals.find(d => d.id === id);
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -156,7 +157,7 @@ export default function DealDashboard() {
               justifyContent: 'center',
               alignSelf: 'stretch',
             }}
-            title="Deal löschen"
+            title={de ? 'Deal löschen' : 'Delete deal'}
           >
             <Trash2 size={15} color="#ff3b30" strokeWidth={2} />
           </button>
@@ -215,30 +216,43 @@ export default function DealDashboard() {
       {/* Development Modal */}
       {showDevModal && deal && (
         <Modal
-          title="In Development überführen"
+          title={de ? 'In Development überführen' : 'Transfer to Development'}
           onClose={() => setShowDevModal(false)}
           actions={
             <>
-              <button onClick={() => setShowDevModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">Abbrechen</button>
+              <button onClick={() => setShowDevModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">{de ? 'Abbrechen' : 'Cancel'}</button>
               <button
                 onClick={() => { transferToDevelopment(deal.id); setShowDevModal(false); navigate('/developments'); }}
                 className="btn-accent px-5 py-2 rounded-xl text-sm"
                 style={{ background: 'linear-gradient(135deg, #ff9500, #b25000)' }}
               >
-                Bestätigen & überführen
+                {de ? 'Bestätigen & überführen' : 'Confirm & transfer'}
               </button>
             </>
           }
         >
           <div style={{ fontSize: 14, color: 'rgba(60,60,67,0.70)', lineHeight: 1.7 }}>
             <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(255,149,0,0.07)', border: '1px solid rgba(255,149,0,0.18)' }}>
-              <strong style={{ color: '#b25000' }}>{deal.name}</strong> wird in das Development-Modul überführt.
+              {de
+                ? <><strong style={{ color: '#b25000' }}>{deal.name}</strong> wird in das Development-Modul überführt.</>
+                : <><strong style={{ color: '#b25000' }}>{deal.name}</strong> will be transferred to the Development module.</>}
             </div>
             <ul style={{ paddingLeft: 16, lineHeight: 2 }}>
-              <li>Underwriting-Daten werden übernommen</li>
-              <li>Dokumente bleiben erhalten</li>
-              <li>Deal verschwindet aus der Acquisition-Pipeline</li>
-              <li>Construction Advisor steht im Development bereit</li>
+              {de ? (
+                <>
+                  <li>Underwriting-Daten werden übernommen</li>
+                  <li>Dokumente bleiben erhalten</li>
+                  <li>Deal verschwindet aus der Acquisition-Pipeline</li>
+                  <li>Construction Advisor steht im Development bereit</li>
+                </>
+              ) : (
+                <>
+                  <li>Underwriting data is carried over</li>
+                  <li>Documents are retained</li>
+                  <li>Deal is removed from the Acquisition pipeline</li>
+                  <li>Construction Advisor becomes available in Development</li>
+                </>
+              )}
             </ul>
           </div>
         </Modal>
@@ -247,27 +261,40 @@ export default function DealDashboard() {
       {/* Transfer Modal */}
       {showTransferModal && (
         <Modal
-          title="In Bestand überführen"
+          title={de ? 'In Bestand überführen' : 'Transfer to Assets'}
           onClose={() => setShowTransferModal(false)}
           actions={
             <>
-              <button onClick={() => setShowTransferModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">Abbrechen</button>
-              <button onClick={handleTransfer} className="btn-accent px-5 py-2 rounded-xl text-sm">Bestätigen & überführen</button>
+              <button onClick={() => setShowTransferModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">{de ? 'Abbrechen' : 'Cancel'}</button>
+              <button onClick={handleTransfer} className="btn-accent px-5 py-2 rounded-xl text-sm">{de ? 'Bestätigen & überführen' : 'Confirm & transfer'}</button>
             </>
           }
         >
           <div style={{ fontSize: 14, color: 'rgba(60,60,67,0.70)', lineHeight: 1.7 }}>
             <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(0,122,255,0.06)', border: '1px solid rgba(0,122,255,0.18)' }}>
-              <strong style={{ color: '#007aff' }}>{deal.name}</strong> wird aus der Acquisition-Pipeline in den Asset-Bestand überführt.
+              {de
+                ? <><strong style={{ color: '#007aff' }}>{deal.name}</strong> wird aus der Acquisition-Pipeline in den Asset-Bestand überführt.</>
+                : <><strong style={{ color: '#007aff' }}>{deal.name}</strong> will be transferred from the Acquisition pipeline into Assets.</>}
             </div>
-            <p>Diese Aktion:</p>
+            <p>{de ? 'Diese Aktion:' : 'This action:'}</p>
             <ul style={{ paddingLeft: 16, lineHeight: 2 }}>
-              <li>Erstellt einen neuen Asset-Eintrag im Bestand</li>
-              <li>Überträgt alle Dokumente und Underwriting-Daten</li>
-              <li>Entfernt den Deal aus der Acquisition-Pipeline</li>
-              <li>Erstellt einen Audit-Log-Eintrag</li>
+              {de ? (
+                <>
+                  <li>Erstellt einen neuen Asset-Eintrag im Bestand</li>
+                  <li>Überträgt alle Dokumente und Underwriting-Daten</li>
+                  <li>Entfernt den Deal aus der Acquisition-Pipeline</li>
+                  <li>Erstellt einen Audit-Log-Eintrag</li>
+                </>
+              ) : (
+                <>
+                  <li>Creates a new asset entry in Assets</li>
+                  <li>Transfers all documents and underwriting data</li>
+                  <li>Removes the deal from the Acquisition pipeline</li>
+                  <li>Creates an audit-log entry</li>
+                </>
+              )}
             </ul>
-            <p style={{ color: 'rgba(60,60,67,0.45)', fontSize: 13 }}>Diese Aktion kann nicht rückgängig gemacht werden.</p>
+            <p style={{ color: 'rgba(60,60,67,0.45)', fontSize: 13 }}>{de ? 'Diese Aktion kann nicht rückgängig gemacht werden.' : 'This action cannot be undone.'}</p>
           </div>
         </Modal>
       )}
@@ -275,25 +302,27 @@ export default function DealDashboard() {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <Modal
-          title="Deal löschen"
+          title={de ? 'Deal löschen' : 'Delete Deal'}
           onClose={() => setShowDeleteModal(false)}
           actions={
             <>
-              <button onClick={() => setShowDeleteModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">Abbrechen</button>
+              <button onClick={() => setShowDeleteModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">{de ? 'Abbrechen' : 'Cancel'}</button>
               <button
                 onClick={() => { deleteDeal(deal.id); navigate('/acquisition'); }}
                 style={{ background: '#ff3b30', color: '#fff', border: 'none', borderRadius: 12, padding: '8px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
               >
-                Endgültig löschen
+                {de ? 'Endgültig löschen' : 'Delete permanently'}
               </button>
             </>
           }
         >
           <div style={{ fontSize: 14, color: 'rgba(60,60,67,0.70)', lineHeight: 1.7 }}>
             <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(255,59,48,0.06)', border: '1px solid rgba(255,59,48,0.2)' }}>
-              <strong style={{ color: '#ff3b30' }}>{deal.name}</strong> wird dauerhaft aus der Acquisition-Pipeline gelöscht.
+              {de
+                ? <><strong style={{ color: '#ff3b30' }}>{deal.name}</strong> wird dauerhaft aus der Acquisition-Pipeline gelöscht.</>
+                : <><strong style={{ color: '#ff3b30' }}>{deal.name}</strong> will be permanently deleted from the Acquisition pipeline.</>}
             </div>
-            <p style={{ color: 'rgba(60,60,67,0.45)', fontSize: 13 }}>Diese Aktion kann nicht rückgängig gemacht werden.</p>
+            <p style={{ color: 'rgba(60,60,67,0.45)', fontSize: 13 }}>{de ? 'Diese Aktion kann nicht rückgängig gemacht werden.' : 'This action cannot be undone.'}</p>
           </div>
         </Modal>
       )}

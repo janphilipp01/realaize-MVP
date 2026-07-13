@@ -1,11 +1,13 @@
 import { GlassPanel, SectionHeader } from '@/components/shared';
 import { formatEUR } from '@/utils/kpiEngine';
 import { useStore } from '@/store/useStore';
+import { useLanguage } from '@/i18n/LanguageContext';
 import type { DevelopmentProject, DevValuationAssumptions } from '@/models/types';
 import { useState } from 'react';
 
 export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; totalBudget: number }) {
   const { updateDevelopment } = useStore();
+  const de = useLanguage().lang === 'de';
   const [valuationForm, setValuationForm] = useState<DevValuationAssumptions>(dev.valuationAssumptions || { opexPct: 15, exitYieldPct: 5.0, purchasingCostsPct: 10 });
         const units = dev.units || [];
         const grossRentMonthly = units.reduce((s, u) => s + u.monthlyRent, 0);
@@ -20,10 +22,10 @@ export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; to
             <div className="grid grid-cols-2 gap-6">
               {/* Inputs */}
               <GlassPanel style={{ padding: 24 }}>
-                <SectionHeader title="Bewertungsannahmen" />
+                <SectionHeader title="Valuation Assumptions" />
                 <div className="space-y-4 mt-2">
                   <div>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>OpEx (% der Bruttomiete)</label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>OpEx (% of gross rent)</label>
                     <div className="flex items-center gap-2">
                       <input type="number" className="input-glass flex-1" min={0} max={100} step={0.5}
                         value={valuationForm.opexPct}
@@ -31,10 +33,10 @@ export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; to
                       />
                       <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.55)' }}>%</span>
                     </div>
-                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.40)', marginTop: 4 }}>Bewirtschaftungskosten, Instandhaltung, Verwaltung</div>
+                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.40)', marginTop: 4 }}>{de ? 'Bewirtschaftungskosten, Instandhaltung, Verwaltung' : 'Operating costs, maintenance, management'}</div>
                   </div>
                   <div>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Exit Yield (Nettoanfangsrendite)</label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Exit Yield (Net Initial Yield)</label>
                     <div className="flex items-center gap-2">
                       <input type="number" className="input-glass flex-1" min={0.1} max={20} step={0.05}
                         value={valuationForm.exitYieldPct}
@@ -44,7 +46,7 @@ export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; to
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Erwerbsnebenkosten (Käufer)</label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Acquisition Costs (Buyer)</label>
                     <div className="flex items-center gap-2">
                       <input type="number" className="input-glass flex-1" min={0} max={20} step={0.5}
                         value={valuationForm.purchasingCostsPct}
@@ -52,7 +54,7 @@ export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; to
                       />
                       <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.55)' }}>%</span>
                     </div>
-                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.40)', marginTop: 4 }}>GrESt, Notar, Makler</div>
+                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.40)', marginTop: 4 }}>{de ? 'GrESt, Notar, Makler' : 'Transfer tax, notary, broker'}</div>
                   </div>
                   <button
                     onClick={() => {
@@ -60,11 +62,11 @@ export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; to
                     }}
                     className="btn-accent px-5 py-2 rounded-xl text-sm w-full"
                   >
-                    Annahmen speichern &amp; Proj. Verkaufspreis setzen
+                    {de ? 'Annahmen speichern & Proj. Verkaufspreis setzen' : 'Save assumptions & set proj. sale price'}
                   </button>
                   {units.length === 0 && (
                     <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.20)', fontSize: 12, color: 'rgba(60,60,67,0.65)' }}>
-                      Noch keine Einheiten im Rent Roll erfasst — Mieteinnahmen = 0.
+                      {de ? 'Noch keine Einheiten im Rent Roll erfasst — Mieteinnahmen = 0.' : 'No units recorded in Rent Roll yet — rental income = 0.'}
                     </div>
                   )}
                 </div>
@@ -72,11 +74,11 @@ export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; to
 
               {/* Valuation waterfall */}
               <GlassPanel style={{ padding: 24 }}>
-                <SectionHeader title="Bewertung bei Fertigstellung" />
+                <SectionHeader title="Valuation at Completion" />
                 <div className="space-y-2 mt-2">
                   {[
-                    { label: 'Bruttomiete p.a. (aus Rent Roll)', value: formatEUR(grossRentAnnual), color: '#1a7f37' },
-                    { label: `− OpEx (${valuationForm.opexPct}% der Bruttomiete)`, value: `− ${formatEUR(opexAmount)}`, color: '#cc1a14' },
+                    { label: de ? 'Bruttomiete p.a. (aus Rent Roll)' : 'Gross Rent p.a. (from Rent Roll)', value: formatEUR(grossRentAnnual), color: '#1a7f37' },
+                    { label: `− OpEx (${valuationForm.opexPct}% ${de ? 'der Bruttomiete' : 'of gross rent'})`, value: `− ${formatEUR(opexAmount)}`, color: '#cc1a14' },
                   ].map(row => (
                     <div key={row.label} className="flex justify-between py-2 px-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
                       <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.65)' }}>{row.label}</span>
@@ -90,9 +92,9 @@ export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; to
 
                   {/* Formula display */}
                   <div style={{ padding: '14px', borderRadius: 12, background: 'rgba(0,122,255,0.05)', border: '1px solid rgba(0,122,255,0.12)', marginTop: 8 }}>
-                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Bewertungsformel</div>
+                    <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{de ? 'Bewertungsformel' : 'Valuation Formula'}</div>
                     <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.70)', lineHeight: 1.8, fontFamily: 'ui-monospace, monospace' }}>
-                      NOI ÷ (Exit Yield × (1 + Erwerb%))<br />
+                      NOI ÷ (Exit Yield × (1 + {de ? 'Erwerb%' : 'Acq.%'}))<br />
                       <span style={{ color: '#007aff' }}>
                         {formatEUR(noi)} ÷ ({valuationForm.exitYieldPct}% × (1 + {valuationForm.purchasingCostsPct}%))
                       </span>
@@ -100,11 +102,11 @@ export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; to
                   </div>
 
                   <div className="flex justify-between py-3 px-3 rounded-xl" style={{ background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.20)', marginTop: 4 }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e' }}>= Valuation bei Fertigstellung</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e' }}>= Valuation at Completion</span>
                     <span style={{ fontSize: 15, fontWeight: 700, color: '#007aff', fontFamily: 'ui-monospace, monospace' }}>{valuation > 0 ? formatEUR(valuation) : '—'}</span>
                   </div>
                   <div className="flex justify-between py-3 px-3 rounded-xl" style={{ background: 'rgba(52,199,89,0.08)', border: '1px solid rgba(52,199,89,0.20)' }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e' }}>= Proj. Verkaufspreis</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#1c1c1e' }}>= Proj. Sale Price</span>
                     <span style={{ fontSize: 15, fontWeight: 700, color: '#1a7f37', fontFamily: 'ui-monospace, monospace' }}>{valuation > 0 ? formatEUR(valuation) : '—'}</span>
                   </div>
 
@@ -115,7 +117,7 @@ export function ValuationTab({ dev, totalBudget }: { dev: DevelopmentProject; to
                     return (
                       <div style={{ borderTop: '1px solid rgba(0,0,0,0.07)', paddingTop: 10, marginTop: 4 }}>
                         <div className="flex justify-between py-2 px-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
-                          <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.65)' }}>Gesamtinvestition</span>
+                          <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.65)' }}>{de ? 'Gesamtinvestition' : 'Total Investment'}</span>
                           <span style={{ fontSize: 13, fontWeight: 600, color: '#1c1c1e', fontFamily: 'ui-monospace, monospace' }}>{formatEUR(totalInvestment)}</span>
                         </div>
                         <div className="flex justify-between py-2 px-3 rounded-xl mt-1" style={{ background: 'rgba(0,0,0,0.03)' }}>

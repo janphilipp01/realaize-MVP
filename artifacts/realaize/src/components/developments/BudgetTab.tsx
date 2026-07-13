@@ -3,6 +3,7 @@ import { Plus, Edit3, Save, X, Trash2 } from 'lucide-react';
 import { GlassPanel, SectionHeader } from '@/components/shared';
 import { formatEUR } from '@/utils/kpiEngine';
 import { useStore } from '@/store/useStore';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { useListContacts } from '@workspace/api-client-react';
 import { GEWERK_CATEGORIES, STATUS_COLORS } from '@/components/developments/constants';
 import type { DevelopmentProject, GeverkPosition, GeverkCategory } from '@/models/types';
@@ -16,6 +17,7 @@ interface Props {
 
 export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props) {
   const { updateGewerk, addGewerk, deleteGewerk, addOffer, updateOffer, deleteOffer, addInvoice, updateInvoice, deleteInvoice } = useStore();
+  const de = useLanguage().lang === 'de';
   const { data: contacts = [] } = useListContacts();
   const [editingGw, setEditingGw] = useState<string | null>(null);
   const [gwEdits, setGwEdits] = useState<Partial<GeverkPosition>>({});
@@ -59,7 +61,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
   return (
         <div className="animate-fade-in">
           <div className="flex justify-between mb-4">
-            <SectionHeader title="Kosten nach Gewerk" />
+            <SectionHeader title="Costs by Trade" />
             <button
               onClick={() => {
                 const newGw: GeverkPosition = {
@@ -71,7 +73,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
               }}
               className="btn-glass px-3 py-1.5 rounded-xl text-xs flex items-center gap-1"
             >
-              <Plus size={12} /> Gewerk hinzufügen
+              <Plus size={12} /> {de ? 'Gewerk hinzufügen' : 'Add Trade'}
             </button>
           </div>
           <GlassPanel style={{ overflow: 'hidden' }}>
@@ -81,7 +83,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
               </colgroup>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                  {['Gewerk', 'Beschreibung', 'Underwriting', 'Angebot', 'Vergabe', 'Δ Budget', 'Status', 'Auftragnehmer', ''].map((h, i) => (
+                  {['Trade', 'Description', 'Underwriting', 'Offer', 'Contract', 'Δ Budget', 'Status', 'Contractor', ''].map((h, i) => (
                     <th key={h} style={{ padding: '10px 10px', fontSize: 10, fontWeight: 700, color: 'rgba(60,60,67,0.45)', textAlign: 'left', letterSpacing: '0.04em', textTransform: 'uppercase', overflow: 'hidden', position: 'relative', userSelect: 'none' }}>
                       {h}
                       {i < 8 && (
@@ -153,7 +155,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
                             value={gwEdits.contractorId ?? gw.contractorId ?? ''}
                             onChange={e => setGwEdits(p => ({ ...p, contractorId: e.target.value || undefined }))}
                           >
-                            <option value="">— kein</option>
+                            <option value="">{de ? '— kein' : '— none'}</option>
                             {contacts.map(c => (
                               <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>
                             ))}
@@ -205,7 +207,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
               </tbody>
               <tfoot>
                 <tr style={{ borderTop: '2px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.02)' }}>
-                  <td colSpan={2} style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, color: '#1c1c1e' }}>GESAMT</td>
+                  <td colSpan={2} style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, color: '#1c1c1e' }}>{de ? 'GESAMT' : 'TOTAL'}</td>
                   <td style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace', color: '#1c1c1e' }}>{formatEUR(totalBudget, true)}</td>
                   <td style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace', color: '#1c1c1e' }}>{totalOffer ? formatEUR(totalOffer, true) : '—'}</td>
                   <td style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace', color: totalContract > totalBudget ? '#cc1a14' : '#1a7f37' }}>{formatEUR(totalContract, true)}</td>
@@ -221,7 +223,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
           {/* ── Angebote ── */}
           <div style={{ marginTop: 24 }}>
             <div className="flex justify-between mb-3">
-              <SectionHeader title="Angebote" />
+              <SectionHeader title="Offers" />
               <button
                 onClick={() => addOffer(dev.id, {
                   id: `offer-${Date.now()}`, gewerkId: '', gewerkCategory: 'Sonstiges',
@@ -229,17 +231,17 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
                 })}
                 className="btn-glass px-3 py-1.5 rounded-xl text-xs flex items-center gap-1"
               >
-                <Plus size={12} /> Angebot hinzufügen
+                <Plus size={12} /> {de ? 'Angebot hinzufügen' : 'Add Offer'}
               </button>
             </div>
             <GlassPanel style={{ overflow: 'hidden' }}>
               {(dev.offers || []).length === 0 ? (
-                <div style={{ padding: '20px 16px', color: 'rgba(60,60,67,0.40)', fontSize: 13, textAlign: 'center' }}>Noch keine Angebote erfasst.</div>
+                <div style={{ padding: '20px 16px', color: 'rgba(60,60,67,0.40)', fontSize: 13, textAlign: 'center' }}>{de ? 'Noch keine Angebote erfasst.' : 'No offers recorded yet.'}</div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-                      {['Gewerk', 'Maßnahme', 'Beschreibung', 'Datum', 'Netto', 'Brutto', ''].map(h => (
+                      {['Trade', 'Measure', 'Description', 'Date', 'Net', 'Gross', ''].map(h => (
                         <th key={h} style={{ padding: '8px 10px', fontSize: 10, fontWeight: 700, color: 'rgba(60,60,67,0.45)', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
                       ))}
                     </tr>
@@ -275,7 +277,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
                   </tbody>
                   <tfoot>
                     <tr style={{ borderTop: '2px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.02)' }}>
-                      <td colSpan={4} style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700 }}>GESAMT</td>
+                      <td colSpan={4} style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700 }}>{de ? 'GESAMT' : 'TOTAL'}</td>
                       <td style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace' }}>{formatEUR((dev.offers || []).reduce((s, o) => s + o.amountNet, 0), true)}</td>
                       <td style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace', color: '#007aff' }}>{formatEUR((dev.offers || []).reduce((s, o) => s + o.amountGross, 0), true)}</td>
                       <td />
@@ -289,7 +291,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
           {/* ── Rechnungen ── */}
           <div style={{ marginTop: 24 }}>
             <div className="flex justify-between mb-3">
-              <SectionHeader title="Rechnungen" />
+              <SectionHeader title="Invoices" />
               <button
                 onClick={() => addInvoice(dev.id, {
                   id: `inv-${Date.now()}`, gewerkId: '', gewerkCategory: 'Sonstiges',
@@ -298,17 +300,17 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
                 })}
                 className="btn-glass px-3 py-1.5 rounded-xl text-xs flex items-center gap-1"
               >
-                <Plus size={12} /> Rechnung hinzufügen
+                <Plus size={12} /> {de ? 'Rechnung hinzufügen' : 'Add Invoice'}
               </button>
             </div>
             <GlassPanel style={{ overflow: 'hidden' }}>
               {(dev.invoices || []).length === 0 ? (
-                <div style={{ padding: '20px 16px', color: 'rgba(60,60,67,0.40)', fontSize: 13, textAlign: 'center' }}>Noch keine Rechnungen erfasst.</div>
+                <div style={{ padding: '20px 16px', color: 'rgba(60,60,67,0.40)', fontSize: 13, textAlign: 'center' }}>{de ? 'Noch keine Rechnungen erfasst.' : 'No invoices recorded yet.'}</div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-                      {['Gewerk', 'Maßnahme', 'Typ', 'Beschreibung', 'Datum', 'Netto', 'Brutto', ''].map(h => (
+                      {['Trade', 'Measure', 'Type', 'Description', 'Date', 'Net', 'Gross', ''].map(h => (
                         <th key={h} style={{ padding: '8px 10px', fontSize: 10, fontWeight: 700, color: 'rgba(60,60,67,0.45)', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
                       ))}
                     </tr>
@@ -349,7 +351,7 @@ export function BudgetTab({ dev, totalBudget, totalOffer, totalContract }: Props
                   </tbody>
                   <tfoot>
                     <tr style={{ borderTop: '2px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.02)' }}>
-                      <td colSpan={5} style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700 }}>GESAMT BEZAHLT</td>
+                      <td colSpan={5} style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700 }}>{de ? 'GESAMT BEZAHLT' : 'TOTAL PAID'}</td>
                       <td style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace' }}>{formatEUR((dev.invoices || []).reduce((s, i) => s + i.amountNet, 0), true)}</td>
                       <td style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace', color: '#007aff' }}>{formatEUR((dev.invoices || []).reduce((s, i) => s + i.amountGross, 0), true)}</td>
                       <td />

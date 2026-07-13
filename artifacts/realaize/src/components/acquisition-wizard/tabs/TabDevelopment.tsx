@@ -5,8 +5,10 @@ import { pdComputeTotalArea, pdComputeTotalDevBudget } from '@/utils/propertyCas
 import type { PropertyData, GewerkePosition } from '@/models/types';
 import { DEFAULT_GEWERKE_CATEGORIES } from '@/models/types';
 import { COST_DISTRIBUTIONS, uid, fmt, Field, Chip, SH } from '@/components/acquisition-wizard/shared';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export function TabDevelopment({ pd, onChange }: { pd: PropertyData; onChange: (p: Partial<PropertyData>) => void }) {
+  const de = useLanguage().lang === 'de';
   const totalArea = pdComputeTotalArea(pd.unitsTarget.length > 0 ? pd.unitsTarget : pd.unitsAsIs);
   const rawBudget = pd.gewerke.reduce((s, g) => s + g.budgetTotal, 0);
   const totalBudget = pdComputeTotalDevBudget(pd.gewerke, pd.contingencyPercent);
@@ -46,22 +48,22 @@ export function TabDevelopment({ pd, onChange }: { pd: PropertyData; onChange: (
 
   return (
     <div>
-      <SH>Projektparameter</SH>
+      <SH>Project Parameters</SH>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 24 }}>
-        <Field label="Projektstart" type="date" value={pd.projectStart} onChange={e => onChange({ projectStart: e.target.value })} />
+        <Field label="Project Start" type="date" value={pd.projectStart} onChange={e => onChange({ projectStart: e.target.value })} />
         <Field label="Contingency %" type="number" step="0.5" value={pd.contingencyPercent} onChange={e => onChange({ contingencyPercent: parseFloat(e.target.value) || 0 })} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'flex-end' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Gesamtbudget inkl. Contingency</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Budget incl. Contingency</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#007aff' }}>{fmt(totalBudget)}</div>
         </div>
       </div>
 
-      <SH>Gewerke</SH>
+      <SH>Trades</SH>
       <div style={{ overflowX: 'auto', marginBottom: 12 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-              {['Gewerk', 'Beschreibung', 'Modus', 'Budget', 'Start KW', 'Dauer KW', 'Gesamt €', 'Verteilung', 'Status', ''].map(h => (
+              {['Trade', 'Description', 'Mode', 'Budget', 'Start Wk', 'Dur. Wk', 'Total €', 'Distribution', 'Status', ''].map(h => (
                 <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontSize: 10, fontWeight: 700, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
@@ -77,7 +79,7 @@ export function TabDevelopment({ pd, onChange }: { pd: PropertyData; onChange: (
                 <td style={{ padding: '4px 6px' }}><input className="input-glass" value={g.description} onChange={e => updateGw(g.id, { description: e.target.value })} style={{ width: 120, fontSize: 12 }} /></td>
                 <td style={{ padding: '4px 6px' }}>
                   <select className="input-glass" value={g.budgetInputMode} onChange={e => updateGw(g.id, { budgetInputMode: e.target.value as typeof g.budgetInputMode })} style={{ width: 80, fontSize: 12 }}>
-                    <option value="pauschal">Pausch.</option>
+                    <option value="pauschal">{de ? 'Pausch.' : 'Flat'}</option>
                     <option value="per_sqm">€/m²</option>
                   </select>
                 </td>
@@ -110,12 +112,12 @@ export function TabDevelopment({ pd, onChange }: { pd: PropertyData; onChange: (
           border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '6px 12px',
         }}
       >
-        <Plus size={12} /> Gewerk hinzufügen
+        <Plus size={12} /> {de ? 'Gewerk hinzufügen' : 'Add Trade'}
       </button>
 
       {pd.gewerke.length > 0 && (
         <>
-          <SH>Bauablauf (Gantt)</SH>
+          <SH>Construction Schedule (Gantt)</SH>
           <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
             <div style={{ minWidth: ganttWidth * 14 + 160, fontFamily: 'monospace' }}>
               {pd.gewerke.map((g, i) => (
@@ -140,9 +142,9 @@ export function TabDevelopment({ pd, onChange }: { pd: PropertyData; onChange: (
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 16 }}>
-            <Chip label="Budget netto" value={fmt(rawBudget)} />
+            <Chip label="Budget net" value={fmt(rawBudget)} />
             <Chip label="Contingency" value={fmt(totalBudget - rawBudget)} color="#f59e0b" />
-            <Chip label="Budget gesamt" value={fmt(totalBudget)} color="#007aff" />
+            <Chip label="Budget total" value={fmt(totalBudget)} color="#007aff" />
           </div>
         </>
       )}

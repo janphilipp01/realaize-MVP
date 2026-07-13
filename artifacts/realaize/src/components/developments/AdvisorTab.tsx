@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Bot } from 'lucide-react';
 import { GlassPanel, SectionHeader } from '@/components/shared';
 import { useStore } from '@/store/useStore';
-import { useDateLocale } from '@/i18n/LanguageContext';
+import { useDateLocale, useLanguage } from '@/i18n/LanguageContext';
 import type { DevelopmentProject } from '@/models/types';
 
 export function AdvisorTab({ dev }: { dev: DevelopmentProject }) {
   const dateLocale = useDateLocale();
+  const de = useLanguage().lang === 'de';
   const { updateDevelopment } = useStore();
   const [advisorInput, setAdvisorInput] = useState('');
   const [advisorMessages, setAdvisorMessages] = useState(dev.advisorMessages || []);
@@ -40,7 +41,7 @@ export function AdvisorTab({ dev }: { dev: DevelopmentProject }) {
           <div className="p-3 rounded-xl mb-4 flex items-center gap-3" style={{ background: 'rgba(0,122,255,0.06)', border: '1px solid rgba(0,122,255,0.12)' }}>
             <Bot size={16} color="#007aff" />
             <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.75)' }}>
-              <strong style={{ color: '#007aff' }}>Construction Advisor</strong> — Simulierter Kostenberater. Benchmarks basieren auf DACH-Marktdaten Q1/2025. Manuell überschreibbar.
+              <strong style={{ color: '#007aff' }}>Construction Advisor</strong> — {de ? 'Simulierter Kostenberater. Benchmarks basieren auf DACH-Marktdaten Q1/2025. Manuell überschreibbar.' : 'Simulated cost advisor. Benchmarks based on DACH market data Q1/2025. Manually overridable.'}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-6">
@@ -49,7 +50,7 @@ export function AdvisorTab({ dev }: { dev: DevelopmentProject }) {
                 <div className="space-y-3">
                   {advisorMessages.length === 0 && (
                     <div style={{ textAlign: 'center', padding: 32, color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>
-                      Beschreiben Sie Ihr Development — Art, Größe, Zustand.<br />Der Advisor liefert Kostenbenchmarks.
+                      {de ? 'Beschreiben Sie Ihr Development — Art, Größe, Zustand.' : 'Describe your development — type, size, condition.'}<br />{de ? 'Der Advisor liefert Kostenbenchmarks.' : 'The advisor provides cost benchmarks.'}
                     </div>
                   )}
                   {advisorMessages.map(msg => (
@@ -72,29 +73,29 @@ export function AdvisorTab({ dev }: { dev: DevelopmentProject }) {
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input className="input-glass flex-1" placeholder="Frage eingeben..." value={advisorInput} onChange={e => setAdvisorInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAdvisorSend()} style={{ fontSize: 13 }} />
-                  <button onClick={handleAdvisorSend} className="btn-accent px-4 py-2 rounded-xl text-sm">Senden</button>
+                  <input className="input-glass flex-1" placeholder={de ? 'Frage eingeben...' : 'Enter your question...'} value={advisorInput} onChange={e => setAdvisorInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAdvisorSend()} style={{ fontSize: 13 }} />
+                  <button onClick={handleAdvisorSend} className="btn-accent px-4 py-2 rounded-xl text-sm">{de ? 'Senden' : 'Send'}</button>
                 </div>
               </div>
             </GlassPanel>
 
             {/* Benchmark Reference */}
             <GlassPanel style={{ padding: 20 }}>
-              <SectionHeader title="Kostenbenchmarks DACH" />
+              <SectionHeader title="Cost Benchmarks DACH" />
               <div className="space-y-2">
                 {[
-                  { label: 'Rohbau', range: '130–165 €/m²' },
-                  { label: 'Dach komplett', range: '120–220 €/m²' },
-                  { label: 'Fassade (WDVS)', range: '80–140 €/m²' },
-                  { label: 'Fenster (3-fach Holz-Alu)', range: '400–700 €/Stk.' },
-                  { label: 'TGA Heizung (WP + FBH)', range: '85–125 €/m²' },
-                  { label: 'TGA Sanitär', range: '65–95 €/m²' },
-                  { label: 'TGA Elektro', range: '55–85 €/m²' },
-                  { label: 'Innenausbau', range: '110–160 €/m²' },
-                  { label: 'Trockenbau', range: '40–65 €/m²' },
-                  { label: 'Aufzug (4 Haltestellen)', range: '45.000–80.000 €' },
-                  { label: 'Planung & Architektur', range: '8–12% der Baukosten' },
-                  { label: 'Reserve', range: '10–20% Gesamt' },
+                  { label: de ? 'Rohbau' : 'Shell construction', range: '130–165 €/m²' },
+                  { label: de ? 'Dach komplett' : 'Roof (complete)', range: '120–220 €/m²' },
+                  { label: de ? 'Fassade (WDVS)' : 'Facade (ETICS)', range: '80–140 €/m²' },
+                  { label: de ? 'Fenster (3-fach Holz-Alu)' : 'Windows (triple, wood-alu)', range: '400–700 €/Stk.' },
+                  { label: de ? 'TGA Heizung (WP + FBH)' : 'MEP heating (HP + UFH)', range: '85–125 €/m²' },
+                  { label: de ? 'TGA Sanitär' : 'MEP plumbing', range: '65–95 €/m²' },
+                  { label: de ? 'TGA Elektro' : 'MEP electrical', range: '55–85 €/m²' },
+                  { label: de ? 'Innenausbau' : 'Fit-out', range: '110–160 €/m²' },
+                  { label: de ? 'Trockenbau' : 'Drywall', range: '40–65 €/m²' },
+                  { label: de ? 'Aufzug (4 Haltestellen)' : 'Elevator (4 stops)', range: '45.000–80.000 €' },
+                  { label: de ? 'Planung & Architektur' : 'Planning & architecture', range: de ? '8–12% der Baukosten' : '8–12% of construction cost' },
+                  { label: 'Reserve', range: de ? '10–20% Gesamt' : '10–20% total' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between py-2 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.03)' }}>
                     <span style={{ fontSize: 12, color: 'rgba(60,60,67,0.65)' }}>{row.label}</span>
@@ -103,7 +104,7 @@ export function AdvisorTab({ dev }: { dev: DevelopmentProject }) {
                 ))}
               </div>
               <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.35)', marginTop: 12, fontStyle: 'italic' }}>
-                Quellen: BKI Baukosten 2024, SIRADOS, Marktbefragung · Stand Q1/2025
+                {de ? 'Quellen: BKI Baukosten 2024, SIRADOS, Marktbefragung · Stand Q1/2025' : 'Sources: BKI construction costs 2024, SIRADOS, market survey · as of Q1/2025'}
               </div>
             </GlassPanel>
           </div>

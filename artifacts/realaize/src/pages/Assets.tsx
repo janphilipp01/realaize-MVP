@@ -14,7 +14,7 @@ import type { AssetOperatingCosts } from '@/models/types';
 // ─── Assets List Page ─────────────────────────────────────────────────────────
 export function AssetsPage() {
   const { assets } = useStore();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('Alle');
   const [view, setView] = useState<'cards' | 'table'>('cards');
@@ -43,7 +43,7 @@ export function AssetsPage() {
           <input className="input-glass pl-8" placeholder={t('assets.search')} value={search} onChange={e => setSearch(e.target.value)} style={{ width: 220 }} />
         </div>
         <select className="input-glass" value={filterType} onChange={e => setFilterType(e.target.value)} style={{ width: 160 }}>
-          <option>Alle</option>
+          <option value="Alle">{lang === 'de' ? 'Alle' : 'All'}</option>
           {['Wohnen', 'Büro', 'Logistik', 'Einzelhandel', 'Mixed Use'].map(t => <option key={t}>{t}</option>)}
         </select>
         <div className="ml-auto flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
@@ -262,9 +262,9 @@ export function AssetDetailPage() {
             </div>
           </GlassPanel>
           <GlassPanel style={{ padding: 24 }}>
-            <SectionHeader title="Covenant-Status" />
+            <SectionHeader title="Covenant Status" />
             {asset.covenants.length === 0 ? (
-              <div style={{ color: 'rgba(60,60,67,0.45)', fontSize: 13 }}>Keine Covenants erfasst.</div>
+              <div style={{ color: 'rgba(60,60,67,0.45)', fontSize: 13 }}>{lang === 'de' ? 'Keine Covenants erfasst.' : 'No covenants recorded.'}</div>
             ) : (
               <div className="space-y-3">
                 {asset.covenants.map(cov => (
@@ -417,16 +417,16 @@ export function AssetDetailPage() {
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-4">
-                <div><div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)' }}>ZINSSATZ</div><div style={{ fontSize: 16, fontWeight: 700, color: '#1c1c1e' }}>{debt.interestRate.toFixed(2)}%</div></div>
-                <div><div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)' }}>TILGUNG</div><div style={{ fontSize: 16, fontWeight: 700, color: '#1c1c1e' }}>{debt.amortizationRate}%</div></div>
-                <div><div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)' }}>FÄLLIGKEIT</div><div style={{ fontSize: 16, fontWeight: 700, color: new Date(debt.maturityDate) < new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 2) ? '#fbbf24' : 'var(--text-primary)' }}>{new Date(debt.maturityDate).toLocaleDateString(dateLocale)}</div></div>
-                <div><div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)' }}>VALUTIERUNG</div><div style={{ fontSize: 16, fontWeight: 700, color: '#1c1c1e' }}>{new Date(debt.drawdownDate).toLocaleDateString(dateLocale)}</div></div>
+                <div><div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)' }}>INTEREST RATE</div><div style={{ fontSize: 16, fontWeight: 700, color: '#1c1c1e' }}>{debt.interestRate.toFixed(2)}%</div></div>
+                <div><div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)' }}>AMORTIZATION</div><div style={{ fontSize: 16, fontWeight: 700, color: '#1c1c1e' }}>{debt.amortizationRate}%</div></div>
+                <div><div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)' }}>MATURITY</div><div style={{ fontSize: 16, fontWeight: 700, color: new Date(debt.maturityDate) < new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 2) ? '#fbbf24' : 'var(--text-primary)' }}>{new Date(debt.maturityDate).toLocaleDateString(dateLocale)}</div></div>
+                <div><div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)' }}>DRAWDOWN</div><div style={{ fontSize: 16, fontWeight: 700, color: '#1c1c1e' }}>{new Date(debt.drawdownDate).toLocaleDateString(dateLocale)}</div></div>
               </div>
             </GlassPanel>
           ))}
           {asset.debtInstruments.length === 0 && (
             <GlassPanel style={{ padding: 48, textAlign: 'center' }}>
-              <div style={{ color: 'rgba(60,60,67,0.45)' }}>Keine Fremdfinanzierung erfasst.</div>
+              <div style={{ color: 'rgba(60,60,67,0.45)' }}>{lang === 'de' ? 'Keine Fremdfinanzierung erfasst.' : 'No debt financing recorded.'}</div>
             </GlassPanel>
           )}
         </div>
@@ -453,33 +453,33 @@ export function AssetDetailPage() {
             {/* Assumptions Panel */}
             <GlassPanel style={{ padding: 20 }}>
               <div className="flex items-center justify-between mb-4">
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#1c1c1e' }}>DCF-Annahmen</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#1c1c1e' }}>DCF Assumptions</div>
               </div>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <label style={{ ...kpiLabelStyle, display: 'block', marginBottom: 4 }}>Haltedauer (Jahre)</label>
+                  <label style={{ ...kpiLabelStyle, display: 'block', marginBottom: 4 }}>Holding Period (Years)</label>
                   <input type="number" className="input-glass" style={{ width: '100%' }}
                     value={dcfHolding ?? asset.holdingPeriodYears ?? 10}
                     onChange={e => setDcfHolding(parseInt(e.target.value) || 10)} />
                 </div>
                 <div>
-                  <label style={{ ...kpiLabelStyle, display: 'block', marginBottom: 4 }}>Exit-Cap-Rate (%)</label>
+                  <label style={{ ...kpiLabelStyle, display: 'block', marginBottom: 4 }}>Exit Cap Rate (%)</label>
                   <input type="number" step="0.1" className="input-glass" style={{ width: '100%' }}
                     value={dcfExitCap ?? asset.exitCapRate ?? 5.0}
                     onChange={e => setDcfExitCap(parseFloat(e.target.value) || 5.0)} />
                 </div>
                 <div>
-                  <label style={{ ...kpiLabelStyle, display: 'block', marginBottom: 4 }}>Mietwachstum p.a. (%)</label>
+                  <label style={{ ...kpiLabelStyle, display: 'block', marginBottom: 4 }}>Rent Growth p.a. (%)</label>
                   <input type="number" step="0.1" className="input-glass" readOnly
                     style={{ width: '100%', opacity: 0.6, cursor: 'not-allowed' }}
                     value={asset.operatingCosts.rentalGrowthRate ?? 2.0} />
-                  <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', marginTop: 2 }}>Bearbeitung in OpCosts</div>
+                  <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', marginTop: 2 }}>{lang === 'de' ? 'Bearbeitung in OpCosts' : 'Edit in OpCosts'}</div>
                 </div>
                 <div>
-                  <label style={{ ...kpiLabelStyle, display: 'block', marginBottom: 4 }}>ERV €/m²/Mon</label>
+                  <label style={{ ...kpiLabelStyle, display: 'block', marginBottom: 4 }}>ERV €/m²/mo</label>
                   <input type="number" step="0.5" className="input-glass" style={{ width: '100%', opacity: 0.6, cursor: 'not-allowed' }}
                     value={asset.ervPerSqm ?? 0} readOnly />
-                  <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', marginTop: 2 }}>Aus Underwriting</div>
+                  <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.40)', marginTop: 2 }}>{lang === 'de' ? 'Aus Underwriting' : 'From Underwriting'}</div>
                 </div>
               </div>
             </GlassPanel>
@@ -489,20 +489,20 @@ export function AssetDetailPage() {
               <GlassPanel style={{ padding: 18 }}>
                 <div style={kpiLabelStyle}>Unlevered IRR</div>
                 <div style={kpiValStyle(dcf.unleveredIRR > 8 ? '#4ade80' : dcf.unleveredIRR > 5 ? '#fbbf24' : '#f87171')}>{dcf.unleveredIRR.toFixed(2)}%</div>
-                <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 2 }}>Auf Gesamtkapital</div>
+                <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 2 }}>{lang === 'de' ? 'Auf Gesamtkapital' : 'On total capital'}</div>
               </GlassPanel>
               <GlassPanel style={{ padding: 18 }}>
                 <div style={kpiLabelStyle}>Levered IRR</div>
                 <div style={kpiValStyle(dcf.leveredIRR > 12 ? '#4ade80' : dcf.leveredIRR > 8 ? '#fbbf24' : '#f87171')}>{dcf.leveredIRR.toFixed(2)}%</div>
-                <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 2 }}>Auf Eigenkapital</div>
+                <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 2 }}>{lang === 'de' ? 'Auf Eigenkapital' : 'On equity'}</div>
               </GlassPanel>
               <GlassPanel style={{ padding: 18 }}>
                 <div style={kpiLabelStyle}>Equity Multiple</div>
                 <div style={kpiValStyle(dcf.equityMultiple > 1.5 ? '#4ade80' : dcf.equityMultiple > 1.2 ? '#fbbf24' : '#f87171')}>{dcf.equityMultiple.toFixed(2)}x</div>
-                <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 2 }}>EK-Rückfluss</div>
+                <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 2 }}>{lang === 'de' ? 'EK-Rückfluss' : 'Equity payback'}</div>
               </GlassPanel>
               <GlassPanel style={{ padding: 18 }}>
-                <div style={kpiLabelStyle}>Exit-Wert (Jahr {dcf.holdingPeriodYears})</div>
+                <div style={kpiLabelStyle}>Exit Value (Year {dcf.holdingPeriodYears})</div>
                 <div style={kpiValStyle('#007aff')}>{formatEUR(dcf.terminalValue, true)}</div>
                 <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 2 }}>@ {dcf.exitCapRate}% Cap Rate</div>
               </GlassPanel>
@@ -510,7 +510,7 @@ export function AssetDetailPage() {
 
             {/* Chart */}
             <GlassPanel style={{ padding: 24 }}>
-              <SectionHeader title="NOI & Levered Cash Flow (jährlich)" />
+              <SectionHeader title="NOI & Levered Cash Flow (annual)" />
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
@@ -526,13 +526,13 @@ export function AssetDetailPage() {
             {/* Annual Table */}
             <GlassPanel style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#1c1c1e' }}>Jährliche Cashflow-Tabelle</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#1c1c1e' }}>Annual Cash Flow Table</div>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ background: 'rgba(0,0,0,0.02)' }}>
-                      {['Jahr', 'Gross Rent', '− Leerstand', 'EGI', '− OpEx', 'NOI', '− Debt Service', 'Levered CF', 'Kumulativ'].map(h => (
+                      {['Year', 'Gross Rent', '− Vacancy', 'EGI', '− OpEx', 'NOI', '− Debt Service', 'Levered CF', 'Cumulative'].map(h => (
                         <th key={h} style={{ padding: '10px 14px', fontSize: 10, fontWeight: 600, color: 'rgba(60,60,67,0.45)', textAlign: 'right', letterSpacing: '0.04em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -566,7 +566,7 @@ export function AssetDetailPage() {
 
       {activeTab === 'images' && (
         <GlassPanel style={{ padding: 24 }} className="animate-fade-in">
-          <SectionHeader title="Bilder" />
+          <SectionHeader title="Images" />
           <ImageManager entityId={asset.id} entityType="Asset" />
         </GlassPanel>
       )}
@@ -589,20 +589,20 @@ export function AssetDetailPage() {
       {showDeleteModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 420, width: '90%', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: '#1c1c1e', marginBottom: 12 }}>Asset löschen</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: '#1c1c1e', marginBottom: 12 }}>{lang === 'de' ? 'Asset löschen' : 'Delete Asset'}</div>
             <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(255,59,48,0.06)', border: '1px solid rgba(255,59,48,0.15)' }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#ff3b30', marginBottom: 6 }}>Wirklich löschen?</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#ff3b30', marginBottom: 6 }}>{lang === 'de' ? 'Wirklich löschen?' : 'Really delete?'}</div>
               <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.70)' }}>
-                <strong>{asset.name}</strong> wird unwiderruflich aus dem Bestand entfernt. Alle zugehörigen Daten, Dokumente und Einheiten gehen verloren.
+                {lang === 'de' ? <><strong>{asset.name}</strong> wird unwiderruflich aus dem Bestand entfernt. Alle zugehörigen Daten, Dokumente und Einheiten gehen verloren.</> : <><strong>{asset.name}</strong> will be permanently removed from Assets. All associated data, documents and units will be lost.</>}
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowDeleteModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">Abbrechen</button>
+              <button onClick={() => setShowDeleteModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">{lang === 'de' ? 'Abbrechen' : 'Cancel'}</button>
               <button
                 onClick={() => { deleteAsset(asset.id); navigate('/assets'); }}
                 style={{ background: 'rgba(255,59,48,0.12)', color: '#ff3b30', border: '1px solid rgba(255,59,48,0.2)', borderRadius: 12, padding: '8px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
               >
-                <Trash2 size={14} /> Endgültig löschen
+                <Trash2 size={14} /> {lang === 'de' ? 'Endgültig löschen' : 'Delete permanently'}
               </button>
             </div>
           </div>

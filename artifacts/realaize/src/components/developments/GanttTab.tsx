@@ -3,12 +3,13 @@ import { Edit3, Save, X } from 'lucide-react';
 import { GlassPanel, SectionHeader } from '@/components/shared';
 import { formatEUR } from '@/utils/kpiEngine';
 import { useStore } from '@/store/useStore';
-import { useDateLocale } from '@/i18n/LanguageContext';
+import { useDateLocale, useLanguage } from '@/i18n/LanguageContext';
 import { STATUS_COLORS } from '@/components/developments/constants';
 import type { DevelopmentProject } from '@/models/types';
 
 export function GanttTab({ dev, ganttMonths }: { dev: DevelopmentProject; ganttMonths: string[] }) {
   const dateLocale = useDateLocale();
+  const de = useLanguage().lang === 'de';
   const { updateGewerk } = useStore();
   const [editingGanttGw, setEditingGanttGw] = useState<string | null>(null);
   const [ganttGwEdits, setGanttGwEdits] = useState<{ ganttStart?: string; ganttDurationMonths?: number }>({});
@@ -16,14 +17,14 @@ export function GanttTab({ dev, ganttMonths }: { dev: DevelopmentProject; ganttM
         <div className="animate-fade-in">
           <GlassPanel style={{ padding: 24, overflowX: 'auto' }}>
             <div className="flex items-center justify-between mb-4">
-              <SectionHeader title="Bauzeitenplan nach Gewerk" />
-              <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>Zeiträume sind direkt editierbar — Stifticon klicken</div>
+              <SectionHeader title="Construction Schedule by Trade" />
+              <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>{de ? 'Zeiträume sind direkt editierbar — Stifticon klicken' : 'Periods are directly editable — click the pencil icon'}</div>
             </div>
             <div style={{ minWidth: 1000 }}>
               {/* Header months */}
               <div style={{ display: 'grid', gridTemplateColumns: '220px 130px repeat(24, 1fr)', borderBottom: '1px solid rgba(0,0,0,0.08)', marginBottom: 4 }}>
-                <div style={{ padding: '6px 8px', fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.45)' }}>GEWERK</div>
-                <div style={{ padding: '6px 8px', fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.45)' }}>ZEITRAUM</div>
+                <div style={{ padding: '6px 8px', fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.45)' }}>TRADE</div>
+                <div style={{ padding: '6px 8px', fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.45)' }}>PERIOD</div>
                 {ganttMonths.map(m => {
                   const d = new Date(m);
                   return (

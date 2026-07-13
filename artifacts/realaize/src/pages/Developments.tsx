@@ -106,7 +106,8 @@ export function DevelopmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { developments, deleteDevelopment, transferDevToBestand, transferDevToSale, settings } = useStore();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const de = lang === 'de';
   const dateLocale = useDateLocale();
   const dev = developments.find(d => d.id === id);
   const [activeTab, setActiveTab] = useState('overview');
@@ -193,28 +194,28 @@ export function DevelopmentDetailPage() {
 
       {/* KPI Strip */}
       <div className="grid grid-cols-5 gap-4 mb-6">
-        <KPICard label="Kaufpreis" value={formatEUR(dev.purchasePrice, true)} status="neutral" />
-        <KPICard label="Gesamtbudget Bau" value={formatEUR(totalBudget, true)} status="neutral" />
-        <KPICard label="Vergaben" value={formatEUR(totalContract, true)} sub={formatPct((totalContract / totalBudget) * 100, 1) + ' des Budgets'} status={totalContract > totalBudget ? 'danger' : 'good'} />
-        <KPICard label="Zahlungen" value={formatEUR(totalActual, true)} status="neutral" />
-        <KPICard label="Proj. Verkaufspreis" value={formatEUR(dev.projectedSalePrice || 0, true)} status={analysis ? (analysis.recommendation === 'Sell' ? 'good' : 'neutral') : 'neutral'} />
+        <KPICard label="Purchase Price" value={formatEUR(dev.purchasePrice, true)} status="neutral" />
+        <KPICard label="Total Construction Budget" value={formatEUR(totalBudget, true)} status="neutral" />
+        <KPICard label="Contracts" value={formatEUR(totalContract, true)} sub={formatPct((totalContract / totalBudget) * 100, 1) + (de ? ' des Budgets' : ' of budget')} status={totalContract > totalBudget ? 'danger' : 'good'} />
+        <KPICard label="Payments" value={formatEUR(totalActual, true)} status="neutral" />
+        <KPICard label="Proj. Sale Price" value={formatEUR(dev.projectedSalePrice || 0, true)} status={analysis ? (analysis.recommendation === 'Sell' ? 'good' : 'neutral') : 'neutral'} />
       </div>
 
       {/* Tabs */}
       <div className="mb-6">
         <Tabs
           tabs={[
-            { key: 'overview', label: 'Übersicht' },
+            { key: 'overview', label: de ? 'Übersicht' : 'Overview' },
             { key: 'rentroll', label: 'Rent Roll', count: (dev.units || []).length },
-            { key: 'budget', label: 'Kosten & Budget', count: dev.gewerke.length },
+            { key: 'budget', label: de ? 'Kosten & Budget' : 'Costs & Budget', count: dev.gewerke.length },
             { key: 'gantt', label: 'Gantt' },
             { key: 'debt', label: 'Debt' },
             { key: 'valuation', label: 'Valuation' },
             { key: 'advisor', label: 'Construction Advisor' },
             { key: 'holdsell', label: 'Hold / Sell' },
             { key: 'cashflow', label: 'Cash Flow / IRR' },
-            { key: 'images', label: 'Bilder' },
-            { key: 'documents', label: 'Dokumente', count: dev.documents.length },
+            { key: 'images', label: de ? 'Bilder' : 'Images' },
+            { key: 'documents', label: de ? 'Dokumente' : 'Documents', count: dev.documents.length },
           ]}
           active={activeTab}
           onChange={setActiveTab}
@@ -251,7 +252,7 @@ export function DevelopmentDetailPage() {
       {/* ── IMAGES ── */}
       {activeTab === 'images' && (
         <GlassPanel style={{ padding: 24 }} className="animate-fade-in">
-          <SectionHeader title="Bilder" />
+          <SectionHeader title="Images" />
           <ImageManager entityId={dev.id} entityType="Development" />
         </GlassPanel>
       )}
@@ -262,25 +263,27 @@ export function DevelopmentDetailPage() {
       {/* Hold/Sell Confirmation Modal */}
       {showHoldSellModal && (
         <Modal
-          title={showHoldSellModal === 'Hold' ? 'In Bestand überführen' : 'In Sales überführen'}
+          title={showHoldSellModal === 'Hold' ? (de ? 'In Bestand überführen' : 'Transfer to Assets') : (de ? 'In Sales überführen' : 'Transfer to Sales')}
           onClose={() => setShowHoldSellModal(null)}
           actions={
             <>
-              <button onClick={() => setShowHoldSellModal(null)} className="btn-glass px-4 py-2 rounded-xl text-sm">Abbrechen</button>
+              <button onClick={() => setShowHoldSellModal(null)} className="btn-glass px-4 py-2 rounded-xl text-sm">{de ? 'Abbrechen' : 'Cancel'}</button>
               <button onClick={() => handleHoldSellConfirm(showHoldSellModal)} className={`${showHoldSellModal === 'Hold' ? 'btn-glass' : 'btn-accent'} px-5 py-2 rounded-xl text-sm`} style={showHoldSellModal === 'Hold' ? { color: '#1a7f37', borderColor: 'rgba(52,199,89,0.3)' } : {}}>
-                Bestätigen & {showHoldSellModal === 'Hold' ? 'in Bestand' : 'in Sales'} überführen
+                {de ? `Bestätigen & ${showHoldSellModal === 'Hold' ? 'in Bestand' : 'in Sales'} überführen` : `Confirm & transfer to ${showHoldSellModal === 'Hold' ? 'Assets' : 'Sales'}`}
               </button>
             </>
           }
         >
           <div style={{ fontSize: 14, color: 'rgba(60,60,67,0.70)', lineHeight: 1.7 }}>
             <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(0,122,255,0.06)', border: '1px solid rgba(0,122,255,0.12)' }}>
-              <strong style={{ color: '#007aff' }}>{dev.name}</strong> wird {showHoldSellModal === 'Hold' ? 'als neues Asset in den Bestand' : 'in die Sales-Pipeline'} überführt.
+              {de
+                ? <><strong style={{ color: '#007aff' }}>{dev.name}</strong> wird {showHoldSellModal === 'Hold' ? 'als neues Asset in den Bestand' : 'in die Sales-Pipeline'} überführt.</>
+                : <><strong style={{ color: '#007aff' }}>{dev.name}</strong> will be transferred {showHoldSellModal === 'Hold' ? 'as a new asset to Assets' : 'to the Sales pipeline'}.</>}
             </div>
             {analysis && (
-              <div>IRR (Hold): <strong>{analysis.holdIRR.toFixed(1)}%</strong> · Nettogewinn (Sell): <strong>{formatEUR(analysis.sellNetProfit)}</strong></div>
+              <div>IRR (Hold): <strong>{analysis.holdIRR.toFixed(1)}%</strong> · {de ? 'Nettogewinn' : 'Net Profit'} (Sell): <strong>{formatEUR(analysis.sellNetProfit)}</strong></div>
             )}
-            <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.40)', marginTop: 12 }}>Diese Aktion erstellt einen Audit-Log-Eintrag und kann nicht rückgängig gemacht werden.</div>
+            <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.40)', marginTop: 12 }}>{de ? 'Diese Aktion erstellt einen Audit-Log-Eintrag und kann nicht rückgängig gemacht werden.' : 'This action creates an audit-log entry and cannot be undone.'}</div>
           </div>
         </Modal>
       )}
@@ -289,20 +292,22 @@ export function DevelopmentDetailPage() {
       {showDeleteModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 420, width: '90%', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: '#1c1c1e', marginBottom: 12 }}>Projekt löschen</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: '#1c1c1e', marginBottom: 12 }}>{de ? 'Projekt löschen' : 'Delete Project'}</div>
             <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(255,59,48,0.06)', border: '1px solid rgba(255,59,48,0.15)' }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#ff3b30', marginBottom: 6 }}>Wirklich löschen?</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#ff3b30', marginBottom: 6 }}>{de ? 'Wirklich löschen?' : 'Really delete?'}</div>
               <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.70)' }}>
-                <strong>{dev.name}</strong> wird unwiderruflich aus dem Development-Portfolio entfernt. Alle Gewerke, Aktivitäten und Dokumente gehen verloren.
+                {de
+                  ? <><strong>{dev.name}</strong> wird unwiderruflich aus dem Development-Portfolio entfernt. Alle Gewerke, Aktivitäten und Dokumente gehen verloren.</>
+                  : <><strong>{dev.name}</strong> will be permanently removed from the development portfolio. All trades, activities and documents will be lost.</>}
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowDeleteModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">Abbrechen</button>
+              <button onClick={() => setShowDeleteModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">{de ? 'Abbrechen' : 'Cancel'}</button>
               <button
                 onClick={() => { deleteDevelopment(dev.id); navigate('/developments'); }}
                 style={{ background: 'rgba(255,59,48,0.12)', color: '#ff3b30', border: '1px solid rgba(255,59,48,0.2)', borderRadius: 12, padding: '8px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
               >
-                <Trash2 size={14} /> Endgültig löschen
+                <Trash2 size={14} /> {de ? 'Endgültig löschen' : 'Delete permanently'}
               </button>
             </div>
           </div>

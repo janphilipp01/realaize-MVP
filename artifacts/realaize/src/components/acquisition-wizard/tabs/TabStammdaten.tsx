@@ -11,7 +11,7 @@ export function TabStammdaten({ pd, onChange }: { pd: PropertyData; onChange: (p
   const isPrime = pd.city === 'Düsseldorf' && !!pd.submarket && PRIME_SUBMARKETS.has(pd.submarket);
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      <SH>Objektdaten</SH>
+      <SH>Property Data</SH>
       <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
         {(['Investment', 'Development'] as DealType[]).map(dt => {
           const active = pd.dealType === dt;
@@ -40,25 +40,25 @@ export function TabStammdaten({ pd, onChange }: { pd: PropertyData; onChange: (p
         })}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Objektname" value={pd.name} onChange={e => onChange({ name: e.target.value })} style={{ gridColumn: '1 / 3' }} />
+        <Field label="Property Name" value={pd.name} onChange={e => onChange({ name: e.target.value })} style={{ gridColumn: '1 / 3' }} />
         <div style={{ gridColumn: '1 / 3', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.55)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            Hauptnutzungsart
+            Main Usage Type
           </label>
           <UsageTypePicker
             value={pd.usageType}
             onChange={(usageType) => onChange({ usageType })}
           />
         </div>
-        <Field label="Adresse" value={pd.address} onChange={e => onChange({ address: e.target.value })} style={{ gridColumn: '1 / 3' }} />
-        <Field label="PLZ" value={pd.zip} onChange={e => onChange({ zip: e.target.value })} />
-        <Field label="Stadt" value={pd.city} onChange={e => onChange({ city: e.target.value })} />
+        <Field label="Address" value={pd.address} onChange={e => onChange({ address: e.target.value })} style={{ gridColumn: '1 / 3' }} />
+        <Field label="Postal Code" value={pd.zip} onChange={e => onChange({ zip: e.target.value })} />
+        <Field label="City" value={pd.city} onChange={e => onChange({ city: e.target.value })} />
         <div style={{ gridColumn: '1 / 3', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <Field
-            label={`Stadtteil / Submarkt${pd.submarket ? (isPrime ? ' · Prime' : ' · Rand') : ''}`}
+            label={`District / Submarket${pd.submarket ? (isPrime ? ' · Prime' : ' · Edge') : ''}`}
             value={pd.submarket || ''}
             onChange={e => onChange({ submarket: e.target.value })}
-            placeholder="z.B. Flingern, Oberkassel"
+            placeholder="e.g. Flingern, Oberkassel"
             list="wizard-submarkets"
           />
           <datalist id="wizard-submarkets">
@@ -67,7 +67,7 @@ export function TabStammdaten({ pd, onChange }: { pd: PropertyData; onChange: (p
         </div>
         <div style={{ gridColumn: '1 / 3', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.55)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            Etagen
+            Floors
           </label>
           <FloorTagPicker
             value={pd.floors}
@@ -77,19 +77,19 @@ export function TabStammdaten({ pd, onChange }: { pd: PropertyData; onChange: (p
       </div>
       {isDev && (
         <>
-          <SH>Entwicklungstyp</SH>
+          <SH>Development Type</SH>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <SelectField label="Entwicklungstyp" value={pd.developmentType || 'Modernisierung'} onChange={e => onChange({ developmentType: e.target.value })}>
+            <SelectField label="Development Type" value={pd.developmentType || 'Modernisierung'} onChange={e => onChange({ developmentType: e.target.value })}>
               {DEV_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </SelectField>
-            <Field label="Projektstart" type="date" value={pd.projectStart} onChange={e => onChange({ projectStart: e.target.value })} />
+            <Field label="Project Start" type="date" value={pd.projectStart} onChange={e => onChange({ projectStart: e.target.value })} />
           </div>
         </>
       )}
-      <SH>Parteien</SH>
+      <SH>Parties</SH>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Verkäufer" value={pd.vendor} onChange={e => onChange({ vendor: e.target.value })} />
-        <Field label="Makler" value={pd.broker} onChange={e => onChange({ broker: e.target.value })} />
+        <Field label="Vendor" value={pd.vendor} onChange={e => onChange({ vendor: e.target.value })} />
+        <Field label="Broker" value={pd.broker} onChange={e => onChange({ broker: e.target.value })} />
       </div>
     </div>
   );

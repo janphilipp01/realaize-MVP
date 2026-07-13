@@ -4,8 +4,10 @@ import { Plus } from 'lucide-react';
 import { pdComputeTotalAcquisitionCosts } from '@/utils/propertyCashFlowModel';
 import type { PropertyData, AcquisitionCostItem } from '@/models/types';
 import { uid, fmt, pct, Field, Chip, SH } from '@/components/acquisition-wizard/shared';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export function TabAcquisition({ pd, onChange }: { pd: PropertyData; onChange: (p: Partial<PropertyData>) => void }) {
+  const de = useLanguage().lang === 'de';
   const totalAcqCosts = pdComputeTotalAcquisitionCosts(pd.purchasePrice, pd.acquisitionCosts);
   const totalAll = pd.purchasePrice + totalAcqCosts;
   const totalPct = pd.acquisitionCosts.filter(c => c.active).reduce((s, c) => s + c.percent, 0);
@@ -16,15 +18,15 @@ export function TabAcquisition({ pd, onChange }: { pd: PropertyData; onChange: (
 
   return (
     <div>
-      <SH>Kaufpreis & Erwerbsnebenkosten</SH>
+      <SH>Purchase Price & Acquisition Costs</SH>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-        <Field label="Kaufpreis (€)" type="number" value={pd.purchasePrice || ''} onChange={e => onChange({ purchasePrice: parseFloat(e.target.value) || 0 })} />
-        <Field label="Signing-Datum" type="date" value={pd.acquisitionDate} onChange={e => onChange({ acquisitionDate: e.target.value })} />
+        <Field label="Purchase Price (€)" type="number" value={pd.purchasePrice || ''} onChange={e => onChange({ purchasePrice: parseFloat(e.target.value) || 0 })} />
+        <Field label="Signing Date" type="date" value={pd.acquisitionDate} onChange={e => onChange({ acquisitionDate: e.target.value })} />
       </div>
 
       <div style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: 8, marginBottom: 8, fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          <span>Position</span><span style={{ textAlign: 'right' }}>%</span><span style={{ textAlign: 'right' }}>Betrag</span><span>Aktiv</span>
+          <span>Position</span><span style={{ textAlign: 'right' }}>%</span><span style={{ textAlign: 'right' }}>{de ? 'Betrag' : 'Amount'}</span><span>{de ? 'Aktiv' : 'Active'}</span>
         </div>
         {pd.acquisitionCosts.map(c => (
           <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: 8, alignItems: 'center', marginBottom: 6 }}>
@@ -43,14 +45,14 @@ export function TabAcquisition({ pd, onChange }: { pd: PropertyData; onChange: (
           }}
           onClick={() => onChange({ acquisitionCosts: [...pd.acquisitionCosts, { id: uid(), name: 'Sonstiges', percent: 0, active: true }] })}
         >
-          <Plus size={12} /> Position hinzufügen
+          <Plus size={12} /> {de ? 'Position hinzufügen' : 'Add Item'}
         </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-        <Chip label="ENK gesamt %" value={pct(totalPct)} color="#c9a96e" />
-        <Chip label="ENK gesamt €" value={fmt(totalAcqCosts)} color="#c9a96e" />
-        <Chip label="Gesamtinvestition" value={fmt(totalAll)} color="#007aff" />
+        <Chip label="Acq. Costs total %" value={pct(totalPct)} color="#c9a96e" />
+        <Chip label="Acq. Costs total €" value={fmt(totalAcqCosts)} color="#c9a96e" />
+        <Chip label="Total Investment" value={fmt(totalAll)} color="#007aff" />
       </div>
     </div>
   );

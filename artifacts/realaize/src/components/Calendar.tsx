@@ -11,6 +11,7 @@ import {
   type AppointmentWrite,
 } from '@workspace/api-client-react';
 import { useStore } from '@/store/useStore';
+import { useLanguage } from '@/i18n/LanguageContext';
 import type { AppointmentCategory, Asset } from '@/models/types';
 
 const CATEGORIES: AppointmentCategory[] = [
@@ -76,6 +77,7 @@ interface CalendarProps { onClose: () => void; }
 
 export default function Calendar({ onClose }: CalendarProps) {
   const qc = useQueryClient();
+  const de = useLanguage().lang === 'de';
   const invalidate = () => qc.invalidateQueries({ queryKey: getListAppointmentsQueryKey() });
 
   const { data: appointments = [] } = useListAppointments();
@@ -147,13 +149,13 @@ export default function Calendar({ onClose }: CalendarProps) {
         }}>
           <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
             <div className="flex items-center justify-between mb-3">
-              <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: '#1c1c1e', margin: 0 }}>Kalender</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: '#1c1c1e', margin: 0 }}>{de ? 'Kalender' : 'Calendar'}</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={startAdd}
                   style={{ background: '#007aff', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 4, color: '#fff', fontSize: 12, fontWeight: 600 }}
                 >
-                  <Plus size={12} /> Neu
+                  <Plus size={12} /> {de ? 'Neu' : 'New'}
                 </button>
                 <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8, cursor: 'pointer', padding: '5px 7px' }}>
                   <X size={14} color="#3c3c43" />
@@ -166,13 +168,13 @@ export default function Calendar({ onClose }: CalendarProps) {
             {Object.keys(groups).length === 0 && past.length === 0 && (
               <div style={{ textAlign: 'center', padding: 32, color: 'rgba(60,60,67,0.45)', fontSize: 13 }}>
                 <CalendarDays size={28} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
-                Keine Termine vorhanden.
+                {de ? 'Keine Termine vorhanden.' : 'No appointments.'}
               </div>
             )}
             {Object.keys(groups).length > 0 && (
               <>
                 <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(60,60,67,0.40)', letterSpacing: '0.06em', textTransform: 'uppercase', padding: '4px 8px 6px' }}>
-                  Bevorstehend
+                  {de ? 'Bevorstehend' : 'Upcoming'}
                 </div>
                 {Object.entries(groups).map(([date, items]) => (
                   <div key={date} className="mb-3">
@@ -189,7 +191,7 @@ export default function Calendar({ onClose }: CalendarProps) {
             {Object.keys(pastGroups).length > 0 && (
               <>
                 <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(60,60,67,0.30)', letterSpacing: '0.06em', textTransform: 'uppercase', padding: '8px 8px 4px', borderTop: '1px solid rgba(0,0,0,0.06)', marginTop: 8 }}>
-                  Vergangen
+                  {de ? 'Vergangen' : 'Past'}
                 </div>
                 {Object.entries(pastGroups).sort((a, b) => b[0].localeCompare(a[0])).map(([date, items]) => (
                   <div key={date} className="mb-3" style={{ opacity: 0.55 }}>
@@ -215,7 +217,7 @@ export default function Calendar({ onClose }: CalendarProps) {
         }}>
           {(adding || editing) && (
             <AppointmentForm
-              title={adding ? 'Neuer Termin' : 'Termin bearbeiten'}
+              title={adding ? (de ? 'Neuer Termin' : 'New Appointment') : (de ? 'Termin bearbeiten' : 'Edit Appointment')}
               data={form}
               assets={assets}
               onChange={patch => setForm(prev => ({ ...prev, ...patch }))}
@@ -235,8 +237,8 @@ export default function Calendar({ onClose }: CalendarProps) {
           {!selected && !adding && !editing && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(60,60,67,0.40)' }}>
               <CalendarDays size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
-              <div style={{ fontSize: 14, fontWeight: 500 }}>Termin auswählen</div>
-              <div style={{ fontSize: 12, marginTop: 4 }}>oder neuen Termin anlegen</div>
+              <div style={{ fontSize: 14, fontWeight: 500 }}>{de ? 'Termin auswählen' : 'Select an appointment'}</div>
+              <div style={{ fontSize: 12, marginTop: 4 }}>{de ? 'oder neuen Termin anlegen' : 'or create a new one'}</div>
             </div>
           )}
         </div>
@@ -272,6 +274,7 @@ function ApptRow({ appt, selected, onSelect }: { appt: Appointment; selected: Ap
 }
 
 function AppointmentDetail({ appt, assets, onEdit, onDelete }: { appt: Appointment; assets: Asset[]; onEdit: () => void; onDelete: () => void }) {
+  const de = useLanguage().lang === 'de';
   const linkedAsset = assets.find(a => a.id === appt.assetId);
   const color = CATEGORY_COLOR[appt.category] ?? '#8e8e93';
   return (
@@ -287,21 +290,21 @@ function AppointmentDetail({ appt, assets, onEdit, onDelete }: { appt: Appointme
           </div>
         </div>
         <button onClick={onEdit} style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 10, cursor: 'pointer', padding: '6px 12px', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, color: '#3c3c43' }}>
-          <Edit3 size={13} /> Bearbeiten
+          <Edit3 size={13} /> {de ? 'Bearbeiten' : 'Edit'}
         </button>
       </div>
 
       <div className="space-y-2">
-        <InfoRow icon={<CalendarDays size={14} color="#007aff" />} label="DATUM & UHRZEIT">
-          {formatDate(appt.date)} · {appt.time}{appt.endTime ? ` – ${appt.endTime} Uhr` : ' Uhr'}
+        <InfoRow icon={<CalendarDays size={14} color="#007aff" />} label={de ? 'DATUM & UHRZEIT' : 'DATE & TIME'}>
+          {formatDate(appt.date)} · {appt.time}{appt.endTime ? ` – ${appt.endTime}${de ? ' Uhr' : ''}` : (de ? ' Uhr' : '')}
         </InfoRow>
         {appt.location && (
-          <InfoRow icon={<MapPin size={14} color="#ff9500" />} label="ORT">
+          <InfoRow icon={<MapPin size={14} color="#ff9500" />} label={de ? 'ORT' : 'LOCATION'}>
             {appt.location}
           </InfoRow>
         )}
         {appt.participants && (
-          <InfoRow icon={<Users size={14} color="#34c759" />} label="TEILNEHMER">
+          <InfoRow icon={<Users size={14} color="#34c759" />} label={de ? 'TEILNEHMER' : 'PARTICIPANTS'}>
             {appt.participants}
           </InfoRow>
         )}
@@ -312,7 +315,7 @@ function AppointmentDetail({ appt, assets, onEdit, onDelete }: { appt: Appointme
         )}
         {appt.notes && (
           <div className="p-3 rounded-xl mt-2" style={{ background: 'rgba(0,0,0,0.03)' }}>
-            <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em', marginBottom: 4 }}>NOTIZEN</div>
+            <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', letterSpacing: '0.03em', marginBottom: 4 }}>{de ? 'NOTIZEN' : 'NOTES'}</div>
             <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.75)', lineHeight: 1.6 }}>{appt.notes}</div>
           </div>
         )}
@@ -320,11 +323,11 @@ function AppointmentDetail({ appt, assets, onEdit, onDelete }: { appt: Appointme
 
       <div style={{ marginTop: 28, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
         <button onClick={onDelete} style={{ background: 'rgba(255,59,48,0.08)', border: '1px solid rgba(255,59,48,0.15)', borderRadius: 10, cursor: 'pointer', padding: '6px 14px', fontSize: 13, color: '#cc1a14', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Trash2 size={13} /> Termin löschen
+          <Trash2 size={13} /> {de ? 'Termin löschen' : 'Delete appointment'}
         </button>
       </div>
       <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.35)', marginTop: 10 }}>
-        Erstellt: {new Date(appt.createdAt).toLocaleDateString('de-DE')}
+        {de ? 'Erstellt' : 'Created'}: {new Date(appt.createdAt).toLocaleDateString(de ? 'de-DE' : 'en-GB')}
       </div>
     </div>
   );
@@ -352,68 +355,69 @@ interface FormProps {
   onDelete?: () => void;
 }
 function AppointmentForm({ title, data, assets, onChange, onSave, onCancel, onDelete }: FormProps) {
+  const de = useLanguage().lang === 'de';
   return (
     <div style={{ padding: 28 }}>
       <div className="flex items-center justify-between mb-6">
         <h2 style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', color: '#1c1c1e' }}>{title}</h2>
         <div className="flex gap-2">
-          <button onClick={onCancel} style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 10, cursor: 'pointer', padding: '6px 12px', fontSize: 13, color: '#3c3c43' }}>Abbrechen</button>
+          <button onClick={onCancel} style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 10, cursor: 'pointer', padding: '6px 12px', fontSize: 13, color: '#3c3c43' }}>{de ? 'Abbrechen' : 'Cancel'}</button>
           <button
             onClick={onSave}
             disabled={!data.title || !data.date || !data.time}
             style={{ background: data.title && data.date && data.time ? '#007aff' : 'rgba(0,0,0,0.12)', border: 'none', borderRadius: 10, cursor: data.title ? 'pointer' : 'not-allowed', padding: '6px 14px', fontSize: 13, fontWeight: 600, color: data.title ? '#fff' : 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: 4 }}
           >
-            <Save size={13} /> Speichern
+            <Save size={13} /> {de ? 'Speichern' : 'Save'}
           </button>
         </div>
       </div>
 
       <div className="space-y-3">
-        <Field label="Titel *">
-          <input className="input-glass" value={data.title} onChange={e => onChange({ title: e.target.value })} placeholder="Terminbezeichnung" />
+        <Field label={de ? 'Titel *' : 'Title *'}>
+          <input className="input-glass" value={data.title} onChange={e => onChange({ title: e.target.value })} placeholder={de ? 'Terminbezeichnung' : 'Appointment title'} />
         </Field>
         <div className="flex gap-3">
           <div style={{ flex: 1 }}>
-            <Field label="Datum *">
+            <Field label={de ? 'Datum *' : 'Date *'}>
               <input type="date" className="input-glass" value={data.date} onChange={e => onChange({ date: e.target.value })} />
             </Field>
           </div>
           <div style={{ flex: 1 }}>
-            <Field label="Uhrzeit *">
+            <Field label={de ? 'Uhrzeit *' : 'Time *'}>
               <input type="time" className="input-glass" value={data.time} onChange={e => onChange({ time: e.target.value })} />
             </Field>
           </div>
           <div style={{ flex: 1 }}>
-            <Field label="Ende">
+            <Field label={de ? 'Ende' : 'End'}>
               <input type="time" className="input-glass" value={data.endTime ?? ''} onChange={e => onChange({ endTime: e.target.value || null })} />
             </Field>
           </div>
         </div>
-        <Field label="Kategorie">
+        <Field label={de ? 'Kategorie' : 'Category'}>
           <select className="input-glass" value={data.category} onChange={e => onChange({ category: e.target.value })}>
             {CATEGORIES.map(c => <option key={c}>{c}</option>)}
           </select>
         </Field>
-        <Field label="Ort">
-          <input className="input-glass" value={data.location ?? ''} onChange={e => onChange({ location: e.target.value || null })} placeholder="Adresse oder Videokonferenz-Link" />
+        <Field label={de ? 'Ort' : 'Location'}>
+          <input className="input-glass" value={data.location ?? ''} onChange={e => onChange({ location: e.target.value || null })} placeholder={de ? 'Adresse oder Videokonferenz-Link' : 'Address or video-call link'} />
         </Field>
-        <Field label="Teilnehmer">
-          <input className="input-glass" value={data.participants ?? ''} onChange={e => onChange({ participants: e.target.value || null })} placeholder="Namen oder E-Mails, kommagetrennt" />
+        <Field label={de ? 'Teilnehmer' : 'Participants'}>
+          <input className="input-glass" value={data.participants ?? ''} onChange={e => onChange({ participants: e.target.value || null })} placeholder={de ? 'Namen oder E-Mails, kommagetrennt' : 'Names or emails, comma-separated'} />
         </Field>
-        <Field label="Asset verknüpfen">
+        <Field label={de ? 'Asset verknüpfen' : 'Link Asset'}>
           <select className="input-glass" value={data.assetId ?? ''} onChange={e => onChange({ assetId: e.target.value || null })}>
-            <option value="">— Kein Asset —</option>
+            <option value="">{de ? '— Kein Asset —' : '— No Asset —'}</option>
             {assets.map(a => <option key={a.id} value={a.id}>{a.name} ({a.city})</option>)}
           </select>
         </Field>
-        <Field label="Notizen">
-          <textarea className="input-glass" rows={3} style={{ resize: 'vertical' }} value={data.notes ?? ''} onChange={e => onChange({ notes: e.target.value || null })} placeholder="Interne Notizen zum Termin..." />
+        <Field label={de ? 'Notizen' : 'Notes'}>
+          <textarea className="input-glass" rows={3} style={{ resize: 'vertical' }} value={data.notes ?? ''} onChange={e => onChange({ notes: e.target.value || null })} placeholder={de ? 'Interne Notizen zum Termin...' : 'Internal notes about the appointment...'} />
         </Field>
       </div>
 
       {onDelete && (
         <button onClick={onDelete} style={{ marginTop: 24, background: 'rgba(255,59,48,0.08)', border: '1px solid rgba(255,59,48,0.15)', borderRadius: 10, cursor: 'pointer', padding: '6px 14px', fontSize: 13, color: '#cc1a14', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Trash2 size={13} /> Termin löschen
+          <Trash2 size={13} /> {de ? 'Termin löschen' : 'Delete appointment'}
         </button>
       )}
     </div>

@@ -56,8 +56,8 @@ export function SalesPage() {
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ background: 'rgba(0,0,0,0.04)', display: 'inline-flex' }}>
         {([
-          { key: 'aktiv', label: `Aktiv (${activeSales.length})` },
-          { key: 'uebersicht', label: `Übersicht (${pastSales.length})` },
+          { key: 'aktiv', label: `${lang === 'de' ? 'Aktiv' : 'Active'} (${activeSales.length})` },
+          { key: 'uebersicht', label: `${lang === 'de' ? 'Übersicht' : 'Overview'} (${pastSales.length})` },
         ] as const).map(tab => (
           <button
             key={tab.key}
@@ -83,7 +83,7 @@ export function SalesPage() {
             <KPICard label="Assets for Sale" value={`${activeSales.length}`} status="neutral" />
             <KPICard label="Asking Volume" value={formatEUR(totalVolume, true)} status="neutral" />
             <KPICard label="Est. Gross Profit" value={formatEUR(totalProfit, true)} status={totalProfit > 0 ? 'good' : 'danger'} />
-            <KPICard label="Veräußerungsgewinn YTD" value={formatEUR(ytdGain, true)} status={ytdGain > 0 ? 'good' : 'neutral'} sub={`${pastSales.filter(s => s.soldAt && s.soldAt >= new Date(new Date().getFullYear(), 0, 1).toISOString()).length} Verkäufe`} />
+            <KPICard label="Disposal Gain YTD" value={formatEUR(ytdGain, true)} status={ytdGain > 0 ? 'good' : 'neutral'} sub={`${pastSales.filter(s => s.soldAt && s.soldAt >= new Date(new Date().getFullYear(), 0, 1).toISOString()).length} ${lang === 'de' ? 'Verkäufe' : 'sales'}`} />
           </div>
 
           <div className="grid grid-cols-3 gap-5">
@@ -110,13 +110,13 @@ export function SalesPage() {
                           <div style={{ fontSize: 16, fontWeight: 700, color: '#007aff' }}>{formatEUR(sale.askingPrice, true)}</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>Bruttogewinn</div>
+                          <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase' }}>Gross Profit</div>
                           <div style={{ fontSize: 16, fontWeight: 700, color: grossProfit > 0 ? '#1a7f37' : '#cc1a14' }}>{formatEUR(grossProfit, true)}</div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="badge-neutral">{activeBuyers.length} Interessenten</span>
+                        <span className="badge-neutral">{activeBuyers.length} {lang === 'de' ? 'Interessenten' : 'buyer leads'}</span>
                         {leadBuyer && <span className={STAGE_COLOR[leadBuyer.stage]}>{leadBuyer.name} — {leadBuyer.stage}</span>}
                       </div>
                     </div>
@@ -126,7 +126,7 @@ export function SalesPage() {
             })}
             {activeSales.length === 0 && (
               <div className="col-span-3" style={{ textAlign: 'center', padding: 48, color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>
-                Keine aktiven Verkäufe vorhanden.
+                {lang === 'de' ? 'Keine aktiven Verkäufe vorhanden.' : 'No active sales.'}
               </div>
             )}
           </div>
@@ -137,9 +137,9 @@ export function SalesPage() {
       {activeTab === 'uebersicht' && (
         <div className="animate-fade-in">
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <KPICard label="Abgeschlossene Verkäufe" value={`${pastSales.length}`} status="neutral" />
-            <KPICard label="Veräußerungsgewinn YTD" value={formatEUR(ytdGain, true)} status={ytdGain > 0 ? 'good' : 'neutral'} />
-            <KPICard label="Realisierter Gewinn Gesamt" value={formatEUR(totalRealised, true)} status={totalRealised > 0 ? 'good' : 'neutral'} />
+            <KPICard label="Closed Sales" value={`${pastSales.length}`} status="neutral" />
+            <KPICard label="Disposal Gain YTD" value={formatEUR(ytdGain, true)} status={ytdGain > 0 ? 'good' : 'neutral'} />
+            <KPICard label="Realized Gain Total" value={formatEUR(totalRealised, true)} status={totalRealised > 0 ? 'good' : 'neutral'} />
           </div>
 
           {pastSales.length > 0 ? (
@@ -147,7 +147,7 @@ export function SalesPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                    {['Objekt', 'Stadt', 'Nutzung', 'Verkaufspreis', 'Gesamtkosten', 'Veräußerungsgewinn', 'Verkauft am'].map(h => (
+                    {['Object', 'City', 'Usage', 'Sale Price', 'Total Cost', 'Disposal Gain', 'Sold on'].map(h => (
                       <th key={h} style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.45)', textAlign: 'left', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{h}</th>
                     ))}
                   </tr>
@@ -175,7 +175,7 @@ export function SalesPage() {
                 </tbody>
                 <tfoot>
                   <tr style={{ background: 'rgba(0,0,0,0.02)', borderTop: '2px solid rgba(0,0,0,0.07)' }}>
-                    <td colSpan={3} style={{ padding: '10px 16px', fontSize: 12, fontWeight: 700, color: 'rgba(60,60,67,0.55)' }}>GESAMT</td>
+                    <td colSpan={3} style={{ padding: '10px 16px', fontSize: 12, fontWeight: 700, color: 'rgba(60,60,67,0.55)' }}>{lang === 'de' ? 'GESAMT' : 'TOTAL'}</td>
                     <td style={{ padding: '10px 16px', fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 700, color: '#007aff' }}>
                       {formatEUR(pastSales.reduce((s, sale) => s + (sale.soldPrice || 0), 0), true)}
                     </td>
@@ -192,7 +192,7 @@ export function SalesPage() {
             </GlassPanel>
           ) : (
             <GlassPanel style={{ padding: 48, textAlign: 'center' }}>
-              <div style={{ color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>Noch keine abgeschlossenen Verkäufe vorhanden.</div>
+              <div style={{ color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>{lang === 'de' ? 'Noch keine abgeschlossenen Verkäufe vorhanden.' : 'No closed sales yet.'}</div>
             </GlassPanel>
           )}
         </div>
@@ -206,7 +206,8 @@ export function SaleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { sales, addBuyer, updateBuyer, markSaleAsSold, returnSaleToBestand, deleteSale } = useStore();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const de = lang === 'de';
   const dateLocale = useDateLocale();
   const sale = sales.find(s => s.id === id);
   const [activeTab, setActiveTab] = useState('overview');
@@ -271,13 +272,13 @@ export function SaleDetailPage() {
                 onClick={() => setShowSoldModal(true)}
                 className="btn-accent px-4 py-2 rounded-xl text-sm flex items-center gap-2"
               >
-                <CheckCircle size={14} /> Verkauft
+                <CheckCircle size={14} /> {de ? 'Verkauft' : 'Sold'}
               </button>
               <button
                 onClick={() => { returnSaleToBestand(sale.id); navigate('/assets'); }}
                 className="btn-glass px-4 py-2 rounded-xl text-sm flex items-center gap-2"
               >
-                <RotateCcw size={14} /> Zurück in Bestand
+                <RotateCcw size={14} /> {de ? 'Zurück in Bestand' : 'Back to Assets'}
               </button>
             </>
           )}
@@ -295,21 +296,21 @@ export function SaleDetailPage() {
       {/* KPIs */}
       <div className="grid grid-cols-5 gap-4 mb-6">
         <KPICard label="Asking Price" value={formatEUR(sale.askingPrice, true)} status="neutral" />
-        <KPICard label="Mindestpreis" value={formatEUR(sale.minimumPrice, true)} status="neutral" />
-        <KPICard label="Gesamtkosten" value={formatEUR(sale.totalCost, true)} status="neutral" />
-        <KPICard label="Bruttogewinn" value={formatEUR(grossProfit, true)} status={grossProfit > 0 ? 'good' : 'danger'} />
-        <KPICard label="Bestes Angebot" value={bestOffer > 0 ? formatEUR(bestOffer, true) : '—'} status={bestOffer >= sale.minimumPrice ? 'good' : bestOffer > 0 ? 'warning' : 'neutral'} />
+        <KPICard label="Minimum Price" value={formatEUR(sale.minimumPrice, true)} status="neutral" />
+        <KPICard label="Total Cost" value={formatEUR(sale.totalCost, true)} status="neutral" />
+        <KPICard label="Gross Profit" value={formatEUR(grossProfit, true)} status={grossProfit > 0 ? 'good' : 'danger'} />
+        <KPICard label="Best Offer" value={bestOffer > 0 ? formatEUR(bestOffer, true) : '—'} status={bestOffer >= sale.minimumPrice ? 'good' : bestOffer > 0 ? 'warning' : 'neutral'} />
       </div>
 
       {/* Tabs */}
       <div className="mb-6">
         <Tabs
           tabs={[
-            { key: 'overview', label: 'Übersicht' },
-            { key: 'buyers', label: 'Käufer-Pipeline', count: sale.buyers.length },
-            { key: 'dataroom', label: 'Datenraum', count: sale.documents.length },
-            { key: 'images', label: 'Bilder' },
-            { key: 'activity', label: 'Aktivitäten' },
+            { key: 'overview', label: de ? 'Übersicht' : 'Overview' },
+            { key: 'buyers', label: de ? 'Käufer-Pipeline' : 'Buyer Pipeline', count: sale.buyers.length },
+            { key: 'dataroom', label: de ? 'Datenraum' : 'Data Room', count: sale.documents.length },
+            { key: 'images', label: de ? 'Bilder' : 'Images' },
+            { key: 'activity', label: de ? 'Aktivitäten' : 'Activities' },
           ]}
           active={activeTab}
           onChange={setActiveTab}
@@ -320,17 +321,17 @@ export function SaleDetailPage() {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-2 gap-6 animate-fade-in">
           <GlassPanel style={{ padding: 24 }}>
-            <SectionHeader title="Objekt-Details" />
+            <SectionHeader title="Property Details" />
             <div className="space-y-2">
               {[
                 { label: 'Asking Price', value: formatEUR(sale.askingPrice) },
-                { label: 'Mindestpreis', value: formatEUR(sale.minimumPrice) },
-                { label: 'Gesamtkosten (inkl. Erwerb)', value: formatEUR(sale.totalCost) },
-                { label: 'Bruttogewinn', value: formatEUR(grossProfit), color: grossProfit > 0 ? '#1a7f37' : '#cc1a14' },
-                { label: 'Fläche', value: sale.area ? `${sale.area.toLocaleString(dateLocale)} m²` : '—' },
-                { label: 'Jahresnettomiete', value: sale.annualRent ? formatEUR(sale.annualRent) : '—' },
+                { label: 'Minimum Price', value: formatEUR(sale.minimumPrice) },
+                { label: 'Total Cost (incl. acquisition)', value: formatEUR(sale.totalCost) },
+                { label: 'Gross Profit', value: formatEUR(grossProfit), color: grossProfit > 0 ? '#1a7f37' : '#cc1a14' },
+                { label: 'Area', value: sale.area ? `${sale.area.toLocaleString(dateLocale)} m²` : '—' },
+                { label: 'Annual Net Rent', value: sale.annualRent ? formatEUR(sale.annualRent) : '—' },
                 { label: 'NOI', value: sale.noi ? formatEUR(sale.noi) : '—' },
-                { label: 'Kaufpreisfaktor', value: sale.annualRent ? `${(sale.askingPrice / sale.annualRent).toFixed(1)}x` : '—' },
+                { label: 'Purchase Price Factor', value: sale.annualRent ? `${(sale.askingPrice / sale.annualRent).toFixed(1)}x` : '—' },
               ].map(row => (
                 <div key={row.label} className="flex justify-between py-2 px-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
                   <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.65)' }}>{row.label}</span>
@@ -342,9 +343,10 @@ export function SaleDetailPage() {
 
           {/* Buyer summary */}
           <GlassPanel style={{ padding: 24 }}>
-            <SectionHeader title="Käufer Überblick" />
+            <SectionHeader title="Buyer Overview" />
             {sale.buyers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 24, color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>Noch keine Käuferinteressenten.</div>
+              <div style={{ textAlign: 'center', padding: 24, color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>{de ? 'Noch keine Käuferinteressenten.' : 'No buyer leads yet.'}</div>
+
             ) : (
               <div className="space-y-2">
                 {sale.buyers.map(buyer => (
@@ -374,16 +376,16 @@ export function SaleDetailPage() {
       {activeTab === 'buyers' && (
         <div className="animate-fade-in">
           <div className="flex justify-between mb-4">
-            <SectionHeader title="Käufer-Pipeline" />
+            <SectionHeader title="Buyer Pipeline" />
             <button onClick={() => setShowAddBuyer(true)} className="btn-accent px-3 py-1.5 rounded-xl text-xs flex items-center gap-1">
-              <Plus size={12} /> Interessent hinzufügen
+              <Plus size={12} /> {de ? 'Interessent hinzufügen' : 'Add Buyer'}
             </button>
           </div>
           <GlassPanel style={{ overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                  {['Interessent', 'Firma', 'Kontakt', 'Phase', 'Angebot', 'Letzter Kontakt', 'Notizen', 'Aktion'].map(h => (
+                  {['Buyer', 'Company', 'Contact', 'Stage', 'Offer', 'Last Contact', 'Notes', 'Action'].map(h => (
                     <th key={h} style={{ padding: '10px 14px', fontSize: 10, fontWeight: 700, color: 'rgba(60,60,67,0.45)', textAlign: 'left', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
@@ -423,7 +425,7 @@ export function SaleDetailPage() {
                         onClick={() => updateBuyer(sale.id, buyer.id, { lastContact: new Date().toISOString().split('T')[0] })}
                         style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 6, cursor: 'pointer', padding: '3px 8px', fontSize: 11, color: 'rgba(60,60,67,0.65)' }}
                       >
-                        Kontakt ✓
+                        {de ? 'Kontakt ✓' : 'Contact ✓'}
                       </button>
                     </td>
                   </tr>
@@ -431,7 +433,7 @@ export function SaleDetailPage() {
               </tbody>
             </table>
             {sale.buyers.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 32, color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>Noch keine Interessenten eingetragen.</div>
+              <div style={{ textAlign: 'center', padding: 32, color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>{de ? 'Noch keine Interessenten eingetragen.' : 'No buyer leads recorded yet.'}</div>
             )}
           </GlassPanel>
         </div>
@@ -441,11 +443,11 @@ export function SaleDetailPage() {
       {activeTab === 'dataroom' && (
         <GlassPanel style={{ padding: 24 }} className="animate-fade-in">
           <div className="flex justify-between mb-4">
-            <SectionHeader title="Verkaufs-Datenraum" />
-            <button className="btn-glass px-3 py-1.5 rounded-xl text-xs flex items-center gap-1"><Upload size={12} /> Hochladen</button>
+            <SectionHeader title="Sales Data Room" />
+            <button className="btn-glass px-3 py-1.5 rounded-xl text-xs flex items-center gap-1"><Upload size={12} /> {t('documents.upload')}</button>
           </div>
           {sale.documents.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 32, color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>Datenraum leer. Dokumente aus dem Bestand werden automatisch übernommen.</div>
+            <div style={{ textAlign: 'center', padding: 32, color: 'rgba(60,60,67,0.40)', fontSize: 13 }}>{de ? 'Datenraum leer. Dokumente aus dem Bestand werden automatisch übernommen.' : 'Data room empty. Documents from Assets are carried over automatically.'}</div>
           ) : (
             <div className="space-y-2">
               {sale.documents.map(doc => (
@@ -466,7 +468,7 @@ export function SaleDetailPage() {
       {/* ── IMAGES ── */}
       {activeTab === 'images' && (
         <GlassPanel style={{ padding: 24 }} className="animate-fade-in">
-          <SectionHeader title="Bilder" />
+          <SectionHeader title="Images" />
           <ImageManager entityId={sale.id} entityType="Sale" />
         </GlassPanel>
       )}
@@ -474,7 +476,7 @@ export function SaleDetailPage() {
       {/* ── ACTIVITY ── */}
       {activeTab === 'activity' && (
         <GlassPanel style={{ padding: 24 }} className="animate-fade-in">
-          <SectionHeader title="Aktivitäten" />
+          <SectionHeader title="Activities" />
           <div className="space-y-4">
             {sale.activityLog.map((entry, i) => (
               <div key={entry.id} className="flex gap-3">
@@ -492,37 +494,37 @@ export function SaleDetailPage() {
 
       {/* Add Buyer Modal */}
       {showAddBuyer && (
-        <Modal title="Interessent hinzufügen" onClose={() => setShowAddBuyer(false)}
+        <Modal title={de ? 'Interessent hinzufügen' : 'Add Buyer'} onClose={() => setShowAddBuyer(false)}
           actions={
             <>
-              <button onClick={() => setShowAddBuyer(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">Abbrechen</button>
-              <button onClick={handleAddBuyer} className="btn-accent px-5 py-2 rounded-xl text-sm">Hinzufügen</button>
+              <button onClick={() => setShowAddBuyer(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">{de ? 'Abbrechen' : 'Cancel'}</button>
+              <button onClick={handleAddBuyer} className="btn-accent px-5 py-2 rounded-xl text-sm">{de ? 'Hinzufügen' : 'Add'}</button>
             </>
           }
         >
           <div className="space-y-3">
-            {[{ label: 'Name *', key: 'name' }, { label: 'Firma', key: 'company' }, { label: 'E-Mail', key: 'email' }, { label: 'Telefon', key: 'phone' }].map(f => (
+            {[{ label: 'Name *', key: 'name' }, { label: de ? 'Firma' : 'Company', key: 'company' }, { label: 'E-Mail', key: 'email' }, { label: de ? 'Telefon' : 'Phone', key: 'phone' }].map(f => (
               <div key={f.key}>
                 <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{f.label}</label>
                 <input className="input-glass" value={(newBuyer as any)[f.key] || ''} onChange={e => setNewBuyer(p => ({ ...p, [f.key]: e.target.value }))} />
               </div>
             ))}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Phase</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{de ? 'Phase' : 'Stage'}</label>
               <select className="input-glass" value={newBuyer.stage} onChange={e => setNewBuyer(p => ({ ...p, stage: e.target.value as BuyerStage }))}>
                 {BUYER_STAGES.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Angebot (EUR)</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{de ? 'Angebot (EUR)' : 'Offer (EUR)'}</label>
               <input type="number" className="input-glass" value={newBuyer.offeredPrice || ''} onChange={e => setNewBuyer(p => ({ ...p, offeredPrice: parseFloat(e.target.value) || undefined }))} />
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Notizen</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{de ? 'Notizen' : 'Notes'}</label>
               <textarea className="input-glass" rows={2} value={newBuyer.notes || ''} onChange={e => setNewBuyer(p => ({ ...p, notes: e.target.value }))} style={{ resize: 'none' }} />
             </div>
             <div className="p-3 rounded-xl" style={{ background: 'rgba(0,122,255,0.06)', border: '1px solid rgba(0,122,255,0.12)' }}>
-              <div style={{ fontSize: 12, color: '#007aff' }}>💡 Kontakt wird automatisch ins Adressbuch (Potentieller Käufer) übernommen.</div>
+              <div style={{ fontSize: 12, color: '#007aff' }}>💡 {de ? 'Kontakt wird automatisch ins Adressbuch (Potentieller Käufer) übernommen.' : 'Contact is automatically added to the address book (Potential Buyer).'}</div>
             </div>
           </div>
         </Modal>
@@ -530,10 +532,10 @@ export function SaleDetailPage() {
 
       {/* Sold Modal */}
       {showSoldModal && (
-        <Modal title="Verkauf abschließen" onClose={() => setShowSoldModal(false)}
+        <Modal title={de ? 'Verkauf abschließen' : 'Complete Sale'} onClose={() => setShowSoldModal(false)}
           actions={
             <>
-              <button onClick={() => setShowSoldModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">Abbrechen</button>
+              <button onClick={() => setShowSoldModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">{de ? 'Abbrechen' : 'Cancel'}</button>
               <button
                 onClick={() => {
                   const price = parseFloat(soldPrice);
@@ -543,18 +545,18 @@ export function SaleDetailPage() {
                 }}
                 className="btn-accent px-5 py-2 rounded-xl text-sm flex items-center gap-2"
               >
-                <CheckCircle size={14} /> Als verkauft markieren
+                <CheckCircle size={14} /> {de ? 'Als verkauft markieren' : 'Mark as Sold'}
               </button>
             </>
           }
         >
           <div className="space-y-4">
             <div className="p-3 rounded-xl" style={{ background: 'rgba(52,199,89,0.07)', border: '1px solid rgba(52,199,89,0.2)' }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a7f37' }}>Verkauf von {sale.name} abschließen</div>
-              <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.65)', marginTop: 4 }}>Das Asset wird als "Verkauft" markiert und in die Verkaufshistorie übertragen.</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a7f37' }}>{de ? `Verkauf von ${sale.name} abschließen` : `Complete sale of ${sale.name}`}</div>
+              <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.65)', marginTop: 4 }}>{de ? 'Das Asset wird als "Verkauft" markiert und in die Verkaufshistorie übertragen.' : 'The asset will be marked as "Sold" and moved to the sales history.'}</div>
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Tatsächlicher Verkaufspreis (EUR) *</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{de ? 'Tatsächlicher Verkaufspreis (EUR) *' : 'Actual Sale Price (EUR) *'}</label>
               <input
                 type="number"
                 className="input-glass"
@@ -565,12 +567,12 @@ export function SaleDetailPage() {
               />
               {soldPrice && (
                 <div style={{ fontSize: 12, marginTop: 6, color: parseFloat(soldPrice) - sale.totalCost >= 0 ? '#1a7f37' : '#cc1a14' }}>
-                  Veräußerungsgewinn: {parseFloat(soldPrice) - sale.totalCost >= 0 ? '+' : ''}{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(parseFloat(soldPrice) - sale.totalCost)}
+                  {de ? 'Veräußerungsgewinn' : 'Disposal gain'}: {parseFloat(soldPrice) - sale.totalCost >= 0 ? '+' : ''}{new Intl.NumberFormat(de ? 'de-DE' : 'en-GB', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(parseFloat(soldPrice) - sale.totalCost)}
                 </div>
               )}
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Closing-Datum</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{de ? 'Closing-Datum' : 'Closing Date'}</label>
               <input
                 type="date"
                 className="input-glass"
@@ -585,24 +587,24 @@ export function SaleDetailPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <Modal title="Verkaufsobjekt löschen" onClose={() => setShowDeleteModal(false)}
+        <Modal title={de ? 'Verkaufsobjekt löschen' : 'Delete Sale Object'} onClose={() => setShowDeleteModal(false)}
           actions={
             <>
-              <button onClick={() => setShowDeleteModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">Abbrechen</button>
+              <button onClick={() => setShowDeleteModal(false)} className="btn-glass px-4 py-2 rounded-xl text-sm">{de ? 'Abbrechen' : 'Cancel'}</button>
               <button
                 onClick={() => { deleteSale(sale.id); navigate('/sales'); }}
                 className="px-5 py-2 rounded-xl text-sm flex items-center gap-2"
                 style={{ background: 'rgba(255,59,48,0.12)', color: '#ff3b30', border: '1px solid rgba(255,59,48,0.2)', cursor: 'pointer' }}
               >
-                <Trash2 size={14} /> Endgültig löschen
+                <Trash2 size={14} /> {de ? 'Endgültig löschen' : 'Delete permanently'}
               </button>
             </>
           }
         >
           <div className="p-4 rounded-xl" style={{ background: 'rgba(255,59,48,0.06)', border: '1px solid rgba(255,59,48,0.15)' }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#ff3b30', marginBottom: 6 }}>Wirklich löschen?</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#ff3b30', marginBottom: 6 }}>{de ? 'Wirklich löschen?' : 'Really delete?'}</div>
             <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.70)' }}>
-              <strong>{sale.name}</strong> wird unwiderruflich gelöscht. Alle Käufer-Daten, Dokumente und Aktivitäten gehen verloren.
+              {de ? <><strong>{sale.name}</strong> wird unwiderruflich gelöscht. Alle Käufer-Daten, Dokumente und Aktivitäten gehen verloren.</> : <><strong>{sale.name}</strong> will be permanently deleted. All buyer data, documents and activities will be lost.</>}
             </div>
           </div>
         </Modal>

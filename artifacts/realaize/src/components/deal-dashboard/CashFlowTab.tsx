@@ -22,13 +22,13 @@ export function CashFlowTab({ deal }: { deal: AcquisitionDeal }) {
           <div className="space-y-6 animate-fade-in">
             {/* Assumptions summary */}
             <GlassPanel style={{ padding: 18 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#1c1c1e', marginBottom: 12 }}>Marktannahmen (DCF)</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#1c1c1e', marginBottom: 12 }}>Market Assumptions (DCF)</div>
               <div className="grid grid-cols-4 gap-6">
                 {[
-                  ['Haltedauer', `${ma.holdingPeriodYears} Jahre`],
-                  ['Mietwachstum p.a.', `${ma.rentalGrowthRate}%`],
-                  ['Exit-Cap-Rate', `${ma.exitCapRate}%`],
-                  ['ERV €/m²/Mon', `${uw.ervPerSqm || '—'}`],
+                  ['Holding Period', `${ma.holdingPeriodYears} yrs`],
+                  ['Rent Growth p.a.', `${ma.rentalGrowthRate}%`],
+                  ['Exit Cap Rate', `${ma.exitCapRate}%`],
+                  ['ERV €/m²/mo', `${uw.ervPerSqm || '—'}`],
                 ].map(([l, v]) => (
                   <div key={l}>
                     <div style={{ fontSize: 10, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{l}</div>
@@ -53,7 +53,7 @@ export function CashFlowTab({ deal }: { deal: AcquisitionDeal }) {
                 <div style={kpiVS(dcf.equityMultiple > 1.5 ? '#4ade80' : dcf.equityMultiple > 1.2 ? '#fbbf24' : '#f87171')}>{dcf.equityMultiple.toFixed(2)}x</div>
               </GlassPanel>
               <GlassPanel style={{ padding: 18 }}>
-                <div style={kpiLS}>Exit-Wert (Jahr {dcf.holdingPeriodYears})</div>
+                <div style={kpiLS}>Exit Value (Year {dcf.holdingPeriodYears})</div>
                 <div style={kpiVS('#007aff')}>{formatEUR(dcf.terminalValue, true)}</div>
                 <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 2 }}>@ {dcf.exitCapRate}% Cap Rate</div>
               </GlassPanel>
@@ -61,7 +61,7 @@ export function CashFlowTab({ deal }: { deal: AcquisitionDeal }) {
 
             {/* Chart */}
             <GlassPanel style={{ padding: 24 }}>
-              <SectionHeader title="NOI & Levered Cash Flow (jährlich)" />
+              <SectionHeader title="NOI & Levered Cash Flow (annual)" />
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={chartData} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
@@ -77,13 +77,13 @@ export function CashFlowTab({ deal }: { deal: AcquisitionDeal }) {
             {/* Annual table */}
             <GlassPanel style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#1c1c1e' }}>Jährliche Cashflow-Tabelle (Underwriting)</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#1c1c1e' }}>Annual Cash Flow Table (Underwriting)</div>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ background: 'rgba(0,0,0,0.02)' }}>
-                      {['Jahr', 'Gross Rent', 'EGI', 'NOI', '− Debt Svc', 'Levered CF', 'Kumulativ'].map(h => (
+                      {['Year', 'Gross Rent', 'EGI', 'NOI', '− Debt Svc', 'Levered CF', 'Cumulative'].map(h => (
                         <th key={h} style={{ padding: '10px 14px', fontSize: 10, fontWeight: 600, color: 'rgba(60,60,67,0.45)', textAlign: 'right', letterSpacing: '0.04em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -101,7 +101,7 @@ export function CashFlowTab({ deal }: { deal: AcquisitionDeal }) {
                       </tr>
                     ))}
                     <tr style={{ borderTop: '2px solid rgba(0,0,0,0.10)', background: 'rgba(0,122,255,0.03)' }}>
-                      <td colSpan={3} style={{ padding: '12px 14px', fontSize: 12, fontWeight: 700, color: '#1c1c1e' }}>Exit-Wert (Jahr {dcf.holdingPeriodYears})</td>
+                      <td colSpan={3} style={{ padding: '12px 14px', fontSize: 12, fontWeight: 700, color: '#1c1c1e' }}>Exit Value (Year {dcf.holdingPeriodYears})</td>
                       <td colSpan={3} style={{ padding: '12px 14px', fontFamily: 'ui-monospace, monospace', fontWeight: 700, color: '#007aff', fontSize: 14, textAlign: 'right' }}>{formatEUR(dcf.terminalValue, true)}</td>
                       <td style={{ padding: '12px 14px', fontSize: 10, color: 'rgba(60,60,67,0.45)', textAlign: 'right' }}>NOI / {dcf.exitCapRate}%</td>
                     </tr>

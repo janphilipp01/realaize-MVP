@@ -3,10 +3,13 @@ import { Info } from 'lucide-react';
 
 import { GlassPanel, SectionHeader } from '@/components/shared';
 import { computeDealKPIs, formatEUR, formatPct, formatX } from '@/utils/kpiEngine';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 import type { AcquisitionDeal } from '@/models/types';
 
 export function OverviewTab({ deal, kpis, handleShowFormula }: { deal: AcquisitionDeal; kpis: ReturnType<typeof computeDealKPIs>; handleShowFormula: (key: string) => void }) {
+  const { lang } = useLanguage();
+  const de = lang === 'de';
   return (
         <div className="space-y-6 animate-fade-in">
           {/* KPI Strip */}
@@ -14,43 +17,43 @@ export function OverviewTab({ deal, kpis, handleShowFormula }: { deal: Acquisiti
             <div className="kpi-card" onClick={() => handleShowFormula('totalAcquisitionCost')}>
               <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Total Acq. Cost</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#007aff' }}>{formatEUR(kpis.totalAcquisitionCost, true)}</div>
-              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>inkl. NK & Capex</div>
+              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>{de ? 'inkl. NK & Capex' : 'incl. costs & capex'}</div>
             </div>
             <div className="kpi-card" onClick={() => handleShowFormula('netInitialYield')}>
               <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Net Initial Yield</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: kpis.netInitialYield > 4.5 ? '#4ade80' : kpis.netInitialYield > 3 ? '#fbbf24' : '#f87171' }}>{formatPct(kpis.netInitialYield)}</div>
-              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>auf Gesamtkosten</div>
+              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>{de ? 'auf Gesamtkosten' : 'on total cost'}</div>
             </div>
             <div className="kpi-card" onClick={() => handleShowFormula('kaufpreisfaktor')}>
-              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Kaufpreisfaktor</div>
+              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Purchase Price Factor</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: kpis.kaufpreisfaktor < 20 ? '#4ade80' : kpis.kaufpreisfaktor < 24 ? '#fbbf24' : '#f87171' }}>{formatX(kpis.kaufpreisfaktor)}</div>
-              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>auf Bruttomiete</div>
+              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>{de ? 'auf Bruttomiete' : 'on gross rent'}</div>
             </div>
             <div className="kpi-card" onClick={() => handleShowFormula('dscr')}>
               <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>DSCR</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: kpis.dscr > 1.5 ? '#4ade80' : kpis.dscr > 1.2 ? '#fbbf24' : '#f87171' }}>{formatX(kpis.dscr)}</div>
-              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>Deckungsgrad</div>
+              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>{de ? 'Deckungsgrad' : 'coverage ratio'}</div>
             </div>
             <div className="kpi-card" onClick={() => handleShowFormula('cashOnCashReturn')}>
               <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Cash-on-Cash</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: kpis.cashOnCashReturn > 4 ? '#4ade80' : kpis.cashOnCashReturn > 1 ? '#fbbf24' : '#f87171' }}>{formatPct(kpis.cashOnCashReturn)}</div>
-              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>EK-Rendite lfd.</div>
+              <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 4 }}>{de ? 'EK-Rendite lfd.' : 'current equity yield'}</div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             {/* Summary KPI table */}
             <GlassPanel style={{ padding: 24 }}>
-              <SectionHeader title="KPI Übersicht" />
+              <SectionHeader title="KPI Overview" />
               <div className="space-y-2">
                 {[
-                  { l: 'Kaufpreis', v: formatEUR(deal.underwritingAssumptions.purchasePrice, true), k: '' },
-                  { l: 'Kaufnebenkosten', v: formatEUR(kpis.closingCosts, true), k: '' },
-                  { l: 'Maklergebühr', v: formatEUR(kpis.brokerFee, true), k: '' },
-                  { l: 'Initialer CapEx', v: formatEUR(deal.underwritingAssumptions.initialCapex, true), k: '' },
+                  { l: 'Purchase Price', v: formatEUR(deal.underwritingAssumptions.purchasePrice, true), k: '' },
+                  { l: 'Closing Costs', v: formatEUR(kpis.closingCosts, true), k: '' },
+                  { l: 'Broker Fee', v: formatEUR(kpis.brokerFee, true), k: '' },
+                  { l: 'Initial CapEx', v: formatEUR(deal.underwritingAssumptions.initialCapex, true), k: '' },
                   { l: 'Total Acquisition Cost', v: formatEUR(kpis.totalAcquisitionCost, true), k: 'totalAcquisitionCost', bold: true },
-                  { l: 'Eigenkapital', v: formatEUR(kpis.equityInvested, true), k: 'equityInvested' },
-                  { l: 'Bruttoanfangsrendite', v: formatPct(kpis.bruttoanfangsrendite), k: 'bruttoanfangsrendite' },
+                  { l: 'Equity', v: formatEUR(kpis.equityInvested, true), k: 'equityInvested' },
+                  { l: 'Gross Initial Yield', v: formatPct(kpis.bruttoanfangsrendite), k: 'bruttoanfangsrendite' },
                   { l: 'NOI', v: formatEUR(kpis.noi, true), k: 'noi' },
                   { l: 'LTV', v: formatPct(kpis.ltv, 1), k: 'ltv' },
                   { l: 'Interest Coverage', v: formatX(kpis.interestCoverageProxy), k: 'interestCoverageProxy' },
@@ -74,14 +77,14 @@ export function OverviewTab({ deal, kpis, handleShowFormula }: { deal: Acquisiti
 
             {/* Scenario Analysis */}
             <GlassPanel style={{ padding: 24 }}>
-              <SectionHeader title="Szenario-Analyse" />
+              <SectionHeader title="Scenario Analysis" />
               <div className="space-y-4">
                 {[
                   { label: 'Base Case', rentMod: 0, vacMod: 0, rateMod: 0, color: '#4ade80' },
-                  { label: '+100bps Zinsen', rentMod: 0, vacMod: 0, rateMod: 1.0, color: '#fbbf24' },
-                  { label: '-10% Miete', rentMod: -10, vacMod: 0, rateMod: 0, color: '#fbbf24' },
-                  { label: '+5% Leerstand', rentMod: 0, vacMod: 5, rateMod: 0, color: '#f87171' },
-                  { label: 'Stress (alle)', rentMod: -8, vacMod: 3, rateMod: 0.75, color: '#f87171' },
+                  { label: '+100bps Rate', rentMod: 0, vacMod: 0, rateMod: 1.0, color: '#fbbf24' },
+                  { label: '-10% Rent', rentMod: -10, vacMod: 0, rateMod: 0, color: '#fbbf24' },
+                  { label: '+5% Vacancy', rentMod: 0, vacMod: 5, rateMod: 0, color: '#f87171' },
+                  { label: 'Stress (all)', rentMod: -8, vacMod: 3, rateMod: 0.75, color: '#f87171' },
                 ].map(scen => {
                   const uw = {
                     ...deal.underwritingAssumptions,
@@ -102,7 +105,7 @@ export function OverviewTab({ deal, kpis, handleShowFormula }: { deal: Acquisiti
                 })}
               </div>
               <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.45)', marginTop: 12, fontStyle: 'italic' }}>
-                * Szenario-KPIs deterministisch berechnet. Kein KI-Einfluss.
+                {de ? '* Szenario-KPIs deterministisch berechnet. Kein KI-Einfluss.' : '* Scenario KPIs calculated deterministically. No AI influence.'}
               </div>
             </GlassPanel>
           </div>

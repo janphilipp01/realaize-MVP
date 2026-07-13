@@ -7,6 +7,7 @@ import {
   TabStammdaten, TabAcquisition, TabDevelopment, TabFinanzierung,
   TabRentRoll, TabOpex, TabMarket, TabCashflow, TabSummary,
 } from '@/components/acquisition-wizard/tabs';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface AcquisitionWizardProps {
   initialData?: Partial<PropertyData>;
@@ -18,6 +19,7 @@ interface AcquisitionWizardProps {
 export function AcquisitionWizard({ initialData, onSave, onClose, title }: AcquisitionWizardProps) {
   const [pd, setPd] = useState<PropertyData>(() => createDefaultPropertyData(initialData));
   const [activeTab, setActiveTab] = useState(0);
+  const { t, lang } = useLanguage();
 
   const isDev = pd.dealType === 'Development';
   const visibleTabs: TabKey[] = isDev ? DEVELOPMENT_TABS : INVESTMENT_TABS;
@@ -68,7 +70,7 @@ export function AcquisitionWizard({ initialData, onSave, onClose, title }: Acqui
           background: 'rgba(255,255,255,0.98)',
         }}>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: '#1c1c1e' }}>{title || 'Neues Deal erfassen'}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: '#1c1c1e' }}>{title || (lang === 'de' ? 'Neues Deal erfassen' : 'Create New Deal')}</div>
             <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)', marginTop: 2 }}>
               {pd.name || 'Objektname eingeben'} · {pd.city || 'Stadt'}
             </div>
@@ -124,7 +126,7 @@ export function AcquisitionWizard({ initialData, onSave, onClose, title }: Acqui
             className="btn-ghost"
             style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: activeTab === 0 ? 0.35 : 1 }}
           >
-            <ChevronLeft size={16} /> Zurück
+            <ChevronLeft size={16} /> {t('common.back')}
           </button>
           <div style={{ fontSize: 12, color: 'rgba(60,60,67,0.45)' }}>
             {activeTab + 1} / {visibleTabs.length}
@@ -138,7 +140,7 @@ export function AcquisitionWizard({ initialData, onSave, onClose, title }: Acqui
                 fontWeight: 600, color: '#4ade80', whiteSpace: 'nowrap',
               }}
             >
-              <CheckCircle2 size={14} /> Speichern
+              <CheckCircle2 size={14} /> {t('common.save')}
             </button>
             {activeTab < visibleTabs.length - 1 ? (
               <button
@@ -146,7 +148,7 @@ export function AcquisitionWizard({ initialData, onSave, onClose, title }: Acqui
                 className="btn-primary"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}
               >
-                Weiter <ChevronRight size={16} />
+                {lang === 'de' ? 'Weiter' : 'Next'} <ChevronRight size={16} />
               </button>
             ) : (
               <button
@@ -157,7 +159,7 @@ export function AcquisitionWizard({ initialData, onSave, onClose, title }: Acqui
                   background: 'linear-gradient(135deg, #007aff, #0051a8)',
                 }}
               >
-                <CheckCircle2 size={14} /> Deal anlegen
+                <CheckCircle2 size={14} /> {lang === 'de' ? 'Deal anlegen' : 'Create Deal'}
               </button>
             )}
           </div>

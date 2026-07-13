@@ -1,13 +1,15 @@
 import { Upload, FileText } from 'lucide-react';
 import { GlassPanel, SectionHeader } from '@/components/shared';
+import { useLanguage } from '@/i18n/LanguageContext';
 import type { DevelopmentProject } from '@/models/types';
 
 export function DocumentsTab({ dev }: { dev: DevelopmentProject }) {
+  const { t } = useLanguage();
   return (
         <GlassPanel style={{ padding: 24 }} className="animate-fade-in">
           <div className="flex justify-between mb-4">
-            <SectionHeader title="Dokumente" />
-            <button className="btn-glass px-3 py-1.5 rounded-xl text-xs flex items-center gap-1"><Upload size={12} /> Hochladen</button>
+            <SectionHeader title="Documents" />
+            <button className="btn-glass px-3 py-1.5 rounded-xl text-xs flex items-center gap-1"><Upload size={12} /> {t('documents.upload')}</button>
           </div>
           <div className="space-y-2">
             {dev.documents.map(doc => (

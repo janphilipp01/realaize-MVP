@@ -59,7 +59,7 @@ function DealCard({ deal }: { deal: AcquisitionDeal }) {
 // ── Main Acquisition Page ───────────────────────────────
 export default function AcquisitionPage() {
   const { deals, addDeal } = useStore();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [filterStage, setFilterStage] = useState('Alle');
@@ -81,7 +81,7 @@ export default function AcquisitionPage() {
     const annualRent = pd.unitsAsIs.reduce((s, u) => s + u.monthlyRent, 0) * 12;
     const deal: AcquisitionDeal = {
       id: dealId,
-      name: pd.name || 'Neues Objekt',
+      name: pd.name || (lang === 'de' ? 'Neues Objekt' : 'New Object'),
       address: pd.address,
       city: pd.city,
       zip: pd.zip,
@@ -187,7 +187,7 @@ export default function AcquisitionPage() {
         <AcquisitionWizard
           onClose={() => setShowNewDeal(false)}
           onSave={handleCreateDeal}
-          title="Neues Deal erfassen"
+          title={lang === 'de' ? 'Neues Deal erfassen' : 'Create New Deal'}
         />
       )}
     </div>
