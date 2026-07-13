@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, BadgeCheck, Database, FileText, Newspaper, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Activity, AlertTriangle, BadgeCheck, Database, FileText, ListChecks, Newspaper, ShieldCheck, TrendingUp } from 'lucide-react';
 import { formatBenchmarkValue } from '@/utils/marketIntelligence';
 import type { AssetClass, BenchmarkKpi, BenchmarkRecord, ConfidenceTier, ImpactTier, ValidationStatus } from '@/models/types';
 
@@ -47,6 +47,7 @@ export function Badge({ bg, color, children }: { bg: string; color: string; chil
 export const TABS = [
   { key: 'benchmarks', label: 'Benchmarks', icon: Database },
   { key: 'review', label: 'Review Queue', icon: ShieldCheck },
+  { key: 'queues', label: 'Review Queues', icon: ListChecks },
   { key: 'news', label: 'News Layer', icon: Newspaper },
   { key: 'crossval', label: 'Cross-Validation', icon: Activity },
   { key: 'memo', label: 'IC Memo Block', icon: FileText },

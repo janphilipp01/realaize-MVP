@@ -3,6 +3,8 @@ import { useStore } from '@/store/useStore';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { TABS, type TabKey } from '@/components/market-intelligence/shared';
 import { BenchmarksTab, ReviewTab, NewsTab, CrossValTab, MemoTab, HistoryTab, SourcesTab } from '@/components/market-intelligence/tabs';
+import { ReviewQueues } from '@/components/market-intelligence/ReviewQueues';
+import { REVIEW_QUEUE_ITEMS } from '@/data/mock/reviewQueues';
 
 export function MarketIntelligencePanel({ city }: { city: string }) {
   const { lang } = useLanguage();
@@ -35,7 +37,7 @@ export function MarketIntelligencePanel({ city }: { city: string }) {
       <div className="flex gap-1 mb-5 flex-wrap" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
         {TABS.map(tb => {
           const active = tab === tb.key;
-          const count = tb.key === 'review' ? pendingCount : undefined;
+          const count = tb.key === 'review' ? pendingCount : tb.key === 'queues' ? REVIEW_QUEUE_ITEMS.length : undefined;
           return (
             <button
               key={tb.key}
@@ -63,6 +65,7 @@ export function MarketIntelligencePanel({ city }: { city: string }) {
 
       {tab === 'benchmarks' && <BenchmarksTab benchmarks={benchmarks} lang={lang} hideCityFilter />}
       {tab === 'review' && <ReviewTab benchmarks={benchmarks} lang={lang} />}
+      {tab === 'queues' && <ReviewQueues lang={lang} />}
       {tab === 'news' && <NewsTab events={marketEvents} lang={lang} />}
       {tab === 'crossval' && <CrossValTab benchmarks={benchmarks} lang={lang} />}
       {tab === 'memo' && <MemoTab benchmarks={benchmarks} events={marketEvents} lang={lang} lockedCity={city} />}
