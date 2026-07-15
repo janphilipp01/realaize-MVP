@@ -56,6 +56,7 @@ export function DealRadarPage() {
   const [activeProfiles, setActiveProfiles] = useState<string[]>(acquisitionProfiles.map(p => p.id));
   const [rejecting, setRejecting] = useState(false);
   const [vaScope, setVaScope] = useState<RenovationScope>('sanierung');
+  const [vaMargin, setVaMargin] = useState(20); // desired profit margin (%) for the value-add screen
   // Market assumptions come live from Market Intelligence (Module 06).
   const benchmarks = useStore(s => s.benchmarks);
   const rentUpliftPct = useStore(s => s.settings.screeningRentUpliftPercent);
@@ -392,7 +393,7 @@ export function DealRadarPage() {
                 // Market NIY derived from the transaction multiplier: NIY = (1 − non-recoverable) / factor.
                 const marketNIY = ((1 - DEFAULT_SCREEN_PROFILE.nonRecoverablePct) / b.factorMedian) * 100;
                 const exitBuffer = resolveExitYieldBuffer(selected.city, selected.submarket);
-                const r = screenValueAdd({ area: selected.areaSqm, purchasePrice: selected.askingPrice, marketRent: b.rentPerSqmMonth, marketNIY, scope: vaScope, profile: { exitYieldBufferPct: exitBuffer, rentUpliftPct } });
+                const r = screenValueAdd({ area: selected.areaSqm, purchasePrice: selected.askingPrice, marketRent: b.rentPerSqmMonth, marketNIY, scope: vaScope, profile: { exitYieldBufferPct: exitBuffer, rentUpliftPct, profitMarginPct: vaMargin / 100 } });
                 const green = '#16a34a', red = '#dc2626';
                 const rows: Array<[string, number, boolean]> = [
                   [de ? 'Potentieller Exit-Wert' : 'Potential exit value', r.exitValue, false],
@@ -406,7 +407,7 @@ export function DealRadarPage() {
                   <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.08)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Target size={13} color="#007aff" />
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#007aff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Value-Add Screening · 20% Marge</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#007aff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Value-Add Screening · {vaMargin}% Marge</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {(Object.keys(BUILD_COST_RATES) as RenovationScope[]).map(sc => (
@@ -418,6 +419,19 @@ export function DealRadarPage() {
                           {SCOPE_LABEL[sc][de ? 'de' : 'en']} · {BUILD_COST_RATES[sc]}€
                         </button>
                       ))}
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.6)' }}>{de ? 'Gewünschte Marge' : 'Target margin'}</span>
+                      <div className="flex items-center" style={{ border: '1px solid rgba(0,0,0,0.12)', borderRadius: 7, overflow: 'hidden' }}>
+                        <button onClick={() => setVaMargin(m => Math.max(0, m - 1))} aria-label={de ? 'Marge verringern' : 'Decrease margin'}
+                          style={{ fontSize: 13, fontWeight: 700, width: 26, height: 26, cursor: 'pointer', color: 'rgba(60,60,67,0.7)', background: 'rgba(0,0,0,0.03)', border: 'none' }}>−</button>
+                        <input type="number" value={vaMargin} min={0} max={100} step={1}
+                          onChange={e => setVaMargin(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                          style={{ width: 40, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#007aff', border: 'none', outline: 'none', background: 'transparent', MozAppearance: 'textfield' as const }} />
+                        <button onClick={() => setVaMargin(m => Math.min(100, m + 1))} aria-label={de ? 'Marge erhöhen' : 'Increase margin'}
+                          style={{ fontSize: 13, fontWeight: 700, width: 26, height: 26, cursor: 'pointer', color: 'rgba(60,60,67,0.7)', background: 'rgba(0,0,0,0.03)', border: 'none' }}>+</button>
+                      </div>
+                      <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.5)' }}>%</span>
                     </div>
                     <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', marginBottom: 8 }}>
                       {de ? 'Basis' : 'Basis'}: {b.rentPerSqmMonth.toFixed(2).replace('.', ',')} €/m²/Mt +{rentUpliftPct}% → ERV {r.screeningRent.toFixed(2).replace('.', ',')} €/m²/Mt · Faktor {b.factorMedian.toFixed(1).replace('.', ',')}× · Exit-NIY {r.exitNIY.toFixed(2).replace('.', ',')}% ({exitBuffer === EXIT_BUFFER_PRIME ? 'Prime +0,75%' : 'Rand +1,0%'}) · {selected.areaSqm.toLocaleString('de-DE')} m² · {selected.submarket ?? selected.city}
@@ -436,11 +450,11 @@ export function DealRadarPage() {
                     </div>
                     <div className="flex items-center justify-between mt-3 p-2.5 rounded-lg" style={{ background: r.pass ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.07)' }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: r.pass ? green : red }}>
-                        {r.pass ? `✓ ${de ? 'Trifft 20%-Hürde' : 'Clears 20% hurdle'} (+${formatEUR(r.surplus, true)})` : `✗ ${de ? 'Verfehlt 20%-Hürde' : 'Misses 20% hurdle'} (${formatEUR(r.surplus, true)})`}
+                        {r.pass ? `✓ ${de ? `Trifft ${vaMargin}%-Hürde` : `Clears ${vaMargin}% hurdle`} (+${formatEUR(r.surplus, true)})` : `✗ ${de ? `Verfehlt ${vaMargin}%-Hürde` : `Misses ${vaMargin}% hurdle`} (${formatEUR(r.surplus, true)})`}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mt-2" style={{ fontSize: 12 }}>
-                      <span style={{ color: 'rgba(60,60,67,0.6)' }}>{de ? 'Max. Kaufpreis (20% Marge)' : 'Max bid (20% margin)'}</span>
+                      <span style={{ color: 'rgba(60,60,67,0.6)' }}>{de ? `Max. Kaufpreis (${vaMargin}% Marge)` : `Max bid (${vaMargin}% margin)`}</span>
                       <span style={{ fontWeight: 700, color: selected.askingPrice <= r.maxBid ? green : red, fontVariantNumeric: 'tabular-nums' }}>
                         {formatEUR(r.maxBid, true)}<span style={{ color: 'rgba(60,60,67,0.45)', fontWeight: 400 }}> {de ? 'vs. Angebot' : 'vs. asking'} {formatEUR(selected.askingPrice, true)}</span>
                       </span>

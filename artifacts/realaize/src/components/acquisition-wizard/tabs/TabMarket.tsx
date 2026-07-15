@@ -14,6 +14,7 @@ export function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Pa
   const targetNIY = useStore(s => s.settings.targetNIY);
   const rentUpliftPct = useStore(s => s.settings.screeningRentUpliftPercent);
   const [scope, setScope] = useState<RenovationScope>('sanierung');
+  const [margin, setMargin] = useState(20); // desired profit margin (%) for the value-add screen
 
   const usageTypes = Array.from(new Set([
     ...pd.unitsAsIs.map(u => u.usageType),
@@ -85,7 +86,7 @@ export function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Pa
         const niyIsFallback = m.marketNIY === undefined;
         return (
           <div style={{ marginTop: 24 }}>
-            <SH>Value-Add Screening (Profil: 20% Marge)</SH>
+            <SH>Value-Add Screening (Profil: {margin}% Marge)</SH>
             {(!m.marketRent || area <= 0 || pd.purchasePrice <= 0) ? (
               <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.5)', padding: '8px 0' }}>
                 {!m.marketRent
@@ -93,7 +94,7 @@ export function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Pa
                   : 'Kaufpreis (Tab Acquisition) und Rent Roll (Fläche) erforderlich.'}
               </div>
             ) : (() => {
-              const r = screenValueAdd({ area, purchasePrice: pd.purchasePrice, marketRent: m.marketRent, marketNIY, scope, profile: { exitYieldBufferPct: exitBuffer, rentUpliftPct } });
+              const r = screenValueAdd({ area, purchasePrice: pd.purchasePrice, marketRent: m.marketRent, marketNIY, scope, profile: { exitYieldBufferPct: exitBuffer, rentUpliftPct, profitMarginPct: margin / 100 } });
               const green = '#16a34a', red = '#dc2626';
               const rows: Array<[string, number, boolean]> = [
                 ['Potentieller Exit-Wert', r.exitValue, false],
@@ -116,6 +117,19 @@ export function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Pa
                       </button>
                     ))}
                   </div>
+                  <div className="flex items-center gap-2" style={{ marginBottom: 12 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(60,60,67,0.6)' }}>Gewünschte Marge</span>
+                    <div className="flex items-center" style={{ border: '1px solid rgba(0,0,0,0.12)', borderRadius: 7, overflow: 'hidden' }}>
+                      <button onClick={() => setMargin(v => Math.max(0, v - 1))} aria-label="Marge verringern"
+                        style={{ fontSize: 13, fontWeight: 700, width: 26, height: 26, cursor: 'pointer', color: 'rgba(60,60,67,0.7)', background: 'rgba(0,0,0,0.03)', border: 'none' }}>−</button>
+                      <input type="number" value={margin} min={0} max={100} step={1}
+                        onChange={e => setMargin(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                        style={{ width: 40, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#007aff', border: 'none', outline: 'none', background: 'transparent', MozAppearance: 'textfield' }} />
+                      <button onClick={() => setMargin(v => Math.min(100, v + 1))} aria-label="Marge erhöhen"
+                        style={{ fontSize: 13, fontWeight: 700, width: 26, height: 26, cursor: 'pointer', color: 'rgba(60,60,67,0.7)', background: 'rgba(0,0,0,0.03)', border: 'none' }}>+</button>
+                    </div>
+                    <span style={{ fontSize: 11, color: 'rgba(60,60,67,0.5)' }}>%</span>
+                  </div>
                   <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', marginBottom: 10 }}>
                     Marktannahmen: {m.marketRent.toFixed(2)} €/m²/Mt.{m.rentSource ? ` (${m.rentSource})` : ''} +{rentUpliftPct}% → ERV {r.screeningRent.toFixed(2)} €/m²/Mt. · Markt-NIY {marketNIY.toFixed(2)}%{niyIsFallback ? ' (Profil-Default)' : (m.yieldSource ? ` (${m.yieldSource})` : '')} → Exit-NIY {r.exitNIY.toFixed(2)}% ({exitBuffer === EXIT_BUFFER_PRIME ? 'Prime +0,75%' : 'Rand +1,0%'}) · {area.toLocaleString('de-DE')} m²
                   </div>
@@ -131,7 +145,7 @@ export function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Pa
                   </div>
                   <div className="flex items-center justify-between mt-3 p-2.5 rounded-lg" style={{ background: r.pass ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.07)' }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: r.pass ? green : red }}>
-                      {r.pass ? `✓ Trifft 20%-Hürde (+${formatEUR(r.surplus)})` : `✗ Verfehlt 20%-Hürde (${formatEUR(r.surplus)})`}
+                      {r.pass ? `✓ Trifft ${margin}%-Hürde (+${formatEUR(r.surplus)})` : `✗ Verfehlt ${margin}%-Hürde (${formatEUR(r.surplus)})`}
                     </span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: pd.purchasePrice <= r.maxBid ? green : red }}>
                       Max. Kaufpreis {formatEUR(r.maxBid)}
