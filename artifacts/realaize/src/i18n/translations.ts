@@ -58,7 +58,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'portfolio.actionNeeded': { de: 'Handlungsbedarf', en: 'Action Required' },
   'portfolio.actionNeededText': { de: 'MFH Neuss: DSCR unter Covenant-Schwelle. Anschlussfinanzierung Sparkasse Neuss fällig Nov 2026 – alternativ Verkauf. Stadthaus Flingern: LTV nahe Schwelle bis Repositionierung abgeschlossen.', en: 'MFH Neuss: DSCR below covenant threshold. Sparkasse Neuss refinancing due Nov 2026 – or sale. Stadthaus Flingern: LTV near threshold until repositioning completes.' },
   'portfolio.opportunities': { de: 'Opportunities', en: 'Opportunities' },
-  'portfolio.opportunitiesText': { de: 'Aktuell keine Deals in der Pipeline. Kapazität für neue Wohn-Ankäufe (< 3 M) in Düsseldorf und NRW – Deal Radar aktiv.', en: 'No deals in the pipeline right now. Capacity for new residential acquisitions (< €3M) across Düsseldorf and NRW – Deal Radar active.' },
+  'portfolio.opportunitiesText': { de: 'Aktive Wohn-Pipeline in Düsseldorf und NRW (< 3 M): mehrere Deals von Screening bis Due Diligence – u.a. Rüttenscheid (Essen) in der DD-Phase.', en: 'Active residential pipeline across Düsseldorf and NRW (< €3M): several deals from screening to due diligence – e.g. Rüttenscheid (Essen) in DD.' },
   'portfolio.net': { de: 'Netto', en: 'Net' },
 
   // ─── CashFlow Page ───

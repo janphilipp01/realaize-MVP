@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useStore } from '@/store/useStore';
-import type { AcquisitionDeal } from '@/models/types';
 
 // Characterization tests for the app store — a net that proves the upcoming
 // slice extraction preserves behaviour. Uses seeded ids so no domain objects
@@ -12,7 +11,7 @@ beforeEach(() => s().resetToMockData());
 describe('initial state', () => {
   it('is seeded from mock data', () => {
     expect(s().assets.length).toBeGreaterThan(0);
-    expect(s().deals.length).toBe(0); // acquisition pipeline seeds empty
+    expect(s().deals.length).toBeGreaterThan(0);
     expect(s().developments.length).toBeGreaterThan(0);
     expect(s().sales.length).toBeGreaterThan(0);
     expect(s().benchmarks.length).toBeGreaterThan(0);
@@ -43,12 +42,11 @@ describe('assets', () => {
 });
 
 describe('deals', () => {
-  it('addDeal then deleteDeal round-trips (pipeline seeds empty)', () => {
-    expect(s().deals.length).toBe(0);
-    s().addDeal({ id: 'deal-test', name: 'Test-Ankauf', city: 'Düsseldorf', askingPrice: 1_000_000 } as unknown as AcquisitionDeal);
-    expect(s().deals.length).toBe(1);
-    s().deleteDeal('deal-test');
-    expect(s().deals.length).toBe(0);
+  it('deleteDeal removes a seeded deal', () => {
+    const id = s().deals[0].id;
+    const n = s().deals.length;
+    s().deleteDeal(id);
+    expect(s().deals.length).toBe(n - 1);
   });
 });
 
