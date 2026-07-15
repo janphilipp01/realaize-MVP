@@ -14,8 +14,6 @@
 import { SCREENING_RENT_UPLIFT_PCT } from '@workspace/screening';
 import type { AssetClass, BenchmarkRecord, UsageType } from '@/models/types';
 
-const RENT_UPLIFT_FACTOR = 1 + SCREENING_RENT_UPLIFT_PCT / 100;
-
 export type RenovationScope = 'modernisierung' | 'sanierung' | 'ausbau' | 'redevelopment';
 
 /** Build cost €/m² per renovation scope. */
@@ -41,6 +39,7 @@ export interface ScreenProfile {
   contingencyPct: number;    // contingency, of (build + financing)
   financingPct: number;      // financing, of (purchase + KNK + build)
   exitYieldBufferPct: number; // added to market NIY for a conservative exit yield (bps as %)
+  rentUpliftPct: number;     // % uplift on the location average rent → stabilized ERV
 }
 
 export const DEFAULT_SCREEN_PROFILE: ScreenProfile = {
@@ -50,6 +49,7 @@ export const DEFAULT_SCREEN_PROFILE: ScreenProfile = {
   contingencyPct: 0.10,
   financingPct: 0.05,
   exitYieldBufferPct: 1.00, // standard/edge exit buffer; prime uses less (see below)
+  rentUpliftPct: SCREENING_RENT_UPLIFT_PCT, // default +20% on the location average rent
 };
 
 // Prime Düsseldorf residential submarkets → tighter exit buffer (0.75%).
@@ -115,8 +115,9 @@ export function screenValueAdd(input: ValueAddInput): ValueAddResult {
   const { area, purchasePrice, marketRent, marketNIY, scope } = input;
 
   // Stabilized NOI (simplified: single non-recoverable haircut on gross rent).
-  // ERV basis is the location average rent + 20% (see SCREENING_RENT_UPLIFT_PCT).
-  const screeningRent = marketRent * RENT_UPLIFT_FACTOR;
+  // ERV basis is the location average rent + the profile's rent uplift
+  // (default SCREENING_RENT_UPLIFT_PCT).
+  const screeningRent = marketRent * (1 + p.rentUpliftPct / 100);
   const noi = area * screeningRent * 12 * (1 - p.nonRecoverablePct);
 
   // Potential stabilized value (Exit = NOI / exit NIY). Decision 1a: no KNK factor.

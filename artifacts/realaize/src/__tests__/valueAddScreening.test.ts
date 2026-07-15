@@ -30,6 +30,12 @@ describe('screenValueAdd', () => {
     expect(r.pass).toBe(false); // overpriced at 3.0m
   });
 
+  it('honours a configurable rent uplift on the ERV basis', () => {
+    expect(screenValueAdd({ ...input, profile: { rentUpliftPct: 0 } }).screeningRent).toBe(15);   // no uplift
+    expect(screenValueAdd({ ...input, profile: { rentUpliftPct: 0 } }).noi).toBe(162_000);        // 1000 * 15 * 12 * 0.9
+    expect(screenValueAdd({ ...input, profile: { rentUpliftPct: 30 } }).screeningRent).toBe(19.5); // 15 + 30%
+  });
+
   it('maxBid is the residual where surplus is zero (monotonic around it)', () => {
     const { maxBid } = screenValueAdd(input);
     expect(screenValueAdd({ ...input, purchasePrice: maxBid }).surplus).toBeCloseTo(0, 2);

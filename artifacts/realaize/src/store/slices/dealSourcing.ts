@@ -13,7 +13,7 @@ export const dealSourcingSlice = (set: SetState, get: GetState): Pick<AppState, 
       // ── Deal Sourcing & Screening (Module 07) ──
       runScreening: () =>
         set(s => ({
-          candidateDeals: runLocalMatcher(s.candidateDeals, s.acquisitionProfiles, benchmarksToScreeningSeeds(s.benchmarks)),
+          candidateDeals: runLocalMatcher(s.candidateDeals, s.acquisitionProfiles, benchmarksToScreeningSeeds(s.benchmarks), s.settings.screeningRentUpliftPercent),
           lastScreeningAt: new Date().toISOString(),
         })),
 
@@ -24,7 +24,7 @@ export const dealSourcingSlice = (set: SetState, get: GetState): Pick<AppState, 
             .map(listingToCandidate)
             .filter(c => !existingRefs.has(c.sourceRef))
             .map(c => ({ ...c, matches: [] }));
-          const merged = runLocalMatcher([...fresh, ...s.candidateDeals], s.acquisitionProfiles, benchmarksToScreeningSeeds(s.benchmarks));
+          const merged = runLocalMatcher([...fresh, ...s.candidateDeals], s.acquisitionProfiles, benchmarksToScreeningSeeds(s.benchmarks), s.settings.screeningRentUpliftPercent);
           return { candidateDeals: merged, lastScreeningAt: new Date().toISOString() };
         }),
 
@@ -94,7 +94,7 @@ export const dealSourcingSlice = (set: SetState, get: GetState): Pick<AppState, 
           const profiles = s.acquisitionProfiles.map(p => p.id === id ? { ...p, ...patch } : p);
           return {
             acquisitionProfiles: profiles,
-            candidateDeals: runLocalMatcher(s.candidateDeals, profiles, benchmarksToScreeningSeeds(s.benchmarks)),
+            candidateDeals: runLocalMatcher(s.candidateDeals, profiles, benchmarksToScreeningSeeds(s.benchmarks), s.settings.screeningRentUpliftPercent),
             lastScreeningAt: new Date().toISOString(),
           };
         }),

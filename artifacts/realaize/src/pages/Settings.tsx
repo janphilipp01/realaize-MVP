@@ -99,6 +99,37 @@ export function SettingsPage() {
           </div>
         </GlassPanel>
 
+        {/* ── Screening ── */}
+        <GlassPanel style={{ padding: 24 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
+            {lang === 'de' ? 'Screening' : 'Screening'}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+            {lang === 'de'
+              ? 'Aufschlag auf die Standort-Durchschnittsmiete, der beim Screening als erzielbare ERV angesetzt wird — im Deal Radar (Faktortest) und bei der Value-Add-Exit-Wert-Herleitung.'
+              : 'Uplift on the location average rent used as the achievable ERV during screening — in the Deal Radar (factor test) and in the value-add exit value derivation.'}
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(60,60,67,0.50)', display: 'block', marginBottom: 6, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                {lang === 'de' ? 'Miet-Aufschlag Screening (%)' : 'Screening Rent Uplift (%)'}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  className="input-glass"
+                  value={settings.screeningRentUpliftPercent}
+                  min={0} max={100} step={1}
+                  onChange={e => updateSettings({ screeningRentUpliftPercent: parseFloat(e.target.value) || 0 })}
+                />
+                <span style={{ fontSize: 13, color: 'rgba(60,60,67,0.50)' }}>
+                  {lang === 'de' ? `Ø-Miete +${settings.screeningRentUpliftPercent}%` : `avg rent +${settings.screeningRentUpliftPercent}%`}
+                </span>
+              </div>
+            </div>
+          </div>
+        </GlassPanel>
+
         {/* ── Marktannahmen ── */}
         <GlassPanel style={{ padding: 24 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>

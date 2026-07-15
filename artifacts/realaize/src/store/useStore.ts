@@ -31,6 +31,11 @@ export const useStore = create<AppState>()(
       name: 'restate-storage-v3',
       // contacts removed from partialize — now served by /api/contacts (React Query)
       partialize: (s) => ({ assets: s.assets, deals: s.deals, developments: s.developments, sales: s.sales, images: s.images, auditLog: s.auditLog, newsReports: s.newsReports, dealRadarListings: s.dealRadarListings, dealRadarCriteria: s.dealRadarCriteria, settings: s.settings, benchmarks: s.benchmarks, marketEvents: s.marketEvents, reportSources: s.reportSources, refreshJobs: s.refreshJobs, candidateDeals: s.candidateDeals, acquisitionProfiles: s.acquisitionProfiles, lastScreeningAt: s.lastScreeningAt }),
+      // Backfill newly added settings keys for state persisted before they existed.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<AppState>;
+        return { ...current, ...p, settings: { ...defaultSettings, ...(p.settings ?? {}) } };
+      },
     }
   )
 )

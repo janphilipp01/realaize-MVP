@@ -9,6 +9,7 @@ export interface AppSettings {
   maxLTV: number;
   targetNIY: number;
   defaultExitMultiplier: number; // e.g. 18 for 18x NOI terminal value
+  screeningRentUpliftPercent: number; // % uplift on location average rent for screening ERV, default 20
   // Default Operating Costs for new assets
   defaultVacancyRate: number;     // %, default 5
   defaultMgmtCostPct: number;     // %, default 3
@@ -156,6 +157,7 @@ export const defaultSettings: AppSettings = {
   maxLTV: 65,
   targetNIY: 4.5,
   defaultExitMultiplier: 18,
+  screeningRentUpliftPercent: 20,
   defaultVacancyRate: 5,
   defaultMgmtCostPct: 3,
   defaultMaintenancePerSqm: 10,

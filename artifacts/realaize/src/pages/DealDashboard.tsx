@@ -28,6 +28,7 @@ export default function DealDashboard() {
   const { deals, updateDeal, deleteDeal, transferToBestand, transferToDevelopment, addAuditEntry, updateDealPropertyData } = useStore();
   const benchmarks = useStore(s => s.benchmarks);
   const targetNIY = useStore(s => s.settings.targetNIY);
+  const rentUpliftPct = useStore(s => s.settings.screeningRentUpliftPercent);
   const { t, lang } = useLanguage();
   const deal = deals.find(d => d.id === id);
 
@@ -99,7 +100,7 @@ export default function DealDashboard() {
                 const price = deal.underwritingAssumptions.purchasePrice || deal.askingPrice || 0;
                 const m = lookupMarketAssumptions(benchmarks, deal.city, deal.usageType, deal.submarket);
                 if (!m.marketRent || area <= 0 || price <= 0) return null;
-                const r = screenValueAdd({ area, purchasePrice: price, marketRent: m.marketRent, marketNIY: m.marketNIY ?? targetNIY, scope: 'sanierung', profile: { exitYieldBufferPct: resolveExitYieldBuffer(deal.city, deal.submarket) } });
+                const r = screenValueAdd({ area, purchasePrice: price, marketRent: m.marketRent, marketNIY: m.marketNIY ?? targetNIY, scope: 'sanierung', profile: { exitYieldBufferPct: resolveExitYieldBuffer(deal.city, deal.submarket), rentUpliftPct } });
                 return (
                   <span title={lang === 'de' ? 'Value-Add Screening (Profil, Scope: Sanierung) — Detail im Underwriting → Market' : 'Value-add screening (profile, scope: refurbishment)'}
                     className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,

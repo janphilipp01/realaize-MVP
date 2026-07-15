@@ -16,7 +16,7 @@ import type {
   CandidateStatus,
 } from '@/models/types';
 
-function toScreeningProfile(p: AcquisitionProfile): ScreeningProfile {
+function toScreeningProfile(p: AcquisitionProfile, rentUpliftPct?: number): ScreeningProfile {
   return {
     id: p.id,
     name: p.name,
@@ -31,6 +31,7 @@ function toScreeningProfile(p: AcquisitionProfile): ScreeningProfile {
     minDiscountPricePct: p.minDiscountPricePct,
     minDiscountFactorPct: p.minDiscountFactorPct,
     minGrossYieldPct: p.minGrossYieldPct,
+    rentUpliftPct,
   };
 }
 
@@ -77,13 +78,14 @@ export function screenCandidateAllProfiles(
   c: CandidateDeal,
   profiles: AcquisitionProfile[],
   benchmarks: ScreeningBenchmarkSeed[],
+  rentUpliftPct?: number,
 ): ProfileMatch[] {
   const bench = lookupBenchmark(c, benchmarks);
   if (!bench) return [];
   const sc = toScreeningCandidate(c);
   const out: ProfileMatch[] = [];
   for (const p of profiles.filter((x) => x.active)) {
-    const r = screenCandidate(sc, toScreeningProfile(p), bench);
+    const r = screenCandidate(sc, toScreeningProfile(p, rentUpliftPct), bench);
     if (r.signal === 'none') continue;
     out.push({
       profileId: p.id,
@@ -132,11 +134,12 @@ export function runLocalMatcher(
   candidates: CandidateDeal[],
   profiles: AcquisitionProfile[],
   benchmarks: ScreeningBenchmarkSeed[],
+  rentUpliftPct?: number,
 ): CandidateDeal[] {
   const now = new Date().toISOString();
   return candidates.map((c) => {
     if (c.status === 'rejected' || c.status === 'promoted' || c.status === 'inactive') return c;
-    const matches = screenCandidateAllProfiles(c, profiles, benchmarks);
+    const matches = screenCandidateAllProfiles(c, profiles, benchmarks, rentUpliftPct);
     const anyMatch = matches.length > 0;
     let status: CandidateStatus = c.status;
     if (c.status === 'new' || c.status === 'matched' || c.status === 'unmatched') {

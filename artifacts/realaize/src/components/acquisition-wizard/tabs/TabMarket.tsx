@@ -12,6 +12,7 @@ export function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Pa
   const setMA = (patch: Partial<typeof ma>) => onChange({ marketAssumptions: { ...ma, ...patch } });
   const benchmarks = useStore(s => s.benchmarks);
   const targetNIY = useStore(s => s.settings.targetNIY);
+  const rentUpliftPct = useStore(s => s.settings.screeningRentUpliftPercent);
   const [scope, setScope] = useState<RenovationScope>('sanierung');
 
   const usageTypes = Array.from(new Set([
@@ -92,7 +93,7 @@ export function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Pa
                   : 'Kaufpreis (Tab Acquisition) und Rent Roll (Fläche) erforderlich.'}
               </div>
             ) : (() => {
-              const r = screenValueAdd({ area, purchasePrice: pd.purchasePrice, marketRent: m.marketRent, marketNIY, scope, profile: { exitYieldBufferPct: exitBuffer } });
+              const r = screenValueAdd({ area, purchasePrice: pd.purchasePrice, marketRent: m.marketRent, marketNIY, scope, profile: { exitYieldBufferPct: exitBuffer, rentUpliftPct } });
               const green = '#16a34a', red = '#dc2626';
               const rows: Array<[string, number, boolean]> = [
                 ['Potentieller Exit-Wert', r.exitValue, false],
@@ -116,7 +117,7 @@ export function TabMarket({ pd, onChange }: { pd: PropertyData; onChange: (p: Pa
                     ))}
                   </div>
                   <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', marginBottom: 10 }}>
-                    Marktannahmen: {m.marketRent.toFixed(2)} €/m²/Mt.{m.rentSource ? ` (${m.rentSource})` : ''} +20% → ERV {r.screeningRent.toFixed(2)} €/m²/Mt. · Markt-NIY {marketNIY.toFixed(2)}%{niyIsFallback ? ' (Profil-Default)' : (m.yieldSource ? ` (${m.yieldSource})` : '')} → Exit-NIY {r.exitNIY.toFixed(2)}% ({exitBuffer === EXIT_BUFFER_PRIME ? 'Prime +0,75%' : 'Rand +1,0%'}) · {area.toLocaleString('de-DE')} m²
+                    Marktannahmen: {m.marketRent.toFixed(2)} €/m²/Mt.{m.rentSource ? ` (${m.rentSource})` : ''} +{rentUpliftPct}% → ERV {r.screeningRent.toFixed(2)} €/m²/Mt. · Markt-NIY {marketNIY.toFixed(2)}%{niyIsFallback ? ' (Profil-Default)' : (m.yieldSource ? ` (${m.yieldSource})` : '')} → Exit-NIY {r.exitNIY.toFixed(2)}% ({exitBuffer === EXIT_BUFFER_PRIME ? 'Prime +0,75%' : 'Rand +1,0%'}) · {area.toLocaleString('de-DE')} m²
                   </div>
                   <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                     {rows.map(([label, val, dim], i) => (

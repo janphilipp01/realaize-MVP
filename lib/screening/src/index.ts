@@ -47,6 +47,7 @@ export interface ScreeningProfile {
   minDiscountPricePct: number; // Test A threshold (floor 0 in core+)
   minDiscountFactorPct?: number | null; // Test B threshold · value-add
   minGrossYieldPct?: number | null; // Test B threshold · core+
+  rentUpliftPct?: number | null; // Test B ERV uplift on the location average rent; default SCREENING_RENT_UPLIFT_PCT
 }
 
 /** Reconciled benchmark inputs for the candidate's submarket × asset class. */
@@ -94,12 +95,12 @@ const round = (n: number, dp = 2): number => {
 };
 
 /**
- * Screening uplift on the market average rent (Durchschnittsmiete) per location.
- * §05 · Test B always screens against +20 % of the submarket/city average rent —
- * the ERV basis reflects achievable post-reletting rent, not today's average.
+ * Default screening uplift on the market average rent (Durchschnittsmiete) per
+ * location. §05 · Test B screens against the submarket/city average rent + this
+ * uplift — the ERV basis reflects achievable post-reletting rent, not today's
+ * average. Overridable per profile via ScreeningProfile.rentUpliftPct.
  */
 export const SCREENING_RENT_UPLIFT_PCT = 20;
-const rentUpliftFactor = 1 + SCREENING_RENT_UPLIFT_PCT / 100;
 
 /** §05 · Pre-screening hard filters. Any failure ends evaluation for the profile. */
 export function runHardFilters(
@@ -151,8 +152,10 @@ export function runTestB(
   bench: ScreeningBenchmark,
 ) {
   // Market rent from MI is the ERV basis — never the listing's stated rent.
-  // Always screen against the location average rent + SCREENING_RENT_UPLIFT_PCT.
-  const upliftedRentPerSqmMonth = bench.rentPerSqmMonth * rentUpliftFactor;
+  // Screen against the location average rent + the profile's rent uplift
+  // (default SCREENING_RENT_UPLIFT_PCT).
+  const upliftPct = profile.rentUpliftPct ?? SCREENING_RENT_UPLIFT_PCT;
+  const upliftedRentPerSqmMonth = bench.rentPerSqmMonth * (1 + upliftPct / 100);
   const annualErv = upliftedRentPerSqmMonth * candidate.areaSqm * 12;
   const impliedFactor = candidate.askingPrice / annualErv;
   const impliedGrossYield = (1 / impliedFactor) * 100;

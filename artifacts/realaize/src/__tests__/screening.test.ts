@@ -84,6 +84,10 @@ describe('runTestB (implied factor / yield)', () => {
     expect(runTestB(candidate, p, bench).passB).toBe(true); // 7.2 >= 5
     expect(runTestB(candidate, { ...p, minGrossYieldPct: 8 }, bench).passB).toBe(false);
   });
+  it('honours a configurable rent uplift on the ERV basis', () => {
+    expect(runTestB(candidate, { ...profile, rentUpliftPct: 0 }, bench).annualErv).toBe(60_000); // no uplift
+    expect(runTestB(candidate, { ...profile, rentUpliftPct: 30 }, bench).annualErv).toBe(78_000); // 10 * 1.30 * 500 * 12
+  });
 });
 
 describe('signalFor', () => {

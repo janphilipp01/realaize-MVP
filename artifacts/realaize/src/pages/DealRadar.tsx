@@ -58,6 +58,7 @@ export function DealRadarPage() {
   const [vaScope, setVaScope] = useState<RenovationScope>('sanierung');
   // Market assumptions come live from Market Intelligence (Module 06).
   const benchmarks = useStore(s => s.benchmarks);
+  const rentUpliftPct = useStore(s => s.settings.screeningRentUpliftPercent);
   const screenSeeds = useMemo(() => benchmarksToScreeningSeeds(benchmarks), [benchmarks]);
 
   const de = lang === 'de';
@@ -391,7 +392,7 @@ export function DealRadarPage() {
                 // Market NIY derived from the transaction multiplier: NIY = (1 − non-recoverable) / factor.
                 const marketNIY = ((1 - DEFAULT_SCREEN_PROFILE.nonRecoverablePct) / b.factorMedian) * 100;
                 const exitBuffer = resolveExitYieldBuffer(selected.city, selected.submarket);
-                const r = screenValueAdd({ area: selected.areaSqm, purchasePrice: selected.askingPrice, marketRent: b.rentPerSqmMonth, marketNIY, scope: vaScope, profile: { exitYieldBufferPct: exitBuffer } });
+                const r = screenValueAdd({ area: selected.areaSqm, purchasePrice: selected.askingPrice, marketRent: b.rentPerSqmMonth, marketNIY, scope: vaScope, profile: { exitYieldBufferPct: exitBuffer, rentUpliftPct } });
                 const green = '#16a34a', red = '#dc2626';
                 const rows: Array<[string, number, boolean]> = [
                   [de ? 'Potentieller Exit-Wert' : 'Potential exit value', r.exitValue, false],
@@ -419,7 +420,7 @@ export function DealRadarPage() {
                       ))}
                     </div>
                     <div style={{ fontSize: 11, color: 'rgba(60,60,67,0.55)', marginBottom: 8 }}>
-                      {de ? 'Basis' : 'Basis'}: {b.rentPerSqmMonth.toFixed(2).replace('.', ',')} €/m²/Mt +20% → ERV {r.screeningRent.toFixed(2).replace('.', ',')} €/m²/Mt · Faktor {b.factorMedian.toFixed(1).replace('.', ',')}× · Exit-NIY {r.exitNIY.toFixed(2).replace('.', ',')}% ({exitBuffer === EXIT_BUFFER_PRIME ? 'Prime +0,75%' : 'Rand +1,0%'}) · {selected.areaSqm.toLocaleString('de-DE')} m² · {selected.submarket ?? selected.city}
+                      {de ? 'Basis' : 'Basis'}: {b.rentPerSqmMonth.toFixed(2).replace('.', ',')} €/m²/Mt +{rentUpliftPct}% → ERV {r.screeningRent.toFixed(2).replace('.', ',')} €/m²/Mt · Faktor {b.factorMedian.toFixed(1).replace('.', ',')}× · Exit-NIY {r.exitNIY.toFixed(2).replace('.', ',')}% ({exitBuffer === EXIT_BUFFER_PRIME ? 'Prime +0,75%' : 'Rand +1,0%'}) · {selected.areaSqm.toLocaleString('de-DE')} m² · {selected.submarket ?? selected.city}
                     </div>
                     <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                       {rows.map(([label, val, dim], i) => (
