@@ -93,6 +93,14 @@ const round = (n: number, dp = 2): number => {
   return Math.round(n * f) / f;
 };
 
+/**
+ * Screening uplift on the market average rent (Durchschnittsmiete) per location.
+ * §05 · Test B always screens against +20 % of the submarket/city average rent —
+ * the ERV basis reflects achievable post-reletting rent, not today's average.
+ */
+export const SCREENING_RENT_UPLIFT_PCT = 20;
+const rentUpliftFactor = 1 + SCREENING_RENT_UPLIFT_PCT / 100;
+
 /** §05 · Pre-screening hard filters. Any failure ends evaluation for the profile. */
 export function runHardFilters(
   candidate: ScreeningCandidate,
@@ -143,7 +151,9 @@ export function runTestB(
   bench: ScreeningBenchmark,
 ) {
   // Market rent from MI is the ERV basis — never the listing's stated rent.
-  const annualErv = bench.rentPerSqmMonth * candidate.areaSqm * 12;
+  // Always screen against the location average rent + SCREENING_RENT_UPLIFT_PCT.
+  const upliftedRentPerSqmMonth = bench.rentPerSqmMonth * rentUpliftFactor;
+  const annualErv = upliftedRentPerSqmMonth * candidate.areaSqm * 12;
   const impliedFactor = candidate.askingPrice / annualErv;
   const impliedGrossYield = (1 / impliedFactor) * 100;
   const discountFactorPct =

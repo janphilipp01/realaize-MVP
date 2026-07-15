@@ -71,18 +71,18 @@ describe('runTestA (€/m² vs benchmark)', () => {
 });
 
 describe('runTestB (implied factor / yield)', () => {
-  it('uses MI rent as the ERV basis, not the listing rent', () => {
+  it('uses MI rent +20% as the ERV basis, not the listing rent', () => {
     const b = runTestB(candidate, profile, bench);
-    expect(b.annualErv).toBe(60_000); // 10 * 500 * 12
-    expect(b.impliedFactor).toBe(16.67); // 1,000,000 / 60,000
-    expect(b.impliedGrossYield).toBe(6); // 1/16.6667
-    expect(b.discountFactorPct).toBe(33.33); // (25-16.6667)/25
+    expect(b.annualErv).toBe(72_000); // 10 * 1.20 * 500 * 12
+    expect(b.impliedFactor).toBe(13.89); // 1,000,000 / 72,000
+    expect(b.impliedGrossYield).toBe(7.2); // 1/13.8889
+    expect(b.discountFactorPct).toBe(44.44); // (25-13.8889)/25
     expect(b.passB).toBe(true); // discount_to_market, floor 0
   });
   it('supports absolute_yield_threshold mode', () => {
     const p = { ...profile, screeningMode: 'absolute_yield_threshold' as const, minGrossYieldPct: 5 };
-    expect(runTestB(candidate, p, bench).passB).toBe(true); // 6.0 >= 5
-    expect(runTestB(candidate, { ...p, minGrossYieldPct: 7 }, bench).passB).toBe(false);
+    expect(runTestB(candidate, p, bench).passB).toBe(true); // 7.2 >= 5
+    expect(runTestB(candidate, { ...p, minGrossYieldPct: 8 }, bench).passB).toBe(false);
   });
 });
 
