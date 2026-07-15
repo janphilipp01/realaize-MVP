@@ -21,11 +21,12 @@ const input: ValueAddInput = {
 describe('screenValueAdd', () => {
   it('computes NOI, exit value and the pass/fail verdict', () => {
     const r = screenValueAdd(input);
-    expect(r.noi).toBe(162_000); // 1000 * 15 * 12 * (1 - 0.10)
+    expect(r.screeningRent).toBe(18); // 15 average rent + 20%
+    expect(r.noi).toBe(194_400); // 1000 * 18 * 12 * (1 - 0.10)
     expect(r.exitNIY).toBe(4.5); // 3.5 + 1.00 default buffer
-    expect(r.exitValue).toBe(3_600_000); // 162k / 4.5%
+    expect(r.exitValue).toBe(4_320_000); // 194.4k / 4.5%
     expect(r.buildCost).toBe(1_000_000);
-    expect(r.totalCosts).toBe(4_636_500);
+    expect(r.totalCosts).toBe(4_636_500); // cost side is rent-independent
     expect(r.pass).toBe(false); // overpriced at 3.0m
   });
 

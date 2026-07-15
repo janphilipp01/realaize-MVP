@@ -7,8 +7,14 @@
 //  4) Profit hurdle = % of exit value (GDV)              [4a]
 //
 // Market rent comes from Market Intelligence in EUR/m²/MONTH → annualized ×12.
+// As in the Deal-Radar screening engine, the stabilized ERV is the location
+// average rent + SCREENING_RENT_UPLIFT_PCT (+20%) — the exit value is derived
+// from achievable post-reletting rent, not today's average.
 
+import { SCREENING_RENT_UPLIFT_PCT } from '@workspace/screening';
 import type { AssetClass, BenchmarkRecord, UsageType } from '@/models/types';
+
+const RENT_UPLIFT_FACTOR = 1 + SCREENING_RENT_UPLIFT_PCT / 100;
 
 export type RenovationScope = 'modernisierung' | 'sanierung' | 'ausbau' | 'redevelopment';
 
@@ -85,6 +91,8 @@ export interface ValueAddInput {
 
 export interface ValueAddResult {
   noi: number;
+  marketRent: number;     // location average rent (€/m²/month), as supplied
+  screeningRent: number;  // stabilized ERV = marketRent + 20% (€/m²/month)
   exitValue: number;
   buildCost: number;
   knk: number;
@@ -107,7 +115,9 @@ export function screenValueAdd(input: ValueAddInput): ValueAddResult {
   const { area, purchasePrice, marketRent, marketNIY, scope } = input;
 
   // Stabilized NOI (simplified: single non-recoverable haircut on gross rent).
-  const noi = area * marketRent * 12 * (1 - p.nonRecoverablePct);
+  // ERV basis is the location average rent + 20% (see SCREENING_RENT_UPLIFT_PCT).
+  const screeningRent = marketRent * RENT_UPLIFT_FACTOR;
+  const noi = area * screeningRent * 12 * (1 - p.nonRecoverablePct);
 
   // Potential stabilized value (Exit = NOI / exit NIY). Decision 1a: no KNK factor.
   // Exit yield is deliberately softer than the (currently hot) market entry yield.
@@ -127,6 +137,8 @@ export function screenValueAdd(input: ValueAddInput): ValueAddResult {
 
   return {
     noi,
+    marketRent,
+    screeningRent,
     exitValue,
     buildCost,
     knk,
