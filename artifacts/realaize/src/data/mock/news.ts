@@ -9,7 +9,7 @@ export const mockNewsReports: DailyIntelligenceReport[] = [
     date: '2026-04-05',
     generatedAt: '2026-04-05T07:15:00',
     executiveSummary: 'Der deutsche Immobilienmarkt zeigt erste Erholungstendenzen: Transaktionsvolumen stieg im Q1/2026 um 18% gegenüber Vorjahr. EZB-Zinssenkung auf 2,75% beflügelt Refinanzierungsumfeld. Bürovermietungsmärkte in Frankfurt und München mit positiver Dynamik, während Logistikimmobilien weiterhin auf Rekordnachfrage stoßen.',
-    marketImpactAnalysis: 'Für das Lestate Real Portfolio ergeben sich folgende Implikationen: (1) Die DSCR-Verletzung bei Hafenviertel Logistik verbessert sich bei einer Refinanzierung auf das aktuelle Zinsniveau von 3,5–4,0%. (2) Der Büromarkt Frankfurt zeigt steigende Nachfrage – positive Signale für die Westend Plaza Vermarktung. (3) Logistikneubau-Pipeline in Hamburg verlangsamt sich – günstig für Bestandshalter wie Hafenviertel.',
+    marketImpactAnalysis: 'Für das Lestate Real Portfolio ergeben sich folgende Implikationen: (1) Die DSCR-Verletzung beim MFH Neuss verbessert sich bei einer Anschlussfinanzierung auf das aktuelle Zinsniveau von 3,5–4,0%. (2) Der Wohnungsmarkt Düsseldorf zeigt anhaltend hohe Nachfrage – positive Signale für die Repositionierung Stadthaus Flingern. (3) Sinkende Finanzierungskosten stützen die Kalkulation der laufenden Developments (Bilk, Ratingen, Krefeld).',
     articles: [
       {
         id: 'art-2026-04-05-001',
@@ -68,7 +68,7 @@ export const mockNewsReports: DailyIntelligenceReport[] = [
     date: '2026-04-04',
     generatedAt: '2026-04-04T07:20:00',
     executiveSummary: 'Starke Zahlen aus dem Münchner Wohnungsmarkt: Neuvermietungen stiegen um 12%, während das Angebot auf historisch niedrigem Niveau verharrt. Neue regulatorische Anforderungen für ESG-Reporting ab 2027 beschäftigen die Branche. Logistiksektor profitiert von E-Commerce-Wachstum.',
-    marketImpactAnalysis: 'Für das Portfolio: Der Münchner Wohnungsmarkt unterstützt die Wertentwicklung von Schwabing Wohnpark. ESG-Reporting-Pflichten ab 2027 erfordern mittelfristig Datenpflege für alle Bestandsobjekte. Für die Prenzlauer Berg Revitalisierung sind die Berlin-Neuigkeiten zur Mietpreisbremse relevant – Planung sollte konservative Mietannahmen beibehalten.',
+    marketImpactAnalysis: 'Für das Portfolio: Der Kölner Wohnungsmarkt unterstützt die Wertentwicklung der Wohnanlage Ehrenfeld. ESG-Reporting-Pflichten ab 2027 erfordern mittelfristig Datenpflege für alle Bestandsobjekte. Für das Wohnprojekt Bilk sind Regelungen zur Mietpreisbremse relevant – die Planung sollte konservative Mietannahmen beibehalten.',
     articles: [
       {
         id: 'art-2026-04-04-001',
@@ -107,7 +107,7 @@ export const mockNewsReports: DailyIntelligenceReport[] = [
     date: '2026-04-03',
     generatedAt: '2026-04-03T07:10:00',
     executiveSummary: 'Signifikante Transaktionen am deutschen Büromarkt: Allianz Real Estate erwirbt Frankfurter Büroturm für 420 Mio. EUR. Düsseldorfer Büroleerstand sinkt auf 9,2%. Wohnimmobilien-Index DEX steigt auf 3-Jahres-Hoch.',
-    marketImpactAnalysis: 'Allianz-Transaktion setzt Benchmark für Prime-Büros in Frankfurt: Rendite 4,1%. Bestätigt Markterholung und stützt Westend Plaza Bewertung. Düsseldorfer Markt erholt sich – positiv für Düsseldorf Gateway Neubau (dev-002). Wohnimmobilien-Index stärkt Argumentation für Altona Wohnquartier Exit-Szenario.',
+    marketImpactAnalysis: 'Der steigende Wohnimmobilien-Index DEX bestätigt die Markterholung im Wohnsegment und stützt die Bewertung des Bestands (Oberkassel, Flingern, Ehrenfeld). Der sinkende Düsseldorfer Leerstand ist positiv für das Wohnprojekt Bilk und den Dachausbau Pempelfort. Der Wohnimmobilien-Index stärkt die Argumentation für das ETW-Exit-Szenario Wohnquartier Krefeld.',
     articles: [
       {
         id: 'art-2026-04-03-001',
